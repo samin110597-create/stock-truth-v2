@@ -51,6 +51,10 @@ module.exports=async function handler(req,res){
   startAutoRefresh();
 }`);
 
+    h=section(h,'function spliceForming(raw,q){','function compute(){',`function spliceForming(raw,q){
+  return{bars:raw.slice(),forming:false};
+}`);
+
     h=section(h,'async function refreshCandles(silent){','function startAutoRefresh(){',`async function refreshCandles(silent){
   if(!D||!D.symbol)return;
   const b=$("#btnRefresh");if(b&&!silent)b.textContent="Reloading…";
