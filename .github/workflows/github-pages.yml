@@ -1,0 +1,150 @@
+name: Build full Stock Truth on GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/github-pages.yml'
+      - 'v2-enhance.js'
+      - 'api/stock.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout v2 repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build full original Stock Truth terminal for GitHub Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/stock-truth-original
+          git clone --quiet --branch original-stock-truth --single-branch https://github.com/samin110597-create/stock-truth.git /tmp/stock-truth-original
+          mkdir -p docs
+          cp /tmp/stock-truth-original/docs/index.html docs/index.html
+          cp v2-enhance.js docs/v2-enhance.js
+          touch docs/.nojekyll
+
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('docs/index.html')
+          h = p.read_text(encoding='utf-8')
+
+          def section(text, start, end, replacement):
+              a = text.find(start)
+              b = text.find(end, a + len(start))
+              if a < 0 or b < 0:
+                  raise SystemExit(f'Unable to patch original terminal section: {start}')
+              return text[:a] + replacement + '\n\n' + text[b:]
+
+          h = h.replace('<title>Stock Truth — analyst terminal</title>', '<title>Stock Truth v2 — full analyst terminal</title>')
+          h = h.replace('const BUILD_TAG="v2.4 · 2026-08-06";', 'const BUILD_TAG="v2.5 · FULL ORIGINAL TERMINAL · secure any-ticker backend · 2026-08-08";')
+          h = h.replace('</style>', '''
+          #keybox{display:none!important}
+          #tfbar button.tf:not([data-tf="1day"]){display:none!important}
+          </style>''', 1)
+
+          h = section(h, 'async function boot(){', 'async function run(symRaw){', r'''async function boot(){
+            const bad=selfTest();
+            if(bad){
+              $("#app").innerHTML=`<div class="panel"><h2>Engine self-test failed <span class="tag bad">STOPPED</span></h2><p class="note err">${esc(bad)}</p></div>`;
+              return;
+            }
+            const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · engine self-test ✓";bt2.classList.remove("dim");bt2.classList.add("up");}
+            INDEX={tickers:[]};MODE="pipeline";TF="1day";
+            $("#modeTag").textContent="GITHUB PAGES · FULL STOCK TRUTH · ANY TICKER";
+            $("#modeTag").classList.remove("bad");
+            $("#modeNote").textContent="This is the full original Stock Truth terminal. Any valid ticker is fetched securely by the v2 data service. Missing fields say unavailable instead of being invented.";
+            drawTickerBar();
+            const first=recents()[0]||"AAPL";
+            await run(first);
+          }''')
+
+          h = section(h, 'async function run(symRaw){', 'async function load(sym){', r'''async function run(symRaw){
+            const sym=(symRaw||$("#sym").value||"").trim().toUpperCase();
+            if(!sym)return;
+            $("#sym").value=sym;TAB="verdict";
+            return load(sym);
+          }''')
+
+          h = section(h, 'async function load(sym){', 'function drawTickerBar(){', r'''async function load(sym){
+            $("#app").innerHTML=`<div class="panel"><h2>Loading ${esc(sym)} <span class="tag pulse">FULL STOCK TRUTH</span></h2><p class="note">Loading adjusted closed-bar history, technicals, fundamentals, earnings and analyst context where the sources return it.</p></div>`;
+            try{
+              const r=await fetch(`https://stock-truth-v2.vercel.app/api/stock?symbol=${encodeURIComponent(sym)}`,{cache:"no-store"});
+              const j=await r.json();
+              if(!r.ok)throw new Error(j.error||("HTTP "+r.status));
+              D=j;D.symbol=D.symbol||sym;D.direct=false;
+            }catch(e){D={symbol:sym,load_error:String(e&&e.message||e)};}
+            TAB="verdict";pushRecent(sym);compute();drawTickerBar();render();
+            window.V2DATA=D;window.dispatchEvent(new CustomEvent("stocktruth:v2data",{detail:D}));
+          }''')
+
+          h = section(h, 'async function refreshCandles(silent){', 'function startAutoRefresh(){', r'''async function refreshCandles(silent){
+            if(!D||!D.symbol)return;
+            const b=$("#btnRefresh");if(b&&!silent)b.textContent="Reloading…";
+            try{await load(D.symbol);}catch(e){const n=$("#modeNote");if(n)n.innerHTML=`<span class="err">Refresh failed — ${esc(e.message||e)}</span>`;}
+            finally{const b2=$("#btnRefresh");if(b2)b2.textContent="Refresh";}
+          }''')
+
+          h = section(h, 'async function setTF(tf){', 'function recents(){', r'''async function setTF(tf){
+            TF="1day";localStorage.setItem("tf","1day");
+            document.querySelectorAll("#tfbar button.tf").forEach(b=>b.classList[b.getAttribute("data-tf")==="1day"?"add":"remove"]("on"));
+            const n=$("#modeNote");if(n)n.textContent="Primary signals use completed daily bars. Weekly and monthly MA/EMA structure is shown in the v2 multi-timeframe truth layer without pretending correlated averages are independent evidence.";
+          }''')
+
+          h = section(h, 'function spliceForming(raw,q){', 'function compute(){', r'''function spliceForming(raw,q){
+            return{bars:raw.slice(),forming:false};
+          }''')
+
+          h = h.replace('</body>', '<script src="./v2-enhance.js"></script></body>')
+          p.write_text(h, encoding='utf-8')
+          PY
+
+          grep -q 'FULL STOCK TRUTH' docs/index.html
+          grep -q 'tabTech' docs/index.html
+          grep -q 'tabFund' docs/index.html
+          grep -q 'tabSrc' docs/index.html
+          grep -q 'BACKTEST' docs/index.html
+          grep -q 'stock-truth-v2.vercel.app/api/stock' docs/index.html
+
+      - name: Commit generated GitHub Pages files
+        shell: bash
+        run: |
+          git config user.name 'stock-truth-pages-bot'
+          git config user.email 'stock-truth-pages-bot@users.noreply.github.com'
+          git add docs/index.html docs/v2-enhance.js docs/.nojekyll
+          if ! git diff --cached --quiet; then
+            git commit -m 'site: publish full Stock Truth terminal on GitHub Pages'
+            git push origin HEAD:main
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
