@@ -2,7 +2,7 @@ const PERIODS=[9,21,50,100,150,200];
 const THRESHOLDS=[0.54,0.56,0.58,0.60,0.62,0.65,0.68,0.70];
 const $=s=>document.querySelector(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const finite=x=>Number.isFinite(Number(x));
+const finite=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x));
 const fmt=(x,d=2)=>finite(x)?Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const pct=(x,d=1)=>finite(x)?`${(Number(x)*100).toFixed(d)}%`:'—';
 const pct100=(x,d=1)=>finite(x)?`${Number(x).toFixed(d)}%`:'—';
@@ -49,7 +49,7 @@ function rollingStd(v,n){
     out[i]=Math.sqrt(a.reduce((s,x)=>s+(x-m)*(x-m),0)/Math.max(1,n-1));
   }return out;
 }
-function returns(v,n){return v.map((x,i)=>i>=n&&v[i-n]?x/v[i-n]-1:null);}
+function returns(v,n){return v.map((x,i)=>i>=n&&finite(v[i-n])&&Number(v[i-n])!==0?x/v[i-n]-1:null);}
 
 function weekKey(date){
   const d=new Date(`${date}T00:00:00Z`);const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);
@@ -148,7 +148,7 @@ function buildFeatureEngine(stockBars,spyBars){
     }
     let volume=0;if(finite(v20[i])&&v20[i]>0&&v[i]>0)volume=0.10*clamp((v[i]/v20[i]-1)/1.5,-1,1)*Math.sign(ret21[i]||tf);
     const total=clamp(tf+mom+rs+0.22*mr+volPenalty+volume,-4,4);
-    const availability=(daily.availability[i]*0.45+w.availability[i]*0.35+m.availability[i]*0.20)/(0.45+0.35+0.20);
+    const availability=daily.availability[i]*0.45+w.availability[i]*0.35+m.availability[i]*0.20;
     score[i]=total;detail[i]={daily:ds,weekly:ws,monthly:ms,momentum:mom,relative:rs,market:mr,rsi:rsi14[i],atrPct:finite(atr14[i])?atr14[i]/c[i]:null,vol20:vol20[i],availability,rs63:rs63[i],rs126:rs126[i]};
   }
   return{daily,weekly,monthly,score,detail,close:c,stockBars};
@@ -158,7 +158,7 @@ function fitLogistic(xs,ys){
   const n=xs.length;if(n<30)return null;
   const mean=xs.reduce((a,b)=>a+b,0)/n;
   const sd=Math.sqrt(xs.reduce((s,x)=>s+(x-mean)*(x-mean),0)/Math.max(1,n-1))||1;
-  let a=Math.log((ys.reduce((s,y)=>s+y,0)+1)/(n-ys.reduce((s,y)=>s+y,0)+1)),b=0;
+  const positives=ys.reduce((s,y)=>s+y,0);let a=Math.log((positives+1)/(n-positives+1)),b=0;
   const lr=0.08,lambda=0.01;
   for(let it=0;it<700;it++){
     let ga=0,gb=0;
@@ -244,8 +244,7 @@ function currentContext(data){
 }
 
 function tfRows(engine){
-  const rows=[];const i=engine.stockBars.length-1;
-  const packs=[['Daily',engine.daily],['Weekly',engine.weekly],['Monthly',engine.monthly]];
+  const rows=[];const packs=[['Daily',engine.daily],['Weekly',engine.weekly],['Monthly',engine.monthly]];
   for(const [name,p] of packs){const k=p.bars.length-1,close=p.c[k];for(const period of PERIODS)rows.push({timeframe:name,period,close,sma:p.ma[period][k],ema:p.em[period][k]});}
   return rows;
 }
@@ -264,7 +263,7 @@ function renderFundamentals(ctx){
 }
 
 function renderBacktest(label,m){
-  if(!m||!m.hitRate)return `<div class="modelcard"><h3>${label}</h3><p class="muted">${esc(m?.reason||'Insufficient history')}</p></div>`;
+  if(!m||!finite(m.hitRate))return `<div class="modelcard"><h3>${label}</h3><p class="muted">${esc(m?.reason||'Insufficient history')}</p></div>`;
   const cls=m.verified?'good':'warn';
   return `<div class="modelcard"><div class="modeltop"><h3>${label}</h3><span class="pill ${cls}">${m.verified?'VERIFIED EDGE':'NO VERIFIED EDGE'}</span></div>
     <div class="model-grid"><div><span>Current P(up)</span><b>${pct(m.probUp)}</b></div><div><span>Current thesis</span><b>${m.current}</b></div><div><span>OOS hit rate</span><b>${pct(m.hitRate)}</b></div><div><span>Balanced accuracy</span><b>${pct(m.balancedAccuracy)}</b></div><div><span>Naive baseline</span><b>${pct(m.baselineAccuracy)}</b></div><div><span>Edge vs baseline</span><b>${pct(m.edge)}</b></div><div><span>Brier skill</span><b>${pct(m.brierSkill)}</b></div><div><span>Coverage</span><b>${pct(m.coverage)}</b></div><div><span>Calls / OOS</span><b>${m.calls} / ${m.oosRows}</b></div><div><span>95% hit-rate lower bound</span><b>${pct(m.wilsonLower)}</b></div></div>
@@ -282,13 +281,13 @@ async function analyze(rawSymbol){
   const symbol=String(rawSymbol||$('#ticker').value||'').trim().toUpperCase();if(!symbol)return;
   $('#ticker').value=symbol;$('#status').textContent=`Loading ${symbol} and SPY…`;$('#app').classList.add('hidden');
   try{
-    const [data,spy]=await Promise.all([getStock(symbol),symbol==='SPY'?getStock('SPY'):getStock('SPY')]);
+    const [data,spy]=await Promise.all([getStock(symbol),getStock('SPY')]);
     const bars=data.candles?.bars||[],spyBars=spy.candles?.bars||[];if(bars.length<120||spyBars.length<120)throw new Error('Not enough closed daily history.');
     $('#status').textContent=`${symbol}: ${bars.length.toLocaleString()} adjusted closed daily bars · ${data.data_quality?.first_bar_date||''} to ${data.data_quality?.last_closed_bar_date||''}`;
     const engine=buildFeatureEngine(bars,spyBars),m5=walkForward(engine,5),m21=walkForward(engine,21),ctx=currentContext(data),i=bars.length-1,d=engine.detail[i];
     const price=data.quote?.current||bars[i].close,change=data.quote?.change_pct;
     $('#title').textContent=`${data.context?.profile?.name||symbol} (${symbol})`;
-    $('#price').textContent=`${data.quote?.currency||''} ${fmt(price)}`.trim();$('#change').textContent=finite(change)?`${Number(change)>=0?'+':''}${fmt(change,2)}% vs previous close`:'Latest quote';$('#change').className=Number(change)>=0?'pos':'neg';
+    $('#price').textContent=`${data.quote?.currency||''} ${fmt(price)}`.trim();$('#change').textContent=finite(change)?`${Number(change)>=0?'+':''}${fmt(change,2)}% vs previous close`:'Latest quote';$('#change').className=finite(change)&&Number(change)>=0?'pos':finite(change)?'neg':'';
     const primary=m21.verified?m21:m5;$('#thesis').textContent=primary.current||'NO VERIFIED EDGE';$('#thesis').className=primary.verified?(primary.current==='UP BIAS'?'pos':primary.current==='DOWN BIAS'?'neg':''):'neutral';
     $('#prob').textContent=pct(primary.probUp);$('#score').textContent=finite(engine.score[i])?fmt(engine.score[i],2):'—';
     $('#tfsummary').textContent=`D ${fmt(d?.daily,2)} · W ${fmt(d?.weekly,2)} · M ${fmt(d?.monthly,2)}`;
@@ -300,7 +299,7 @@ async function analyze(rawSymbol){
     $('#earnings').innerHTML=ehtml;
     $('#revisions').innerHTML=`<div class="revision"><b class="${ctx.revLabel==='RISING'?'pos':ctx.revLabel==='FALLING'?'neg':''}">${ctx.revLabel}</b><span>30-day EPS estimate change: ${pct(ctx.revDelta)}</span></div><p class="warning">Current analyst-revision snapshot only; excluded from historical win rate until historical point-in-time revision data is available.</p>`;
     $('#fundamentals').innerHTML=renderFundamentals(ctx);
-    $('#truth').innerHTML=`<b>What is actually backtested:</b> adjusted closed-bar price history, daily/weekly/monthly MA & EMA structure, momentum, volatility, volume, SPY regime and SPY-relative strength. <b>What is not yet counted in the win rate:</b> today’s earnings date, current fundamentals and current analyst revisions. They are shown as context only to avoid look-ahead leakage.`;
+    $('#truth').innerHTML=`<b>Actually backtested:</b> adjusted closed-bar price history, daily/weekly/monthly MA & EMA structure, momentum, volatility, volume, SPY regime and SPY-relative strength. Historical period mapping never uses a weekly/monthly period-end later than the signal date. <b>Not yet counted in win rate:</b> today’s earnings date, current fundamentals and current analyst revisions. Those remain context only so current information cannot leak into old predictions.`;
     drawChart(bars);$('#app').classList.remove('hidden');
   }catch(e){$('#status').innerHTML=`<span class="neg">${esc(e.message||e)}</span>`;}
 }
