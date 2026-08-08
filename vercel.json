@@ -1,12 +1,15 @@
 {
   "version": 2,
+  "rewrites": [
+    { "source": "/", "destination": "/api/app" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Cache-Control", "value": "s-maxage=300, stale-while-revalidate=900" }
+        { "key": "Cache-Control", "value": "s-maxage=180, stale-while-revalidate=600" }
       ]
     }
   ]
