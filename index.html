@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stock Truth v2</title>
+<style>
+:root{--bg:#0b0f14;--panel:#111821;--panel2:#151f2a;--text:#e9eef5;--muted:#8fa1b5;--line:#263443;--green:#48c78e;--red:#ff6b6b;--amber:#f4c95d;--blue:#6aa9ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#081018,#0b0f14 35%);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif}.wrap{max-width:1220px;margin:auto;padding:28px 18px 60px}.top{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}.brand h1{margin:0;font-size:30px;letter-spacing:-.8px}.brand p{margin:5px 0 0;color:var(--muted)}.badge{border:1px solid var(--line);background:#0e1620;padding:7px 10px;border-radius:999px;color:#b8c8d8;font-size:12px}.search{margin:24px 0 18px;display:flex;gap:10px}.search input{flex:1;min-width:0;background:#0d141c;border:1px solid #2b3a4b;color:white;border-radius:10px;padding:14px 15px;font-size:16px;outline:none}.search input:focus{border-color:var(--blue)}button{border:1px solid #35506e;background:#17304b;color:#fff;border-radius:10px;padding:0 18px;font-weight:700;cursor:pointer}button:hover{background:#1d3a5a}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.chips button{padding:7px 10px;border-color:var(--line);background:#101923;color:#b9c7d5;font-weight:600}.status{min-height:24px;color:var(--muted);margin-bottom:10px}.err{color:var(--red)}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.panel{grid-column:span 12;background:rgba(17,24,33,.95);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.16)}.panel h2{margin:0 0 12px;font-size:15px;letter-spacing:.1px}.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.card{background:var(--panel2);border:1px solid #223140;border-radius:11px;padding:13px;min-height:88px}.card .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px}.card .v{font-size:22px;font-weight:780;margin-top:7px;letter-spacing:-.4px}.card .s{color:var(--muted);font-size:11px;margin-top:4px}.up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--amber)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.two{grid-column:span 6}.evidence{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ev{border:1px solid #253545;border-radius:10px;padding:12px;background:#101822}.ev strong{display:block;margin-bottom:8px}.ev ul{margin:0;padding-left:18px;color:#cbd7e3}.ev li{margin:6px 0}table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #243342;text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}canvas{width:100%;height:240px;background:#0d141c;border-radius:10px;border:1px solid #22303e}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{background:#101822;border:1px solid #253545;border-radius:10px;padding:11px}.metric .k{color:var(--muted);font-size:11px}.metric .v{font-size:17px;font-weight:700;margin-top:5px}.note{color:var(--muted);font-size:12px;margin:10px 0 0}.gate{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;border:1px solid currentColor}.hidden{display:none}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.two{grid-column:span 12}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><h1>Stock Truth v2</h1><p>Any-ticker research · adjusted closed bars · SPY-relative context · historical thesis validation</p></div>
+    <div class="badge">Research tool · not a guarantee or personalized investment advice</div>
+  </div>
+
+  <div class="search">
+    <input id="ticker" value="AAPL" autocomplete="off" spellcheck="false" placeholder="Enter ticker, e.g. AAPL, SHOP.TO, BRK-B, ^GSPC" />
+    <button id="go">Analyze</button>
+  </div>
+  <div class="chips"><button>AAPL</button><button>MSFT</button><button>NVDA</button><button>GOOG</button><button>AMZN</button><button>META</button><button>SPY</button></div>
+  <div id="status" class="status">Enter a ticker to load 10 years of server-side market history when available.</div>
+
+  <div id="app" class="hidden">
+    <div class="grid">
+      <section class="panel">
+        <h2 id="heading">Overview</h2>
+        <div class="cards">
+          <div class="card"><div class="k">Latest price</div><div class="v" id="price">—</div><div class="s" id="chg">—</div></div>
+          <div class="card"><div class="k">Current thesis</div><div class="v" id="thesis">—</div><div class="s" id="score">—</div></div>
+          <div class="card"><div class="k">5-session thesis hit rate</div><div class="v" id="w5">—</div><div class="s" id="e5">—</div></div>
+          <div class="card"><div class="k">21-session thesis hit rate</div><div class="v" id="w21">—</div><div class="s" id="e21">—</div></div>
+          <div class="card"><div class="k">Market regime</div><div class="v" id="regime">—</div><div class="s" id="spytrend">SPY context</div></div>
+          <div class="card"><div class="k">Relative strength</div><div class="v" id="rel">—</div><div class="s">63-session vs SPY</div></div>
+        </div>
+      </section>
+
+      <section class="panel two">
+        <h2>Price history</h2><canvas id="chart" width="900" height="300"></canvas>
+      </section>
+      <section class="panel two">
+        <h2>Evidence</h2>
+        <div class="evidence">
+          <div class="ev"><strong class="up">Supporting</strong><ul id="bull"></ul></div>
+          <div class="ev"><strong class="down">Opposing</strong><ul id="bear"></ul></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Historical thesis validation</h2>
+        <table><thead><tr><th>Horizon</th><th>Calls</th><th>Coverage</th><th>Hit rate</th><th>Naive baseline</th><th>Edge</th><th>95% lower bound</th><th>Gate</th></tr></thead><tbody id="bt"></tbody></table>
+        <p class="note">A “call” is only made when the fixed evidence score is strong enough. Neutral periods are skipped. This can improve precision by reducing coverage, but the gate only passes when the historical hit rate beats the naive class-frequency baseline by at least 3 percentage points, has enough samples, and its 95% Wilson lower bound is above 50%.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Current measurable state</h2>
+        <div class="metrics" id="metrics"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Data quality & interpretation</h2>
+        <div id="quality" class="note"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<script>
+const $=s=>document.querySelector(s), fmt=(x,d=2)=>Number.isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const pct=(x,d=1)=>Number.isFinite(x)?fmt(x*100,d)+'%':'—';
+const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:NaN;
+const sma=(a,i,n)=>i>=n-1?avg(a.slice(i-n+1,i+1)):NaN;
+function stdev(a){if(a.length<2)return NaN;const m=avg(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1));}
+function ret(a,i,n){return i>=n&&a[i-n]>0?a[i]/a[i-n]-1:NaN;}
+function rsi(a,i,n=14){if(i<n)return NaN;let g=0,l=0;for(let j=i-n+1;j<=i;j++){const d=a[j]-a[j-1];if(d>0)g+=d;else l-=d;}if(l===0)return 100;const rs=(g/n)/(l/n);return 100-100/(1+rs);}
+function atr(b,i,n=14){if(i<n)return NaN;const tr=[];for(let j=i-n+1;j<=i;j++){const p=b[j-1].close;tr.push(Math.max(b[j].high-b[j].low,Math.abs(b[j].high-p),Math.abs(b[j].low-p)));}return avg(tr)/b[i].close;}
+function vol(a,i,n=20){if(i<n)return NaN;const r=[];for(let j=i-n+1;j<=i;j++)r.push(Math.log(a[j]/a[j-1]));return stdev(r)*Math.sqrt(252);}
+function alignBench(bars,bench){const m=new Map(bench.map(x=>[x.date,x.close]));let last=null;return bars.map(x=>{if(m.has(x.date))last=m.get(x.date);return last;});}
+function wilson(k,n,z=1.96){if(!n)return NaN;const p=k/n,den=1+z*z/n;return (p+z*z/(2*n)-z*Math.sqrt((p*(1-p)+z*z/(4*n))/n))/den;}
+
+function stateAt(bars, benchClose, i){
+  const c=bars.map(x=>x.close), v=bars.map(x=>x.volume||0), bc=benchClose;
+  const s20=sma(c,i,20),s50=sma(c,i,50),s200=sma(c,i,200),bs200=sma(bc,i,200);
+  const r21=ret(c,i,21),r63=ret(c,i,63),br21=ret(bc,i,21),br63=ret(bc,i,63);
+  const rs21=r21-br21,rs63=r63-br63,R=rsi(c,i,14),A=atr(bars,i,14),V20=vol(c,i,20),V60=vol(c,i,60);
+  const vv=sma(v,i,20),vr=vv>0?v[i]/vv:NaN,dd63=c[i]/Math.max(...c.slice(Math.max(0,i-62),i+1))-1;
+  const lo=Math.min(...c.slice(Math.max(0,i-251),i+1)), hi=Math.max(...c.slice(Math.max(0,i-251),i+1)), pos=hi>lo?(c[i]-lo)/(hi-lo):NaN;
+  let score=0;const bull=[],bear=[];
+  const add=(cond,w,yes,no)=>{if(cond){score+=w;bull.push(yes)}else{score-=w;bear.push(no)}};
+  add(c[i]>s200,1.0,'Price above 200-day trend','Price below 200-day trend');
+  add(s50>s200,.75,'50-day trend above 200-day','50-day trend below 200-day');
+  add(s20>s50,.50,'20-day trend above 50-day','20-day trend below 50-day');
+  add(r21>0,.45,'21-session momentum positive','21-session momentum negative');
+  add(r63>0,.55,'63-session momentum positive','63-session momentum negative');
+  add(rs21>0,.40,'21-session relative strength beating SPY','21-session relative strength lagging SPY');
+  add(rs63>0,.60,'63-session relative strength beating SPY','63-session relative strength lagging SPY');
+  if(Number.isFinite(R)){if(R>=55&&R<=72){score+=.35;bull.push('RSI supports trend without extreme overbought')}else if(R<45){score-=.35;bear.push('RSI below 45')}else if(R>78){score-=.25;bear.push('RSI is stretched above 78')}}
+  if(Number.isFinite(vr)&&vr>1.2){const d=c[i]/c[i-1]-1;if(d>0){score+=.25;bull.push('Above-average volume confirmed an up session')}else if(d<0){score-=.25;bear.push('Above-average volume confirmed a down session')}}
+  if(Number.isFinite(bs200)){if(bc[i]>bs200){score+=.45;bull.push('SPY regime above 200-day trend')}else{score-=.45;bear.push('SPY regime below 200-day trend')}}
+  if(Number.isFinite(br63)){if(br63>0){score+=.25;bull.push('SPY 63-session momentum positive')}else{score-=.25;bear.push('SPY 63-session momentum negative')}}
+  if(dd63<-0.18){score-=.25;bear.push('Deep 63-session drawdown')}
+  const call=score>=3?'UP':score<=-3?'DOWN':'NEUTRAL';
+  return {score,call,bull,bear,s20,s50,s200,r21,r63,rs21,rs63,R,A,V20,V60,vr,dd63,pos,br63,bs200};
+}
+
+function backtest(bars,benchClose,h){
+  let calls=0,wins=0,upActual=0,downActual=0,eligible=0;
+  for(let i=252;i<bars.length-h;i++){
+    if(!Number.isFinite(benchClose[i]))continue; eligible++;
+    const s=stateAt(bars,benchClose,i); if(s.call==='NEUTRAL')continue;
+    const f=bars[i+h].close/bars[i].close-1; if(!Number.isFinite(f)||f===0)continue;
+    calls++; if(f>0)upActual++; else downActual++;
+    if((s.call==='UP'&&f>0)||(s.call==='DOWN'&&f<0))wins++;
+  }
+  const hit=calls?wins/calls:NaN,base=calls?Math.max(upActual,downActual)/calls:NaN,edge=hit-base,coverage=eligible?calls/eligible:0,lower=wilson(wins,calls);
+  const verified=calls>=80&&hit>=.55&&edge>=.03&&lower>.50;
+  return {h,calls,wins,hit,base,edge,coverage,lower,verified};
+}
+
+function drawChart(bars){const cv=$('#chart'),ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*dpr;cv.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);const a=bars.slice(-504),c=a.map(x=>x.close),mn=Math.min(...c),mx=Math.max(...c),pad=18;ctx.strokeStyle='#6aa9ff';ctx.lineWidth=1.6;ctx.beginPath();c.forEach((v,i)=>{const x=pad+i*(w-pad*2)/(c.length-1),y=h-pad-(v-mn)*(h-pad*2)/(mx-mn||1);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle='#8fa1b5';ctx.font='11px system-ui';ctx.fillText(fmt(mx,2),8,14);ctx.fillText(fmt(mn,2),8,h-6);}
+function li(items){return items.slice(0,6).map(x=>`<li>${x}</li>`).join('')||'<li>No strong evidence</li>';}
+function m(k,v){return `<div class="metric"><div class="k">${k}</div><div class="v">${v}</div></div>`}
+
+async function analyze(){
+  const sym=$('#ticker').value.trim().toUpperCase(); if(!sym)return;
+  $('#status').textContent=`Loading ${sym}…`; $('#status').className='status'; $('#app').classList.add('hidden');
+  try{
+    const r=await fetch(`/api/stock?symbol=${encodeURIComponent(sym)}`,{cache:'no-store'});const j=await r.json();if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);
+    const bars=j.asset.bars,bench=alignBench(bars,j.benchmark.bars),i=bars.length-1,s=stateAt(bars,bench,i),b5=backtest(bars,bench,5),b21=backtest(bars,bench,21);
+    const q=j.asset.quote,p=q.current,chg=q.change_pct/100;$('#heading').textContent=`${j.asset.symbol} · ${j.asset.profile.name||j.asset.symbol}`;$('#price').textContent=(q.currency?`${q.currency} `:'')+fmt(p,2);$('#chg').textContent=Number.isFinite(chg)?`${chg>=0?'+':''}${pct(chg,2)} vs prior close`:'Latest available quote';$('#chg').className='s '+(chg>0?'up':chg<0?'down':'');
+    const verifiedNow=(s.call==='UP'&&(b5.verified||b21.verified))||(s.call==='DOWN'&&(b5.verified||b21.verified));
+    const thesis=s.call==='NEUTRAL'?'NO EDGE':verifiedNow?`${s.call} BIAS`:`UNVERIFIED ${s.call} BIAS`;$('#thesis').textContent=thesis;$('#thesis').className='v '+(s.call==='UP'?'up':s.call==='DOWN'?'down':'neutral');$('#score').textContent=`evidence score ${s.score.toFixed(2)} · threshold ±3.00`;
+    $('#w5').textContent=pct(b5.hit);$('#w5').className='v '+(b5.verified?'up':'neutral');$('#e5').textContent=`edge ${Number.isFinite(b5.edge)?(b5.edge>=0?'+':'')+pct(b5.edge):'—'} · ${b5.calls} calls`;
+    $('#w21').textContent=pct(b21.hit);$('#w21').className='v '+(b21.verified?'up':'neutral');$('#e21').textContent=`edge ${Number.isFinite(b21.edge)?(b21.edge>=0?'+':'')+pct(b21.edge):'—'} · ${b21.calls} calls`;
+    const spyBull=Number.isFinite(s.bs200)&&bench[i]>s.bs200;$('#regime').textContent=spyBull?'RISK-ON':'DEFENSIVE';$('#regime').className='v '+(spyBull?'up':'down');$('#spytrend').textContent=`SPY 63-session return ${pct(s.br63)}`;$('#rel').textContent=pct(s.rs63);$('#rel').className='v '+(s.rs63>0?'up':'down');
+    $('#bull').innerHTML=li(s.bull);$('#bear').innerHTML=li(s.bear);
+    const row=b=>`<tr><td>${b.h} sessions</td><td>${b.calls}</td><td>${pct(b.coverage)}</td><td>${pct(b.hit)}</td><td>${pct(b.base)}</td><td class="${b.edge>0?'up':'down'}">${b.edge>=0?'+':''}${pct(b.edge)}</td><td>${pct(b.lower)}</td><td><span class="gate ${b.verified?'up':'neutral'}">${b.verified?'VERIFIED EDGE':'NO VERIFIED EDGE'}</span></td></tr>`;$('#bt').innerHTML=row(b5)+row(b21);
+    $('#metrics').innerHTML=m('SMA 20',fmt(s.s20,2))+m('SMA 50',fmt(s.s50,2))+m('SMA 200',fmt(s.s200,2))+m('RSI 14',fmt(s.R,1))+m('ATR 14',pct(s.A))+m('Volatility 20',pct(s.V20))+m('21-session return',pct(s.r21))+m('63-session return',pct(s.r63))+m('63-session vs SPY',pct(s.rs63))+m('Volume / 20d avg',fmt(s.vr,2)+'×')+m('63-session drawdown',pct(s.dd63))+m('52-week range position',pct(s.pos));
+    $('#quality').innerHTML=`Source: <span class="mono">${j.source}</span> · ${j.data_quality.asset_bars} adjusted closed daily bars · requested history: ${j.data_quality.history_years_requested} years · benchmark: SPY · forming daily candle excluded. The score is a fixed ruleset and is replayed historically without using future observations. A higher historical hit rate does not guarantee future performance.`;
+    drawChart(bars);$('#app').classList.remove('hidden');$('#status').textContent=`Loaded ${j.asset.symbol} · data generated ${new Date(j.generated_at).toLocaleString()}`;
+  }catch(e){$('#status').textContent=`Could not analyze ${sym}: ${e.message||e}`;$('#status').className='status err';}
+}
+$('#go').onclick=analyze;$('#ticker').addEventListener('keydown',e=>{if(e.key==='Enter')analyze()});document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{$('#ticker').value=b.textContent;analyze()});window.addEventListener('resize',()=>{if(!$('#app').classList.contains('hidden'))analyze()});analyze();
+</script>
+</body>
+</html>
