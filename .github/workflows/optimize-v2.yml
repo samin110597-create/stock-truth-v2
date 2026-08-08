@@ -1,0 +1,39 @@
+name: Optimize v2 forecast performance
+on:
+  push:
+    paths:
+      - '.github/workflows/optimize-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache SPY mapping once
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('v2-enhance.js')
+          s=p.read_text()
+          old="let spyDaily=null,spyW=null,spyM=null,spyC=null,sret63=null,sret126=null;if(spyBars&&spyBars.length){spyDaily=timeframePack(spyBars);spyW=mapCompletedToDaily(stockBars,timeframePack(resample(spyBars,'weekly',true)));spyM=mapCompletedToDaily(stockBars,timeframePack(resample(spyBars,'monthly',true)));spyC=alignSeries(stockBars,spyBars);sret63=returns(spyC,63);sret126=returns(spyC,126);}"
+          new="let spyDaily=null,spyDMap=null,spyW=null,spyM=null,spyC=null,sret63=null,sret126=null;if(spyBars&&spyBars.length){spyDaily=timeframePack(spyBars);spyDMap=mapCompletedToDaily(stockBars,spyDaily);spyW=mapCompletedToDaily(stockBars,timeframePack(resample(spyBars,'weekly',true)));spyM=mapCompletedToDaily(stockBars,timeframePack(resample(spyBars,'monthly',true)));spyC=alignSeries(stockBars,spyBars);sret63=returns(spyC,63);sret126=returns(spyC,126);}"
+          if old not in s: raise SystemExit('first patch target not found')
+          s=s.replace(old,new,1)
+          old2="if(spyDaily){const sd=mapCompletedToDaily(stockBars,spyDaily);for(const [x,wt] of [[sd.scores[i],.5],[spyW.scores[i],.3],[spyM.scores[i],.2]])"
+          new2="if(spyDMap){for(const [x,wt] of [[spyDMap.scores[i],.5],[spyW.scores[i],.3],[spyM.scores[i],.2]])"
+          if old2 not in s: raise SystemExit('second patch target not found')
+          p.write_text(s.replace(old2,new2,1))
+          PY
+      - name: Syntax check
+        run: |
+          node --check v2-enhance.js
+          node --check api/stock-v4.js
+          node --check lib/sec-fundamentals.js
+      - name: Commit optimization
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add v2-enhance.js
+          git commit -m "Cache SPY mapping in advanced forecast" || exit 0
+          git push
