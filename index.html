@@ -27,11 +27,12 @@
 <div class="card"><span>Model policy</span><b class="neutral">NO FORCED CALL</b><b class="small">Edge must pass OOS gate</b></div>
 </div></section>
 <section class="panel"><h2>Walk-forward probability & win-rate validation</h2><div id="models" class="models"></div></section>
-<section class="panel"><h2>MA / EMA structure — 9, 21, 50, 100, 150, 200</h2><p class="muted">Weekly and monthly history uses only completed period bars as of each historical signal date; future days inside a week/month are never leaked backward.</p><div id="matrix" class="matrix"></div></section>
+<section class="panel"><h2>MA / EMA structure — 9, 21, 50, 100, 150, 200</h2><p class="muted">Historical signals never receive a weekly/monthly period-end later than the signal date. The current unfinished period may use only data available so far and is never backfilled into earlier dates.</p><div id="matrix" class="matrix"></div></section>
 <section class="panel half"><h2>Recent price history</h2><canvas id="chart"></canvas></section>
 <section class="panel half"><h2>Upcoming earnings context</h2><div id="earnings"></div><h2 style="margin-top:16px">Analyst EPS revision context</h2><div id="revisions"></div></section>
 <section class="panel"><h2>Current fundamental snapshot</h2><div id="fundamentals"></div></section>
+<section class="panel"><h2>SEC filing-date fundamentals — U.S. issuers</h2><div id="secfundamentals"><p class="muted">Loading filing-date facts when available…</p></div></section>
 <section class="panel"><h2>Truth / leakage audit</h2><div id="truth" class="truthbox"></div></section>
 </div></div>
 <div class="footer">Research tool only. Historical statistics describe this model's past out-of-sample behavior; they do not guarantee future price direction.</div>
-</div><script src="/app.js"></script></body></html>
+</div><script src="/app.js"></script><script src="/sec-panel.js"></script></body></html>
