@@ -1,36 +1,167 @@
 (()=>{
-'use strict';
 const QAPI='https://stock-truth-v2.vercel.app/api/quarterly-v1';
-const qCache=new Map();
-let qData=null,qSymbol=null;
+let qData=null,qSymbol=null,qError=null;
+const qCache=new Map(), instCharts={};
 const finite=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const f2=(x,d=2)=>finite(x)?Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
-const p1=x=>finite(x)?`${(Number(x)*100).toFixed(1)}%`:'—';
-const big2=x=>{if(!finite(x))return'—';const n=Number(x),a=Math.abs(n);if(a>=1e12)return`${(n/1e12).toFixed(2)}T`;if(a>=1e9)return`${(n/1e9).toFixed(2)}B`;if(a>=1e6)return`${(n/1e6).toFixed(2)}M`;if(a>=1e3)return`${(n/1e3).toFixed(1)}K`;return f2(n,0);};
-const esc2=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function ema(v,n){const o=Array(v.length).fill(null),k=2/(n+1);let e=null;for(let i=0;i<v.length;i++){const x=Number(v[i]);if(!Number.isFinite(x))continue;e=e==null?x:x*k+e*(1-k);o[i]=e;}return o;}
-function sma(v,n){const o=Array(v.length).fill(null);let s=0,c=0;for(let i=0;i<v.length;i++){const x=Number(v[i]);if(Number.isFinite(x)){s+=x;c++;}if(i>=n){const y=Number(v[i-n]);if(Number.isFinite(y)){s-=y;c--;}}if(i>=n-1&&c===n)o[i]=s/n;}return o;}
-function rsi(v,n=14){const o=Array(v.length).fill(null);let ag=0,al=0;for(let i=1;i<v.length;i++){const d=Number(v[i])-Number(v[i-1]),g=Math.max(d,0),l=Math.max(-d,0);if(i<=n){ag+=g;al+=l;if(i===n){ag/=n;al/=n;o[i]=al===0?100:100-100/(1+ag/al);}}else{ag=(ag*(n-1)+g)/n;al=(al*(n-1)+l)/n;o[i]=al===0?100:100-100/(1+ag/al);}}return o;}
-function atr(b,n=14){const tr=b.map((x,i)=>i===0?x.high-x.low:Math.max(x.high-x.low,Math.abs(x.high-b[i-1].close),Math.abs(x.low-b[i-1].close)));return ema(tr,n);}
-function macd(v){const e12=ema(v,12),e26=ema(v,26),line=v.map((_,i)=>finite(e12[i])&&finite(e26[i])?e12[i]-e26[i]:null),sig=ema(line.map(x=>finite(x)?x:0),9),hist=line.map((x,i)=>finite(x)&&finite(sig[i])?x-sig[i]:null);return{line,sig,hist};}
-function adx(b,n=14){const len=b.length,tr=Array(len).fill(0),pdm=Array(len).fill(0),mdm=Array(len).fill(0);for(let i=1;i<len;i++){tr[i]=Math.max(b[i].high-b[i].low,Math.abs(b[i].high-b[i-1].close),Math.abs(b[i].low-b[i-1].close));const up=b[i].high-b[i-1].high,dn=b[i-1].low-b[i].low;pdm[i]=up>dn&&up>0?up:0;mdm[i]=dn>up&&dn>0?dn:0;}const atrW=ema(tr,n),p=ema(pdm,n),m=ema(mdm,n),pdi=Array(len).fill(null),mdi=Array(len).fill(null),dx=Array(len).fill(null);for(let i=0;i<len;i++){if(!finite(atrW[i])||!atrW[i])continue;pdi[i]=100*p[i]/atrW[i];mdi[i]=100*m[i]/atrW[i];const den=pdi[i]+mdi[i];dx[i]=den?100*Math.abs(pdi[i]-mdi[i])/den:0;}return{adx:ema(dx.map(x=>finite(x)?x:0),n),pdi,mdi};}
-function cmf(b,n=20){const o=Array(b.length).fill(null);for(let i=n-1;i<b.length;i++){let mf=0,vol=0;for(let j=i-n+1;j<=i;j++){const r=b[j],v=Number(r.volume)||0,den=r.high-r.low,m=den?((r.close-r.low)-(r.high-r.close))/den:0;mf+=m*v;vol+=v;}o[i]=vol?mf/vol:null;}return o;}
-function obv(b){const o=Array(b.length).fill(0);for(let i=1;i<b.length;i++){const v=Number(b[i].volume)||0;o[i]=o[i-1]+(b[i].close>b[i-1].close?v:b[i].close<b[i-1].close?-v:0);}return o;}
-function pctRank(arr,x){const a=arr.filter(finite).map(Number);if(!a.length||!finite(x))return null;return a.filter(v=>v<=Number(x)).length/a.length;}
-function resample(b,mode){const m=new Map();for(const r of b){const d=new Date(r.date+'T00:00:00Z');let k;if(mode==='weekly'){const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);k=d.toISOString().slice(0,10);}else k=r.date.slice(0,7);let x=m.get(k);if(!x){x={date:r.date,open:r.open,high:r.high,low:r.low,close:r.close,volume:Number(r.volume)||0};m.set(k,x);}else{x.date=r.date;x.high=Math.max(x.high,r.high);x.low=Math.min(x.low,r.low);x.close=r.close;x.volume+=(Number(r.volume)||0);}}return[...m.values()];}
-function state(b,label){if(!b||b.length<35)return{label,status:'INSUFFICIENT',score:null};const c=b.map(x=>Number(x.close)),i=c.length-1,e20=ema(c,20),e50=ema(c,50),e200=ema(c,200),r=rsi(c,14),m=macd(c),a=adx(b,14),at=atr(b,14),cf=cmf(b,20),ov=obv(b),v=b.map(x=>Number(x.volume)||0),v20=sma(v,20);const px=c[i],parts=[];if(finite(e20[i]))parts.push(px>e20[i]?1:-1);if(finite(e50[i]))parts.push(px>e50[i]?1:-1);if(finite(e20[i])&&finite(e50[i]))parts.push(e20[i]>e50[i]?1:-1);if(finite(e200[i])&&finite(e50[i]))parts.push(e50[i]>e200[i]?1:-1);const trend=parts.length?parts.reduce((s,x)=>s+x,0)/parts.length:0;const mom=clamp(((finite(r[i])?(r[i]-50)/20:0)+(finite(m.hist[i])?Math.sign(m.hist[i]):0)+(i>=21&&c[i-21]?clamp((px/c[i-21]-1)/.12,-1,1):0))/3,-1,1);const participation=clamp(((finite(cf[i])?cf[i]/.18:0)+(i>=10&&ov[i-10]!==0?clamp((ov[i]-ov[i-10])/Math.max(1,Math.abs(ov[i-10]))*3,-1,1):0)+(finite(v20[i])&&v20[i]?clamp((v[i]/v20[i]-1),-1,1)*Math.sign(c[i]-c[Math.max(0,i-1)]):0))/3,-1,1);const n=20,hiNow=Math.max(...b.slice(-n).map(x=>x.high)),loNow=Math.min(...b.slice(-n).map(x=>x.low)),hiPrev=b.length>=40?Math.max(...b.slice(-40,-20).map(x=>x.high)):null,loPrev=b.length>=40?Math.min(...b.slice(-40,-20).map(x=>x.low)):null;let structure=0,struct='MIXED';if(finite(hiPrev)&&finite(loPrev)){if(hiNow>hiPrev&&loNow>loPrev){structure=1;struct='HH / HL';}else if(hiNow<hiPrev&&loNow<loPrev){structure=-1;struct='LH / LL';}else struct='MIXED / TRANSITION';}const directional=clamp(.46*trend+.24*mom+.15*participation+.15*structure,-1,1),score=Math.round(50+50*directional);const atrPct=finite(at[i])&&px?at[i]/px:null;const widths=[];const mid=sma(c,20);for(let j=19;j<c.length;j++){const a20=c.slice(j-19,j+1),mean=mid[j],sd=Math.sqrt(a20.reduce((s,x)=>s+(x-mean)**2,0)/20);if(mean)widths.push(4*sd/mean);}const width=widths.at(-1),widthPct=pctRank(widths.slice(-120),width);let regime='RANGE / BALANCED';if(finite(a.adx[i])&&a.adx[i]>=25)regime=directional>=0?'TRENDING UP':'TRENDING DOWN';else if(finite(widthPct)&&widthPct<=.25)regime='VOLATILITY COMPRESSION';else if(finite(widthPct)&&widthPct>=.8)regime='VOLATILITY EXPANSION';const status=score>=67?'BULLISH':score<=33?'BEARISH':'NEUTRAL / MIXED';return{label,px,e20:e20[i],e50:e50[i],e200:e200[i],rsi:r[i],macdHist:m.hist[i],adx:a.adx[i],pdi:a.pdi[i],mdi:a.mdi[i],atrPct,cmf:cf[i],volRatio:finite(v20[i])&&v20[i]?v[i]/v20[i]:null,obvSlope:i>=10?ov[i]-ov[i-10]:null,structure:struct,score,status,regime,widthPct,hi20:hiNow,lo20:loNow,trend,momentum:mom,participation};}
-function techData(){const daily=(D&&D.daily&&D.daily.bars)||((D&&D.candles&&D.candles.interval==='1day')?D.candles.bars:[])||[];if(!daily.length)return null;const w=resample(daily,'weekly'),mo=resample(daily,'monthly'),ds=state(daily,'Daily'),ws=state(w,'Weekly'),ms=state(mo,'Monthly'),avail=[ds,ws,ms].filter(x=>finite(x.score)),comp=avail.length?Math.round(avail.reduce((s,x)=>s+x.score*(x.label==='Daily'?.45:x.label==='Weekly'?.35:.20),0)/avail.reduce((s,x)=>s+(x.label==='Daily'?.45:x.label==='Weekly'?.35:.20),0)):null;const px=ds.px,b55=daily.slice(-55),hi55=Math.max(...b55.map(x=>x.high)),lo55=Math.min(...b55.map(x=>x.low));return{daily,states:[ds,ws,ms],comp,px,hi55,lo55};}
-function clsScore(s){return !finite(s)?'':s>=67?'up':s<=33?'down':'amber';}
-function institutionalTech(){const x=techData();if(!x)return'';const d=x.states[0],agreement=x.states.filter(s=>finite(s.score)).map(s=>s.score>=60?1:s.score<=40?-1:0),same=agreement.length&&agreement.every(v=>v===agreement[0]&&v!==0);const quality=[];quality.push(`${x.daily.length} closed daily bars`);if(D?.candles?.closed_bars_only)quality.push('forming bar excluded');quality.push(same?'multi-timeframe directional agreement':'multi-timeframe mixed');const nearestSup=T?.levels?.support?.[0],nearestRes=T?.levels?.resistance?.[0];return`<div class="panel" style="border-color:rgba(122,155,196,.45)"><h2>Institutional technical command center <span class="tag">PRICE / VOLUME / STRUCTURE</span></h2><div class="stats"><div class="st"><div class="l">Technical confluence</div><div class="v ${clsScore(x.comp)}">${finite(x.comp)?x.comp+'/100':'—'}</div><div class="s">directional evidence, not a probability</div></div><div class="st"><div class="l">Primary regime</div><div class="v">${esc2(d.regime)}</div><div class="s">ADX + volatility structure</div></div><div class="st"><div class="l">Market structure</div><div class="v ${d.structure==='HH / HL'?'up':d.structure==='LH / LL'?'down':'amber'}">${esc2(d.structure)}</div><div class="s">20-session swing comparison</div></div><div class="st"><div class="l">Trend strength · ADX</div><div class="v">${f2(d.adx,1)}</div><div class="s">+DI ${f2(d.pdi,1)} · −DI ${f2(d.mdi,1)}</div></div><div class="st"><div class="l">ATR volatility</div><div class="v">${p1(d.atrPct)}</div><div class="s">ATR14 as % of price</div></div><div class="st"><div class="l">Volume participation</div><div class="v ${finite(d.volRatio)&&d.volRatio>=1.2?'up':''}">${finite(d.volRatio)?f2(d.volRatio,2)+'×':'—'}</div><div class="s">vs 20-session average · CMF ${f2(d.cmf,2)}</div></div></div><p class="note"><b>Data quality:</b> ${quality.join(' · ')}. A higher confluence score means more independent technical evidence is aligned; it does not guarantee direction.</p></div><div class="panel"><h2>Multi-timeframe institutional matrix</h2><table><tr><th>Frame</th><th>Score</th><th>Trend</th><th>RSI14</th><th>MACD hist</th><th>ADX</th><th>Structure</th><th>Regime</th></tr>${x.states.map(s=>`<tr><td>${esc2(s.label)}</td><td class="${clsScore(s.score)}">${finite(s.score)?s.score:'—'}</td><td class="${s.status==='BULLISH'?'up':s.status==='BEARISH'?'down':'amber'}">${esc2(s.status)}</td><td>${f2(s.rsi,1)}</td><td class="${finite(s.macdHist)&&s.macdHist>0?'up':finite(s.macdHist)&&s.macdHist<0?'down':''}">${f2(s.macdHist,3)}</td><td>${f2(s.adx,1)}</td><td>${esc2(s.structure||'—')}</td><td>${esc2(s.regime||'—')}</td></tr>`).join('')}</table><p class="note">Daily drives tactical timing; weekly and monthly determine whether that setup is aligned with the larger trend.</p></div><div class="panel"><h2>Institutional level map</h2><div class="stats"><div class="st"><div class="l">20-session range</div><div class="v">$${f2(d.lo20)} – $${f2(d.hi20)}</div></div><div class="st"><div class="l">55-session range</div><div class="v">$${f2(x.lo55)} – $${f2(x.hi55)}</div></div><div class="st"><div class="l">Nearest support</div><div class="v">${finite(nearestSup)?'$'+f2(nearestSup):'—'}</div></div><div class="st"><div class="l">Nearest resistance</div><div class="v">${finite(nearestRes)?'$'+f2(nearestRes):'—'}</div></div><div class="st"><div class="l">EMA20 / 50 / 200</div><div class="v">$${f2(d.e20)} / $${f2(d.e50)} / $${f2(d.e200)}</div></div><div class="st"><div class="l">Volatility percentile</div><div class="v">${finite(d.widthPct)?Math.round(d.widthPct*100)+'th':'—'}</div><div class="s">Bollinger-width regime vs recent history</div></div></div></div><div class="panel"><h2>Momentum + trend-strength tape</h2><div style="height:240px"><canvas id="cvInstMomentum"></canvas></div></div><div class="panel"><h2>Participation tape</h2><div style="height:220px"><canvas id="cvInstParticipation"></canvas></div><p class="note">Volume confirms price action only when participation expands in the same direction. CMF and OBV help distinguish price movement with sponsorship from price movement on weak participation.</p></div>`;}
-function qPanel(){if(!D||!D.symbol)return'';if(qSymbol!==D.symbol)return`<div class="panel"><h2>10-quarter fundamental tape <span class="tag pulse">LOADING</span></h2><p class="note">Loading quarterly statements for ${esc2(D.symbol)}.</p></div>`;if(!qData)return'';if(qData.error)return`<div class="panel"><h2>10-quarter fundamental tape <span class="tag bad">UNAVAILABLE</span></h2><p class="note err">${esc2(qData.error)}</p></div>`;const n=qData.rows?.length||0;return`<div class="panel" style="border-color:rgba(122,155,196,.45)"><h2>10-quarter fundamental tape <span class="tag">${n} QUARTERS · ${esc2(qData.source||'')}</span></h2><p class="note">Quarter-by-quarter trends make inflections visible before annual summaries do. Missing reported fields remain blank rather than being estimated.</p></div><div class="panel"><h2>Revenue</h2><div style="height:220px"><canvas id="qRevenue"></canvas></div></div><div class="panel"><h2>Profitability · gross / operating / net margins</h2><div style="height:220px"><canvas id="qMargins"></canvas></div></div><div class="panel"><h2>Net income + diluted EPS</h2><div style="height:220px"><canvas id="qEarnings"></canvas></div></div><div class="panel"><h2>Operating cash flow + free cash flow</h2><div style="height:220px"><canvas id="qCashFlow"></canvas></div></div><div class="panel"><h2>Cash vs debt</h2><div style="height:220px"><canvas id="qBalance"></canvas></div></div><div class="panel"><h2>Liquidity + leverage</h2><div style="height:220px"><canvas id="qLeverage"></canvas></div></div><div class="panel"><h2>Diluted share count</h2><div style="height:220px"><canvas id="qShares"></canvas></div></div><div class="panel"><h2>R&D + stock-based compensation</h2><div style="height:220px"><canvas id="qInvestment"></canvas></div></div>`;}
-async function loadQ(symbol){qSymbol=symbol;qData=null;const cached=qCache.get(symbol);if(cached&&Date.now()-cached.at<30*60e3){qData=cached.data;return;}try{const r=await fetch(`${QAPI}?symbol=${encodeURIComponent(symbol)}`,{cache:'no-store'}),j=await r.json();qData=r.ok?j:{error:j.error||`quarterly endpoint HTTP ${r.status}`};}catch(e){qData={error:String(e?.message||e)};}qCache.set(symbol,{at:Date.now(),data:qData});try{if(typeof TAB!=='undefined'&&TAB==='fund')render();}catch{}}
-function destroy(k){try{if(charts&&charts[k]){charts[k].destroy();delete charts[k];}}catch{}}
-function opts(percent=false){return{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#8C909A',boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}},y:{ticks:{color:'#8C909A',font:{size:9},callback:v=>percent?`${v}%`:big2(v)},grid:{color:'rgba(140,144,154,.08)'}}}};}
-function chart(id,key,type,labels,sets,options){const el=document.getElementById(id);if(!el||typeof Chart==='undefined')return;destroy(key);charts[key]=new Chart(el,{type,data:{labels,datasets:sets},options:options||opts(false)});}
-function drawTech(){const x=techData();if(!x||typeof Chart==='undefined')return;const b=x.daily.slice(-120),c=b.map(r=>r.close),labels=b.map(r=>r.date.slice(5)),rs=rsi(c,14),m=macd(c),a=adx(b,14),cf=cmf(b,20),v=b.map(r=>Number(r.volume)||0),v20=sma(v,20);chart('cvInstMomentum','instMom','line',labels,[{label:'RSI14',data:rs,borderColor:'#7A9BC4',borderWidth:1.5,pointRadius:0,yAxisID:'y'},{label:'ADX14',data:a.adx,borderColor:'#E8A33D',borderWidth:1.4,pointRadius:0,yAxisID:'y'},{label:'MACD hist ×10',data:m.hist.map(z=>finite(z)?z*10:null),borderColor:'#4CAF7D',borderWidth:1,pointRadius:0,yAxisID:'y'}],{...opts(false),scales:{x:opts(false).scales.x,y:{min:0,max:100,ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}}}});chart('cvInstParticipation','instPart','bar',labels,[{label:'Volume / 20d avg',data:v.map((z,i)=>finite(v20[i])&&v20[i]?z/v20[i]:null),backgroundColor:'rgba(122,155,196,.35)',yAxisID:'y'},{type:'line',label:'CMF20',data:cf,borderColor:'#E8A33D',borderWidth:1.5,pointRadius:0,yAxisID:'y1'}],{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#8C909A',boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}},y:{position:'left',ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}},y1:{position:'right',min:-1,max:1,ticks:{color:'#8C909A',font:{size:9}},grid:{drawOnChartArea:false}}}});}
-function drawQ(){if(!qData||qData.error||!Array.isArray(qData.rows)||typeof Chart==='undefined')return;const r=qData.rows,labels=r.map(x=>x.label||x.date);chart('qRevenue','qRevenue','bar',labels,[{label:'Revenue',data:r.map(x=>x.revenue),backgroundColor:'rgba(122,155,196,.38)'}]);chart('qMargins','qMargins','line',labels,[{label:'Gross margin',data:r.map(x=>finite(x.gross_margin)?x.gross_margin*100:null),borderColor:'#7A9BC4',borderWidth:1.7,pointRadius:2},{label:'Operating margin',data:r.map(x=>finite(x.op_margin)?x.op_margin*100:null),borderColor:'#4CAF7D',borderWidth:1.7,pointRadius:2},{label:'Net margin',data:r.map(x=>finite(x.net_margin)?x.net_margin*100:null),borderColor:'#E8A33D',borderWidth:1.7,pointRadius:2}],opts(true));chart('qEarnings','qEarnings','bar',labels,[{label:'Net income',data:r.map(x=>x.net_income),backgroundColor:'rgba(76,175,125,.35)',yAxisID:'y'},{type:'line',label:'Diluted EPS',data:r.map(x=>x.eps),borderColor:'#E8A33D',borderWidth:1.8,pointRadius:2,yAxisID:'y1'}],{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8C909A',boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}},y:{ticks:{color:'#8C909A',font:{size:9},callback:v=>big2(v)},grid:{color:'rgba(140,144,154,.08)'}},y1:{position:'right',ticks:{color:'#8C909A',font:{size:9}},grid:{drawOnChartArea:false}}}});chart('qCashFlow','qCashFlow','bar',labels,[{label:'Operating cash flow',data:r.map(x=>x.ocf),backgroundColor:'rgba(122,155,196,.35)'},{label:'Free cash flow',data:r.map(x=>x.fcf),backgroundColor:'rgba(232,163,61,.35)'}]);chart('qBalance','qBalance','line',labels,[{label:'Cash + short-term investments',data:r.map(x=>x.cash),borderColor:'#4CAF7D',borderWidth:1.8,pointRadius:2},{label:'Total debt',data:r.map(x=>x.total_debt),borderColor:'#E05252',borderWidth:1.8,pointRadius:2}]);chart('qLeverage','qLeverage','line',labels,[{label:'Current ratio',data:r.map(x=>x.current_ratio),borderColor:'#7A9BC4',borderWidth:1.8,pointRadius:2},{label:'Debt / equity',data:r.map(x=>x.debt_to_equity),borderColor:'#E8A33D',borderWidth:1.8,pointRadius:2}],{...opts(false),scales:{x:opts(false).scales.x,y:{ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}}}});chart('qShares','qShares','line',labels,[{label:'Diluted average shares',data:r.map(x=>x.shares),borderColor:'#9B87C4',borderWidth:1.8,pointRadius:2}]);chart('qInvestment','qInvestment','bar',labels,[{label:'R&D',data:r.map(x=>x.rd),backgroundColor:'rgba(122,155,196,.35)'},{label:'Stock-based compensation',data:r.map(x=>x.sbc),backgroundColor:'rgba(232,163,61,.35)'}]);}
-try{const baseTech=tabTech,baseFund=tabFund,baseRender=render;tabTech=function(){return institutionalTech()+baseTech();};tabFund=function(){return qPanel()+baseFund();};render=function(){baseRender();try{if(TAB==='tech')drawTech();if(TAB==='fund')drawQ();}catch(e){console.warn('institutional draw',e);}};}catch(e){console.warn('Institutional layer could not patch terminal',e);}
-window.addEventListener('stocktruth:v2data',e=>{const s=e?.detail?.symbol;if(s&&s!==qSymbol)loadQ(s);});
-try{if(window.V2DATA?.symbol)loadQ(window.V2DATA.symbol);else if(typeof D!=='undefined'&&D?.symbol)loadQ(D.symbol);}catch{}
+const escI=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtI=(x,d=1)=>finite(x)?Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const pctI=(x,d=0)=>finite(x)?`${(Number(x)*100).toFixed(d)}%`:'—';
+const bigI=x=>{if(!finite(x))return'—';const n=Number(x),a=Math.abs(n);if(a>=1e12)return`${(n/1e12).toFixed(2)}T`;if(a>=1e9)return`${(n/1e9).toFixed(2)}B`;if(a>=1e6)return`${(n/1e6).toFixed(2)}M`;if(a>=1e3)return`${(n/1e3).toFixed(1)}K`;return fmtI(n,0);};
+
+const CATW={Trend:22,Momentum:14,Volume:10,Structure:12,Pattern:10,Business:10,"Balance sheet":6,Valuation:8,Execution:4,Analysts:1,Positioning:3};
+function institutionalScore(rows){
+  const cats={};let bull=0,bear=0,neutral=0;
+  for(const x of (rows||[])){if(!x||!x.w)continue;(cats[x.cat]||(cats[x.cat]=[])).push(x);if(x.dir>0)bull+=x.w;else if(x.dir<0)bear+=x.w;else neutral+=x.w;}
+  let num=0,den=0;const categories={};
+  for(const [cat,cw] of Object.entries(CATW)){
+    const a=cats[cat]||[];if(!a.length)continue;
+    let s=0,w=0;for(const x of a){s+=x.w*clamp(Number(x.dir)||0,-1,1);w+=x.w;}
+    if(!w)continue;const signal=s/w,pts=Math.round(50+50*signal);
+    categories[cat]={signal,pts,weight:cw,n:a.length,itemWeight:w};num+=signal*cw;den+=cw;
+  }
+  const net=den?num/den:0,pts=den?Math.round(50+50*net):null,coverage=den/100;
+  const active=Object.values(categories).filter(c=>Math.abs(c.signal)>=.12),sgn=Math.sign(net);
+  const ad=active.reduce((s,c)=>s+c.weight,0),an=active.reduce((s,c)=>s+(Math.sign(c.signal)===sgn?c.weight:0),0);
+  const agreement=ad?an/ad:null;
+  const state=pts==null?'DATA LIMITED':pts>=72?'STRONG CONSTRUCTIVE':pts>=60?'CONSTRUCTIVE':pts>=45?'BALANCED / MIXED':pts>=33?'CAUTIOUS':'DEFENSIVE';
+  const edge=Math.abs(net)<.15?'NO EDGE':net>.45?'STRONG BULL':net>.15?'LEAN BULL':net<-.45?'STRONG BEAR':'LEAN BEAR';
+  return{bull,bear,neutral,tot:bull+bear+neutral,net,pts,coverage,agreement,categories,state,edge};
+}
+function cat(S,cat){
+  const c=S.categories?.[cat];if(!c)return{label:'NO DATA',cls:'dim',pts:null,detail:'not counted; coverage reduced'};
+  return{label:c.pts>=65?'SUPPORTIVE':c.pts<=35?'ADVERSE':'MIXED',cls:c.pts>=65?'up':c.pts<=35?'down':'amber',pts:c.pts,detail:`${c.n} measured input${c.n===1?'':'s'} · normalized as one family`};
+}
+function mtf(){
+  if(typeof T==='undefined'||!T)return{label:'NO DATA',cls:'dim',detail:''};
+  const a=['monthly','weekly','daily'].map(k=>T.trends?.[k]?.label||'NEUTRAL'),b=a.filter(x=>x==='BULLISH').length,r=a.filter(x=>x==='BEARISH').length;
+  if(b===3)return{label:'FULL BULL ALIGNMENT',cls:'up',detail:a.join(' / ')};
+  if(r===3)return{label:'FULL BEAR ALIGNMENT',cls:'down',detail:a.join(' / ')};
+  if(b>=2&&!r)return{label:'CONSTRUCTIVE ALIGNMENT',cls:'up',detail:a.join(' / ')};
+  if(r>=2&&!b)return{label:'DEFENSIVE ALIGNMENT',cls:'down',detail:a.join(' / ')};
+  return{label:'MIXED TIMEFRAMES',cls:'amber',detail:a.join(' / ')};
+}
+function liquidity(){
+  if(typeof T==='undefined'||!T)return{label:'NO DATA',cls:'dim',detail:''};
+  const demand=(T.ob?.bullish?.length||0)+(T.fvg?.below?.length||0),supply=(T.ob?.bearish?.length||0)+(T.fvg?.above?.length||0);
+  const sup=T.levels?.support?.[0],res=T.levels?.resistance?.[0],sd=sup?Math.abs(T.price-sup)/T.price:null,rd=res?Math.abs(res-T.price)/T.price:null;
+  let label='BALANCED',cls='amber';
+  if(demand>supply+1||(finite(sd)&&finite(rd)&&sd<rd*.65)){label='DEMAND CLOSER';cls='up';}
+  else if(supply>demand+1||(finite(sd)&&finite(rd)&&rd<sd*.65)){label='SUPPLY CLOSER';cls='down';}
+  return{label,cls,detail:`price-action proxy · demand zones ${demand}, supply zones ${supply}`};
+}
+function volRegime(){
+  if(typeof T==='undefined'||!T)return{label:'NO DATA',cls:'dim',detail:''};
+  const ap=T.price?T.atr/T.price:null;let label='NORMAL',cls='blue';
+  if(finite(T.adx)&&T.adx>=25){label='TRENDING';cls='up';}
+  if(finite(T.bbW)&&T.bbW<6){label='COMPRESSION';cls='amber';}
+  if((finite(ap)&&ap>.06)||(finite(T.bbW)&&T.bbW>20)){label='ELEVATED';cls='amber';}
+  return{label,cls,detail:`ATR ${pctI(ap,1)} · ADX ${fmtI(T.adx,1)} · BB width ${finite(T.bbW)?fmtI(T.bbW,1)+'%':'—'}`};
+}
+function btState(S){
+  if(typeof BT==='undefined'||!BT||BT.error)return{label:'NOT ESTABLISHED',cls:'dim',detail:BT?.error||'backtest unavailable'};
+  const key=S.net>=.15?'bull':S.net<=-.15?'bear':'neutral',row=BT.buckets?.[key],base=BT.baseline;
+  if(!row?.n||!base?.n)return{label:'NOT ESTABLISHED',cls:'dim',detail:'insufficient bucket history'};
+  const delta=row.avg21-base.avg21;
+  if(!row.sufficient)return{label:'LOW SAMPLE',cls:'amber',detail:`n=${row.n} · ${fmtI(delta,2)} pts vs baseline`};
+  const tail=key==='bull'?delta>0:key==='bear'?delta<0:Math.abs(delta)<.35;
+  return{label:tail?'HISTORICAL TAILWIND':'NO TAILWIND PROVEN',cls:tail?'up':'amber',detail:`${fmtI(row.avg21,2)}% vs ${fmtI(base.avg21,2)}% baseline · n=${row.n}`};
+}
+function decisionStack(){
+  if(typeof L==='undefined'||typeof T==='undefined'||!T)return'';
+  const S=institutionalScore(L),trend=cat(S,'Trend'),mom=cat(S,'Momentum'),str=cat(S,'Structure'),volu=cat(S,'Volume'),pat=cat(S,'Pattern'),liq=liquidity(),vr=volRegime(),m=mtf(),bt=btState(S);
+  const rows=[
+    ['1','Trend',trend.label,trend.cls,trend.pts==null?'—':trend.pts+'/100',trend.detail],
+    ['2','Momentum',mom.label,mom.cls,mom.pts==null?'—':mom.pts+'/100',mom.detail],
+    ['3','Structure',str.label,str.cls,str.pts==null?'—':str.pts+'/100',str.detail],
+    ['4','Liquidity map',liq.label,liq.cls,'proxy',liq.detail],
+    ['5','Volume / participation',volu.label,volu.cls,volu.pts==null?'—':volu.pts+'/100',volu.detail],
+    ['6','Volatility regime',vr.label,vr.cls,'context',vr.detail],
+    ['7','Pattern confirmation',pat.label,pat.cls,pat.pts==null?'—':pat.pts+'/100',pat.detail],
+    ['8','Multi-timeframe',m.label,m.cls,'3 frames',m.detail],
+    ['9','Backtested edge',bt.label,bt.cls,'history',bt.detail]
+  ];
+  return`<div class="panel" style="border-color:rgba(122,155,196,.45)"><h2>Institutional decision stack <span class="tag">TREND → VALIDATION</span></h2>
+  <table><tr><th>#</th><th>Layer</th><th>State</th><th>Score / role</th><th>Evidence</th></tr>${rows.map(r=>`<tr><td class="dim">${r[0]}</td><td>${r[1]}</td><td class="${r[3]}">${r[2]}</td><td class="mono">${r[4]}</td><td class="dim">${escI(r[5])}</td></tr>`).join('')}</table>
+  <p class="note"><b>Truth rule:</b> the liquidity row is a price-action proxy from support/resistance, order blocks and fair-value gaps—not live order-book or dark-pool data. Volatility is regime context, not automatically bullish or bearish. Historical backtests are validation context, not a promise.</p></div>`;
+}
+function verdictPanel(){
+  if(typeof L==='undefined'||typeof T==='undefined'||!T)return'';
+  const S=institutionalScore(L),cls=S.pts>=60?'up':S.pts<45?'down':'amber';
+  const cats=Object.entries(S.categories).sort((a,b)=>Math.abs(b[1].signal*b[1].weight)-Math.abs(a[1].signal*a[1].weight));
+  const up=cats.filter(([,c])=>c.signal>.12).slice(0,3),dn=cats.filter(([,c])=>c.signal<-.12).slice(0,3);
+  return`<div class="panel" style="border-color:rgba(232,163,61,.35)"><h2>Institutional verdict <span class="tag">CATEGORY-NORMALIZED · NO DOUBLE COUNTING</span></h2>
+  <div class="stats"><div class="st"><div class="l">Evidence balance</div><div class="v ${cls}" style="font-size:25px">${S.pts??'—'}/100</div><div class="s">50 = genuinely balanced</div></div>
+  <div class="st"><div class="l">State</div><div class="v ${cls}">${escI(S.state)}</div><div class="s">not a probability</div></div>
+  <div class="st"><div class="l">Evidence coverage</div><div class="v">${pctI(S.coverage,0)}</div><div class="s">missing data lowers coverage, not direction</div></div>
+  <div class="st"><div class="l">Directional agreement</div><div class="v">${S.agreement==null?'—':pctI(S.agreement,0)}</div><div class="s">agreement among active families</div></div></div>
+  <div class="grid g2" style="margin-top:10px"><div><h3>Strongest support</h3>${up.length?up.map(([k,c])=>`<div class="ev"><div><b>${escI(k)}</b><div class="sub">${c.n} inputs normalized into one family</div></div><span class="up">${c.pts}/100</span></div>`).join(''):'<p class="note">No evidence family is clearly supportive.</p>'}</div>
+  <div><h3>Primary risks</h3>${dn.length?dn.map(([k,c])=>`<div class="ev"><div><b>${escI(k)}</b><div class="sub">${c.n} inputs normalized into one family</div></div><span class="down">${c.pts}/100</span></div>`).join(''):'<p class="note">No evidence family is clearly adverse.</p>'}</div></div>
+  <p class="note">This score is intentionally harder to distort: closely related indicators first collapse into their evidence family, neutral readings stay at the midpoint, and unavailable fundamentals/analyst data are never treated as bearish. A low score therefore requires actual adverse evidence.</p></div>`;
+}
+function techCommand(){
+  if(typeof T==='undefined'||!T||typeof L==='undefined')return'';
+  const S=institutionalScore(L),keys=['Trend','Momentum','Volume','Structure','Pattern'];let n=0,d=0;
+  for(const k of keys){const c=S.categories[k];if(c){n+=c.signal*CATW[k];d+=CATW[k];}}
+  const ts=d?Math.round(50+50*n/d):null,cls=ts>=60?'up':ts<45?'down':'amber',m=mtf(),vr=volRegime();
+  return`<div class="panel" style="border-color:rgba(122,155,196,.45)"><h2>Institutional technical command center <span class="tag">INDEPENDENT FAMILIES</span></h2>
+  <div class="stats"><div class="st"><div class="l">Technical confluence</div><div class="v ${cls}">${ts??'—'}/100</div><div class="s">directional evidence, not odds</div></div>
+  <div class="st"><div class="l">Multi-timeframe</div><div class="v ${m.cls}">${escI(m.label)}</div><div class="s">${escI(m.detail)}</div></div>
+  <div class="st"><div class="l">Regime</div><div class="v ${vr.cls}">${escI(vr.label)}</div><div class="s">${escI(vr.detail)}</div></div>
+  <div class="st"><div class="l">Market structure</div><div class="v ${T.bos?.dir==='bullish'?'up':T.bos?.dir==='bearish'?'down':'amber'}">${escI(T.bos?.dir?.toUpperCase()||'NO CLEAN BOS')}</div><div class="s">${T.bos?`through $${fmtI(T.bos.price,2)} on ${escI(T.bos.date)}`:'structure remains mixed'}</div></div>
+  <div class="st"><div class="l">Participation</div><div class="v ${T.obvSlope>0?'up':T.obvSlope<0?'down':''}">${finite(T.relVol)?fmtI(T.relVol,2)+'×':'—'}</div><div class="s">volume vs 20d · OBV ${T.obvSlope>0?'rising':'falling'}</div></div>
+  <div class="st"><div class="l">Nearest levels</div><div class="v">${T.levels?.support?.[0]?'$'+fmtI(T.levels.support[0],2):'—'} / ${T.levels?.resistance?.[0]?'$'+fmtI(T.levels.resistance[0],2):'—'}</div><div class="s">support / resistance</div></div></div>
+  <p class="note">The command score does not count RSI, MACD, moving averages and timeframe structure as separate independent votes when they describe the same underlying trend. That reduces false confidence from indicator duplication.</p></div>`;
+}
+
+async function loadQuarterly(sym){
+  qSymbol=sym;qError=null;
+  if(qCache.has(sym)){qData=qCache.get(sym);try{if(typeof render==='function')render();}catch{}return;}
+  qData=null;try{const r=await fetch(`${QAPI}?symbol=${encodeURIComponent(sym)}`,{cache:'no-store'}),j=await r.json();if(!r.ok||j.error)throw new Error(j.error||`HTTP ${r.status}`);qCache.set(sym,j);qData=j;}catch(e){qError=String(e?.message||e);}
+  try{if(typeof render==='function')render();}catch{}
+}
+function qPanel(){
+  if(typeof D==='undefined'||!D?.symbol)return'';
+  if(qSymbol!==D.symbol)return`<div class="panel"><h2>10-quarter fundamentals <span class="tag pulse">LOADING</span></h2><p class="note">Loading reported quarterly history.</p></div>`;
+  if(qError)return`<div class="panel"><h2>10-quarter fundamentals <span class="tag bad">UNAVAILABLE</span></h2><p class="note">${escI(qError)}</p></div>`;
+  if(!qData?.rows?.length)return`<div class="panel"><h2>10-quarter fundamentals <span class="tag">NO SERIES YET</span></h2><p class="note">No reported quarterly series returned for this security.</p></div>`;
+  const n=qData.rows.length,cards=[['qRev','Revenue'],['qProfit','Profitability'],['qMargin','Margins'],['qEPS','Diluted EPS'],['qCashflow','Cash generation'],['qBalance','Balance sheet'],['qRatio','Liquidity / leverage'],['qShares','Share dilution'],['qInvest','R&D / stock compensation']];
+  return`<div class="panel"><h2>Quarterly fundamental trendbook <span class="tag">${n} REPORTED QUARTERS</span></h2><p class="note" style="margin-top:0">Each chart uses reported quarterly fields from ${escI(qData.source||'server fundamentals')}. Missing values stay blank; no quarter is fabricated.</p></div><div class="grid g2">${cards.map(([id,t])=>`<div class="panel"><h2>${t} <span class="tag">QUARTERLY</span></h2><div style="height:230px"><canvas id="${id}"></canvas></div></div>`).join('')}</div>`;
+}
+function destroy(id){if(instCharts[id]){try{instCharts[id].destroy();}catch{}delete instCharts[id];}}
+function chart(id,series,percent=false){
+  const el=document.getElementById(id);if(!el||typeof Chart==='undefined'||!qData?.rows)return;destroy(id);
+  const rows=qData.rows,labels=rows.map(r=>r.label||r.date),datasets=series.map(s=>({type:s.type||'line',label:s.label,data:rows.map(r=>finite(r[s.key])?(percent?Number(r[s.key])*100:Number(r[s.key])):null),borderWidth:1.7,pointRadius:2,spanGaps:false}));
+  instCharts[id]=new Chart(el,{data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{labels:{color:'#8C909A',boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:'#8C909A',font:{size:9}},grid:{color:'rgba(140,144,154,.08)'}},y:{ticks:{color:'#8C909A',font:{size:9},callback:v=>percent?v+'%':bigI(v)},grid:{color:'rgba(140,144,154,.08)'}}}}});
+}
+function drawQ(){
+  if(!qData?.rows?.length)return;
+  chart('qRev',[{key:'revenue',label:'Revenue',type:'bar'}]);
+  chart('qProfit',[{key:'gross_profit',label:'Gross profit'},{key:'operating_income',label:'Operating income'},{key:'net_income',label:'Net income'}]);
+  chart('qMargin',[{key:'gross_margin',label:'Gross margin'},{key:'op_margin',label:'Operating margin'},{key:'net_margin',label:'Net margin'},{key:'fcf_margin',label:'FCF margin'}],true);
+  chart('qEPS',[{key:'eps',label:'Diluted EPS'}]);
+  chart('qCashflow',[{key:'ocf',label:'Operating cash flow'},{key:'fcf',label:'Free cash flow'}]);
+  chart('qBalance',[{key:'cash',label:'Cash'},{key:'total_debt',label:'Total debt'},{key:'equity',label:'Equity'}]);
+  chart('qRatio',[{key:'current_ratio',label:'Current ratio'},{key:'debt_to_equity',label:'Debt / equity'}]);
+  chart('qShares',[{key:'shares',label:'Diluted average shares'}]);
+  chart('qInvest',[{key:'rd',label:'R&D'},{key:'sbc',label:'Stock-based compensation'}]);
+}
+function softenForecastLanguage(){
+  const host=document.getElementById('v2truth');if(!host)return;
+  const walk=document.createTreeWalker(host,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.nodeValue&&n.nodeValue.includes('NO VERIFIED EDGE'))n.nodeValue=n.nodeValue.replaceAll('NO VERIFIED EDGE','EDGE NOT YET VERIFIED');}
+  host.querySelectorAll('.tag.bad').forEach(x=>{if(x.textContent.includes('EDGE NOT YET VERIFIED'))x.classList.remove('bad');});
+}
+
+try{
+  if(typeof score==='function')score=institutionalScore;
+  const baseVerdict=typeof tabVerdict==='function'?tabVerdict:null,baseTech=typeof tabTech==='function'?tabTech:null,baseFund=typeof tabFund==='function'?tabFund:null,baseRender=typeof render==='function'?render:null;
+  if(baseVerdict)tabVerdict=function(){const S=institutionalScore(typeof L!=='undefined'?L:[]);let h=baseVerdict();h=h.replace('The read','Factor ledger').replace('Weighted evidence','Category-normalized evidence').replace('Bull against bear weight','Raw bullish / bearish weight');if(S.edge)h=h.replace(`>${S.edge}<`,`>${S.state}<`);return verdictPanel()+decisionStack()+h;};
+  if(baseTech)tabTech=function(){return techCommand()+decisionStack()+baseTech();};
+  if(baseFund)tabFund=function(){return qPanel()+baseFund();};
+  if(baseRender)render=function(){const r=baseRender();queueMicrotask(()=>{try{if(typeof TAB!=='undefined'&&TAB==='fund')drawQ();softenForecastLanguage();}catch(e){console.warn('institutional post-render',e);}});return r;};
+}catch(e){console.warn('Institutional v3 patch failed',e);}
+
+const observer=new MutationObserver(()=>softenForecastLanguage());observer.observe(document.documentElement,{subtree:true,childList:true});
+window.addEventListener('stocktruth:v2data',e=>{const s=e?.detail?.symbol;if(s&&s!==qSymbol)loadQuarterly(s);setTimeout(softenForecastLanguage,0);});
+try{const s=window.V2DATA?.symbol||(typeof D!=='undefined'&&D?.symbol);if(s)loadQuarterly(s);}catch{}
 })();
