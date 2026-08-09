@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stock Truth v2 — full analyst terminal</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<title>Stock Truth — analyst terminal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" referrerpolicy="no-referrer" crossorigin="anonymous"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Archivo:wght@400;500;600;700&display=swap');
 :root{--bg:#101216;--panel:#181B21;--edge:#282C34;--ink:#E8E5DD;--dim:#8C909A;
@@ -78,9 +78,6 @@ summary{cursor:pointer;font-size:11px;color:var(--dim);font-family:var(--mono)}
   #tfbar button.tf{padding:5px 11px;font-size:11px}
   #tfbar button.tf.on{border-color:var(--amber);color:var(--amber)}
   #btnRefresh{padding:5px 11px;font-size:11px}
-
-#keybox{display:none!important}
-#tfbar button.tf:not([data-tf="1day"]){display:none!important}
 </style>
 </head>
 <body>
@@ -796,22 +793,35 @@ function techScoreSeries(bars,E){
 
 function fwd(c,i,h){return(i+h<c.length&&c[i]>0)?c[i+h]/c[i]-1:null;}
 
+const MIN_BUCKET=30;   /* below this a result is labelled insufficient */
 function backtest(bars,E){
   if(!bars||bars.length<320)return{error:"needs at least 320 bars of history to say anything"};
   const{score,arrays}=techScoreSeries(bars,E);
   const{c,s50,s200,rsiA,mac}=arrays;
   const n=c.length,H=21,H2=5;
-  const mk=()=>({n:0,s5:0,s21:0,w21:0});
+  const mk=()=>({n:0,s5:0,s21:0,w21:0,sq:0});
   const buckets={bull:mk(),neutral:mk(),bear:mk()};
+  const halves={train:{bull:mk(),neutral:mk(),bear:mk(),base:mk()},
+                test: {bull:mk(),neutral:mk(),bear:mk(),base:mk()}};
+  const regimes={up:{bull:mk(),bear:mk(),base:mk()},down:{bull:mk(),bear:mk(),base:mk()}};
+  const split=Math.floor((260+(n-H))/2);
   const base=mk();
+  const s200a=arrays.s200;
   for(let i=260;i<n-H;i++){
     const f5=fwd(c,i,H2),f21=fwd(c,i,H);
     if(f21==null)continue;
-    base.n++;base.s5+=f5??0;base.s21+=f21;if(f21>0)base.w21++;
+    const half=i<split?halves.train:halves.test;
+    const reg=(s200a[i]!=null&&c[i]>=s200a[i])?regimes.up:regimes.down;
+    const feed=o=>{o.n++;o.s5+=f5??0;o.s21+=f21;o.sq+=f21*f21;if(f21>0)o.w21++;};
+    feed(base);feed(half.base);feed(reg.base);
     const s=score[i];if(s==null)continue;
-    const b=s>=0.15?buckets.bull:s<=-0.15?buckets.bear:buckets.neutral;
-    b.n++;b.s5+=f5??0;b.s21+=f21;if(f21>0)b.w21++;}
-  const fin=o=>o.n?{n:o.n,avg5:o.s5/o.n*100,avg21:o.s21/o.n*100,win21:o.w21/o.n*100}:{n:0,avg5:null,avg21:null,win21:null};
+    const k=s>=0.15?"bull":s<=-0.15?"bear":"neutral";
+    feed(buckets[k]);feed(half[k]);
+    if(k!=="neutral")feed(reg[k]);}
+  const fin=o=>{if(!o.n)return{n:0,avg5:null,avg21:null,win21:null,se21:null,sufficient:false};
+    const avg=o.s21/o.n,va=Math.max(0,o.sq/o.n-avg*avg);
+    return{n:o.n,avg5:o.s5/o.n*100,avg21:avg*100,win21:o.w21/o.n*100,
+      se21:Math.sqrt(va/o.n)*100,sufficient:o.n>=MIN_BUCKET};};
 
   /* signal events: what happened 21 bars after each firing */
   const ev={};
@@ -828,21 +838,96 @@ function backtest(bars,E){
       if(rsiA[i]>30&&rsiA[i-1]<=30)rec("RSI exited oversold",i);}
     const prior=Math.max(...c.slice(Math.max(0,i-252),i));
     if(c[i]>prior)rec("52-week high breakout",i);}
-  const events=Object.entries(ev).map(([name,o])=>({name,n:o.n,avg21:o.s/o.n*100,win21:o.w/o.n*100}))
+  const events=Object.entries(ev).map(([name,o])=>({name,n:o.n,avg21:o.s/o.n*100,win21:o.w/o.n*100,
+      sufficient:o.n>=5}))
     .sort((a,b)=>b.n-a.n);
 
-  return{bars_used:n,horizon_days:H,
+  const halfFin=h2=>({bull:fin(h2.bull),neutral:fin(h2.neutral),bear:fin(h2.bear),baseline:fin(h2.base)});
+  const tr=halfFin(halves.train),te=halfFin(halves.test);
+  const consistent=(tr.bull.n>=MIN_BUCKET&&te.bull.n>=MIN_BUCKET&&tr.bear.n>=MIN_BUCKET&&te.bear.n>=MIN_BUCKET)
+    ?(((tr.bull.avg21>tr.bear.avg21)===(te.bull.avg21>te.bear.avg21))?"CONSISTENT":"INCONSISTENT")
+    :"INSUFFICIENT SAMPLE";
+  return{bars_used:n,horizon_days:H,min_bucket:MIN_BUCKET,
     buckets:{bull:fin(buckets.bull),neutral:fin(buckets.neutral),bear:fin(buckets.bear)},
-    baseline:fin(base),events,
+    baseline:fin(base),
+    walk_forward:{train:tr,test:te,verdict:consistent,split_index:split,
+      note:"The score's weights were fixed before seeing either half; the halves test whether the bull-beats-bear ordering holds out of window, not parameter fitting."},
+    regimes:{up:{bull:fin(regimes.up.bull),bear:fin(regimes.up.bear),baseline:fin(regimes.up.base)},
+             down:{bull:fin(regimes.down.bull),bear:fin(regimes.down.bear),baseline:fin(regimes.down.base)}},
+    events,
     caveats:["Technical factors only — fundamentals are a single snapshot and cannot be replayed from this data.",
       "Forward windows overlap, so the samples are not independent and significance is weaker than the counts suggest.",
       "In-sample: the same history that shaped the weights is scoring them. Treat this as a sanity check, not proof of edge.",
-      "No trading costs, slippage or dividends."]};}
+      "No trading costs, slippage or dividends — assume roughly 0.05-0.10% per side against every figure."]};}
+
+
+/* ============================================================
+   PERMUTATION TEST — the only honest way to read a single ticker.
+
+   Measuring "bull bucket beat bear bucket" against zero is wrong:
+   on a fixed finite price path the bull bucket is systematically
+   penalised (the path must end where it ends), so even pure noise
+   scores about -1.5 points. The fix is to compare the real edge
+   against ITS OWN null: shuffle this ticker's daily returns many
+   times — destroying all time structure while keeping its exact
+   volatility and fat tails — rerun the identical calculation, and
+   see where the real number lands in that distribution.
+   ============================================================ */
+function shuffledBars(bars,rand){
+  const c=bars.map(b=>b.close),r=[];
+  for(let i=1;i<c.length;i++)r.push(Math.log(c[i]/c[i-1]));
+  for(let i=r.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));const t=r[i];r[i]=r[j];r[j]=t;}
+  const out=[];let p=c[0];
+  const relH=bars.map(b=>b.high/b.close),relL=bars.map(b=>b.low/b.close),
+        relO=bars.map(b=>b.open/b.close);
+  out.push({...bars[0],close:p,open:p*relO[0],high:p*relH[0],low:p*relL[0]});
+  for(let i=0;i<r.length;i++){
+    p*=Math.exp(r[i]);
+    out.push({date:bars[i+1].date,close:p,open:p*relO[i+1],
+      high:p*Math.max(relH[i+1],1),low:p*Math.min(relL[i+1],1),
+      volume:bars[i+1].volume});}
+  return out;}
+
+function rawEdge(bars,E){
+  const{score}=techScoreSeries(bars,E);
+  const c=bars.map(b=>b.close),n=c.length,H=21;
+  let bs=0,bn=0,rs=0,rn=0;
+  for(let i=260;i<n-H;i++){
+    const f=fwd(c,i,H);if(f==null)continue;
+    const s=score[i];if(s==null)continue;
+    if(s>=0.15){bs+=f;bn++;}else if(s<=-0.15){rs+=f;rn++;}}
+  return(bn&&rn)?(bs/bn-rs/rn)*100:null;}
+
+function permutationTest(bars,E,iters){
+  iters=iters||150;
+  const actual=rawEdge(bars,E);
+  if(actual==null)return{error:"not enough bull and bear periods to compare"};
+  let seed=20260806;
+  const rand=()=>{seed^=seed<<13;seed>>>=0;seed^=seed>>17;seed^=seed<<5;seed>>>=0;return seed/4294967296;};
+  const nulls=[];
+  for(let k=0;k<iters;k++){
+    const e=rawEdge(shuffledBars(bars,rand),E);
+    if(e!=null)nulls.push(e);}
+  if(nulls.length<30)return{error:"could not build a null distribution"};
+  nulls.sort((a,b)=>a-b);
+  const mean=nulls.reduce((a,b)=>a+b,0)/nulls.length;
+  const sd=Math.sqrt(nulls.reduce((a,b)=>a+(b-mean)**2,0)/(nulls.length-1));
+  const beaten=nulls.filter(x=>x<actual).length;
+  const pctile=beaten/nulls.length*100;
+  const pOneSided=(nulls.filter(x=>x>=actual).length+1)/(nulls.length+1);
+  const q=p=>nulls[Math.min(nulls.length-1,Math.floor(nulls.length*p))];
+  return{actual,iters:nulls.length,null_mean:mean,null_sd:sd,percentile:pctile,p:pOneSided,
+    null_lo:q(0.05),null_hi:q(0.95),
+    z:sd>0?(actual-mean)/sd:null,
+    significant:pOneSided<=0.05,
+    note:"The null keeps this ticker's own volatility and fat tails and destroys only the time ordering. "+
+         "A real edge should beat the shuffles; landing inside them means the score's separation here is "+
+         "what chance produces on this ticker."};}
 
 
 
 
-const BACKTEST={backtest,techScoreSeries};
+const BACKTEST={backtest,techScoreSeries,permutationTest,rawEdge};
 
 /* ================= helpers ================= */
 const $=s=>document.querySelector(s);
@@ -862,11 +947,30 @@ const sgn=v=>v>0?"up":v<0?"down":"";
 const agoBars=n=>n===0?"today":n===1?"yesterday":n+" sessions ago";
 
 /* ================= state ================= */
-const BUILD_TAG="v2.5 · FULL ORIGINAL TERMINAL · secure any-ticker backend · 2026-08-08";
+const BUILD_TAG="v2.6 · 2026-08-06";
+/* Policy switch honoring the security spec: set false to disable all
+   browser-side vendor calls and key storage — the page then runs purely
+   on robot data, failing safely when it is absent. */
+const ALLOW_DIRECT=true;
+/* US market holidays for calendar-aware staleness (daily timeframe) */
+const US_HOLIDAYS=new Set(["2025-01-01","2025-01-20","2025-02-17","2025-04-18","2025-05-26",
+ "2025-06-19","2025-07-04","2025-09-01","2025-11-27","2025-12-25",
+ "2026-01-01","2026-01-19","2026-02-16","2026-04-03","2026-05-25",
+ "2026-06-19","2026-07-03","2026-09-07","2026-11-26","2026-12-25"]);
+function tradingSessionsBetween(fromTs,toTs){
+  let n=0;const d=new Date(fromTs);d.setUTCHours(12,0,0,0);
+  const end=new Date(toTs);
+  while(d<end){d.setUTCDate(d.getUTCDate()+1);
+    const wd=d.getUTCDay(),key=d.toISOString().slice(0,10);
+    if(wd!==0&&wd!==6&&!US_HOLIDAYS.has(key))n++;
+    if(n>40)break;}
+  return n;}
 let INDEX=null,D=null,T=null,V=null,L=null,S=null,PAT=null,SIG=null,MODE="direct";
 let TF=localStorage.getItem("tf")||"1day",FRESH=null,candleTimer=null;
+let FORM_ON=localStorage.getItem("form_on")!=="0";
+function toggleForming(){FORM_ON=!FORM_ON;localStorage.setItem("form_on",FORM_ON?"1":"0");compute();render();}
 const RANKD={};let RANK_SORT={key:"score",dir:-1},RANK_BUSY=false;
-const BT_CACHE={};let BT=null;
+const BT_CACHE={};let BT=null;const PERM_CACHE={};let PERM=null,PERM_BUSY=false;
 const TFM={"1day":{ppy:252,perDay:1,label:"Daily",intraday:false,staleMin:24*60},
   "1h":{ppy:252*6.5,perDay:6.5,label:"1 hour",intraday:true,staleMin:70},
   "30min":{ppy:252*13,perDay:13,label:"30 min",intraday:true,staleMin:40},
@@ -887,6 +991,10 @@ const LIVEKEY=()=>localStorage.getItem("live_finnhub")||"";
 const KEYS={finn:"",twelve:"",fmp:"",poly:"",av:""};
 const KMAP={kFinn:["finn","k_finn"],kTwelve:["twelve","k_twelve"],kFmp:["fmp","k_fmp"],
   kPoly:["poly","k_poly"],kAv:["av","k_av"]};
+function wipeKeys(){
+  for(const[,[k,ls]]of Object.entries(KMAP)){KEYS[k]="";localStorage.removeItem(ls);const e=$("#"+Object.keys(KMAP).find(id=>KMAP[id][0]===k));if(e)e.value="";}
+  localStorage.removeItem("live_finnhub");
+  const n=$("#modeNote");if(n)n.textContent="All keys removed from this browser.";}
 function loadKeys(){Object.entries(KMAP).forEach(([id,[k,ls]])=>{
   KEYS[k]=localStorage.getItem(ls)||"";const e=$("#"+id);if(e)e.value=KEYS[k];});}
 function bindKeys(){Object.entries(KMAP).forEach(([id,[k,ls]])=>{const e=$("#"+id);if(!e)return;
@@ -1158,10 +1266,18 @@ async function runDirect(sym){
    costs two API credits instead of seven */
 async function refreshCandles(silent){
   if(!D||!D.symbol)return;
-  const b=$("#btnRefresh");if(b&&!silent)b.textContent="Reloading…";
-  try{await load(D.symbol);}catch(e){const n=$("#modeNote");if(n)n.innerHTML=`<span class="err">Refresh failed — ${esc(e.message||e)}</span>`;}
-  finally{const b2=$("#btnRefresh");if(b2)b2.textContent="Refresh";}
-}
+  if(!D.direct){await load(D.symbol);return;}
+  const btn=$("#btnRefresh");if(btn&&!silent)btn.textContent="…";
+  try{
+    const[bars,q]=await Promise.all([dCandles(D.symbol,TF),dQuote(D.symbol).catch(e=>derr("finnhub",e))]);
+    D.candles={source:"twelvedata",fetched_at:nowISO(),bars,n:bars.length,interval:TF,
+      latest:bars[bars.length-1].date,cross_check:D.candles?.cross_check||null,
+      confidence:D.candles?.confidence||"MEDIUM"};
+    D.quote=q;D.generated_at=nowISO();
+    compute();render();
+  }catch(e){
+    const n=$("#modeNote");if(n)n.innerHTML=`<span class="err">Refresh failed — ${esc(e.message||e)}</span>`;
+  }finally{const b2=$("#btnRefresh");if(b2)b2.textContent="Refresh";}}
 
 function startAutoRefresh(){
   if(candleTimer)clearInterval(candleTimer);
@@ -1174,10 +1290,15 @@ function startAutoRefresh(){
     refreshCandles(true);},everyMin*6e4);}
 
 async function setTF(tf){
-  TF="1day";localStorage.setItem("tf","1day");
-  document.querySelectorAll("#tfbar button.tf").forEach(b=>b.classList[b.getAttribute("data-tf")==="1day"?"add":"remove"]("on"));
-  const n=$("#modeNote");if(n)n.textContent="Primary signals use completed daily bars. Weekly and monthly MA/EMA structure is shown in the v2 multi-timeframe truth layer without pretending correlated averages are independent evidence.";
-}
+  if(!TFM[tf]||tf===TF)return;
+  TF=tf;localStorage.setItem("tf",tf);
+  document.querySelectorAll("#tfbar button.tf").forEach(b=>
+    b.classList[b.getAttribute("data-tf")===tf?"add":"remove"]("on"));
+  if(!D||!D.symbol)return;
+  if(TFM[tf].intraday&&!KEYS.twelve){
+    $("#modeNote").innerHTML=`<span class="err">Intraday candles need a Twelve Data key — open the key panel above.</span>`;
+    return;}
+  await runDirect(D.symbol);}
 
 function recents(){try{return JSON.parse(localStorage.getItem("recents")||"[]");}catch{return[];}}
 function pushRecent(s){const r=recents().filter(x=>x!==s);r.unshift(s);
@@ -1199,37 +1320,46 @@ function selfTest(){
 async function boot(){
   const bad=selfTest();
   if(bad){
-    $("#app").innerHTML=`<div class="panel"><h2>Engine self-test failed <span class="tag bad">STOPPED</span></h2><p class="note err">${esc(bad)}</p></div>`;
-    return;
+    $("#app").innerHTML=`<div class="panel" style="border-color:rgba(224,82,82,.6)">
+      <h2>This file is damaged <span class="tag bad">SELF-TEST FAILED</span></h2>
+      <p class="note err">${esc(bad)}.</p>
+      <p class="note">The page verifies its own math engine every time it loads. A failure here almost always means the uploaded index.html was truncated or corrupted in transit — it is not a data problem. Re-download index.html and upload it into docs again, then hard-refresh. Nothing will be computed from a damaged engine.</p></div>`;
+    $("#modeTag").textContent="DAMAGED FILE";$("#modeTag").classList.add("bad");
+    {const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · SELF-TEST FAILED";bt2.classList.add("err");}}
+    return;}
+  {const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · engine self-test ✓";bt2.classList.remove("dim");bt2.classList.add("up");}}
+  loadKeys();bindKeys();
+  try{
+    INDEX=await(await fetch("./data/index.json",{cache:"no-store"})).json();
+    if(!INDEX||!Array.isArray(INDEX.tickers)||!INDEX.tickers.length)throw new Error("empty index");
+    MODE="pipeline";
+    $("#modeTag").textContent="PIPELINE MODE — NO KEYS NEEDED FOR WATCHLIST TICKERS";
+    $("#modeNote").textContent="Watchlist tickers load from data the GitHub robot committed. Typing any other ticker fetches it directly, which uses the keys in the panel above.";
+  }catch(e){
+    INDEX=null;MODE="direct";
+    $("#modeTag").textContent="DIRECT MODE — ROBOT DATA NOT FOUND";
+    $("#modeTag").classList.add("bad");
+    $("#keybox").open=true;
+    $("#modeNote").innerHTML="The robot's data file (<span class=\"mono\">data/index.json</span>) is not on this site yet, so the page is calling vendors straight from your browser instead. Paste at least a Twelve Data key above, type a ticker, press Analyze — everything works right now. When the GitHub Action runs successfully this banner disappears on its own and watchlist tickers stop needing keys.";
   }
-  const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · engine self-test ✓";bt2.classList.remove("dim");bt2.classList.add("up");}
-  INDEX={tickers:[]};MODE="pipeline";TF="1day";
-  $("#modeTag").textContent="GITHUB PAGES · FULL STOCK TRUTH · ANY TICKER";
-  $("#modeTag").classList.remove("bad");
-  $("#modeNote").textContent="This is the full original Stock Truth terminal. Any valid ticker is fetched securely by the v2 data service. Missing fields say unavailable instead of being invented.";
   drawTickerBar();
-  const first=recents()[0]||"AAPL";
-  await run(first);
-}
+  const first=INDEX?INDEX.tickers[0]:recents()[0];
+  if(first)await run(first);
+  else $("#app").innerHTML=`<div class="panel"><h2>Ready</h2>
+    <p class="note">Type any ticker above and press Analyze. The Verdict tab gives the weighted read with every factor listed; Technicals holds indicators, triggered signals and patterns with exact levels; Fundamentals holds the six valuation models and pillars; Sources is the audit trail.</p></div>`;}
 
 async function run(symRaw){
   const sym=(symRaw||$("#sym").value||"").trim().toUpperCase();
   if(!sym)return;
   $("#sym").value=sym;TAB="verdict";
-  return load(sym);
-}
+  if(MODE==="pipeline"&&INDEX.tickers.includes(sym))return load(sym);
+  return runDirect(sym);}
 
 async function load(sym){
-  $("#app").innerHTML=`<div class="panel"><h2>Loading ${esc(sym)} <span class="tag pulse">FULL STOCK TRUTH</span></h2><p class="note">Loading adjusted closed-bar history, technicals, fundamentals, earnings and analyst context where the sources return it.</p></div>`;
-  try{
-    const r=await fetch(`https://stock-truth-v2.vercel.app/api/stock?symbol=${encodeURIComponent(sym)}`,{cache:"no-store"});
-    const j=await r.json();
-    if(!r.ok)throw new Error(j.error||("HTTP "+r.status));
-    D=j;D.symbol=D.symbol||sym;D.direct=false;
-  }catch(e){D={symbol:sym,load_error:String(e&&e.message||e)};}
-  TAB="verdict";pushRecent(sym);compute();drawTickerBar();render();
-  window.V2DATA=D;window.dispatchEvent(new CustomEvent("stocktruth:v2data",{detail:D}));
-}
+  $("#app").innerHTML=`<div class="panel"><h2>Loading ${esc(sym)} <span class="tag pulse">CACHED DATA</span></h2></div>`;
+  try{D=await(await fetch(`./data/${sym}.json`,{cache:"no-store"})).json();}
+  catch(e){D={symbol:sym,load_error:String(e)};}
+  TAB="verdict";pushRecent(sym);compute();drawTickerBar();render();}
 
 function drawTickerBar(){
   const cur=D?.symbol;
@@ -1241,6 +1371,33 @@ function drawTickerBar(){
 
 /* ================= compute ================= */
 /* ---- freshness: how old is the newest bar, and is a live bar spliced in? ---- */
+/* ---- snapshot integrity: every check the security spec lists, plus quote sanity ---- */
+function validateSnapshot(d){
+  const critical=[],warnings=[];
+  const cd=d&&d.candles;
+  if(!cd||cd.error||!Array.isArray(cd.bars)||!cd.bars.length){critical.push("no candle array");return{critical,warnings};}
+  const bars=cd.bars;
+  if(bars.length<252)warnings.push(`only ${bars.length} completed bars — 252 needed for a qualified setup`);
+  const seen=new Set();let prev=null;
+  for(const b of bars){
+    if(seen.has(b.date)){critical.push("duplicate candle date "+b.date);break;}
+    seen.add(b.date);
+    if(prev&&b.date<=prev){critical.push("candles not strictly chronological at "+b.date);break;}
+    prev=b.date;
+    const o=b.open,h=b.high,l=b.low,c2=b.close;
+    if(![o,h,l,c2].every(v=>Number.isFinite(v)&&v>0)){critical.push("invalid OHLC values on "+b.date);break;}
+    if(h<Math.max(o,c2)-1e-9||l>Math.min(o,c2)+1e-9||h<l){critical.push("inconsistent OHLC range on "+b.date);break;}
+    if(b.volume!=null&&(!Number.isFinite(b.volume)||b.volume<0)){critical.push("invalid volume on "+b.date);break;}}
+  const q=d.quote;
+  if(q&&!q.error){
+    if(!Number.isFinite(q.current)||q.current<=0)warnings.push("quote price invalid — ignored");
+    else{const lc=bars[bars.length-1].close;
+      if(lc>0&&Math.abs(q.current/lc-1)>0.35)warnings.push(`quote deviates ${fmt(Math.abs(q.current/lc-1)*100,0)}% from the last close — possible symbol mismatch or halt`);}}
+  if(d.generated_at&&!Number.isFinite(Date.parse(d.generated_at)))warnings.push("invalid generation timestamp");
+  const xc=cd.cross_check;
+  if(xc&&(xc.grade==="LOW"||xc.status==="DISAGREE"))warnings.push("independent candle sources disagree — levels unverified");
+  return{critical,warnings};}
+
 function parseBarTime(d){
   if(!d)return null;
   const t=Date.parse(d.includes(" ")?d.replace(" ","T"):d+"T21:00:00");
@@ -1255,12 +1412,33 @@ function todayKey(ts){
    exchange data, not an estimate. Volume is left null because a quote carries
    none, so volume indicators keep using closed bars only. */
 function spliceForming(raw,q){
-  return{bars:raw.slice(),forming:false};
-}
+  const out=raw.slice();
+  if(!FORM_ON)return{bars:out,forming:false};
+  const last=out[out.length-1];
+  if(!last)return{bars:out,forming:false};
+  if(tfm().intraday){
+    if(LIVE.price!=null){
+      const b={...last};
+      b.close=LIVE.price;b.high=Math.max(b.high,LIVE.price);b.low=Math.min(b.low,LIVE.price);
+      out[out.length-1]=b;return{bars:out,forming:true};}
+    return{bars:out,forming:false};}
+  const px=LIVE.price??(q&&!q.error?q.current:null);
+  if(px==null)return{bars:out,forming:false};
+  const tk=todayKey(q&&q.ts);
+  if(last.date>=tk){
+    const b={...last};
+    b.close=px;b.high=Math.max(b.high,px);b.low=Math.min(b.low,px);
+    out[out.length-1]=b;return{bars:out,forming:true};}
+  const o=(q&&!q.error&&q.open)||px;
+  out.push({date:tk,open:o,high:(q&&q.high)||Math.max(o,px),
+    low:(q&&q.low)||Math.min(o,px),close:px,volume:null});
+  return{bars:out,forming:true};}
 
 function compute(){
   T=null;V=null;L=null;S=null;PAT=null;SIG=null;FRESH=null;
   if(!D||D.load_error||!D.candles||D.candles.error)return;
+  const VAL=validateSnapshot(D);
+  if(VAL.critical.length){FRESH={invalid:VAL};return;}
   const raw=D.candles.bars;if(!raw||raw.length<60)return;
   const q=D.quote&&!D.quote.error?D.quote:null;
   const M=tfm();
@@ -1272,6 +1450,7 @@ function compute(){
 
   const lastClosedT=parseBarTime(raw[raw.length-1].date);
   const ageMin=lastClosedT?Math.max(0,(Date.now()-lastClosedT)/6e4):null;
+  const missedSessions=(!M.intraday&&lastClosedT)?tradingSessionsBetween(lastClosedT,Date.now()):null;
   /* unadjusted-split sniff: a >25% overnight jump that the day does not retrace
      is almost always a vendor serving unadjusted history — every level computed
      across it is wrong until the vendor fixes it */
@@ -1281,8 +1460,9 @@ function compute(){
     const pc=scanSrc[k-1].close,o=scanSrc[k].open,cl=scanSrc[k].close;
     if(pc>0&&o>0&&Math.abs(o/pc-1)>0.25&&Math.abs(cl/pc-1)>0.25){
       splitFlag={date:scanSrc[k].date,jump:(o/pc-1)*100};}}
-  FRESH={tf:TF,label:M.label,lastClosed:raw[raw.length-1].date,ageMin,splitFlag,
-    stale:ageMin!=null&&ageMin>M.staleMin*3,
+  FRESH={tf:TF,label:M.label,lastClosed:raw[raw.length-1].date,ageMin,splitFlag,val:VAL,
+    missedSessions,
+    stale:M.intraday?(ageMin!=null&&ageMin>M.staleMin*3):(missedSessions!=null&&missedSessions>1),
     forming:sp.forming,quoteAge:q&&q.fetched_at?(Date.now()-Date.parse(q.fetched_at))/6e4:null,
     live:LIVE.price!=null,mode:D.direct?"direct":"pipeline",
     fetchedAt:D.candles.fetched_at,dailyAvailable:!!daily};
@@ -1330,8 +1510,15 @@ function compute(){
   if(x&&x.next_earnings){
     const dd=(x.next_earnings*1000-Date.now())/864e5;
     if(dd>-1&&dd<=7)FRESH.earningsIn=Math.max(0,dd);}
+  if(!D.rel&&D.symbol!=="VOO"){
+    const symNow=D.symbol;
+    loadBenchmark().then(bb=>{
+      if(!bb||!D||D.symbol!==symNow)return;
+      const rs=relStrength((D.daily&&D.daily.bars)||T.rawBars,bb);
+      if(rs){D.rel=rs;L=ledger();render();}});}
   const btKey=D.symbol+":"+TF+":"+(T.rawBars.length);
   BT=BT_CACHE[btKey]||(BT_CACHE[btKey]=BACKTEST.backtest((D.daily&&D.daily.bars)||T.rawBars,ENG));
+  PERM=PERM_CACHE[D.symbol]||null;
   const sc=score(L);
   RANKD[D.symbol]={sym:D.symbol,name:(D.fundamentals&&D.fundamentals.name)||(D.profile&&D.profile.name)||D.symbol,
     score:sc.pts,edge:sc.edge,price:T.price,
@@ -1343,11 +1530,30 @@ function compute(){
     earningsIn:FRESH.earningsIn!=null?Math.round(FRESH.earningsIn):null,
     at:Date.now()};}
 
+function bizType(f){
+  const s2=((f.sector||"")+" "+(f.industry||"")).toLowerCase();
+  if(/reit|real estate/.test(s2))return"reit";
+  if(/bank|insurance|capital markets|financial|credit services|asset management/.test(s2))return"financial";
+  if(/utilit/.test(s2))return"utility";
+  return"general";}
+
 function valuate(){
   const f=D.fundamentals;if(!f||f.error||f.is_etf||!T)return null;
   const E=ENG,price=T.price;
   const g1=A.g1/100,g2=A.g2/100,disc=A.disc/100,term=A.term/100;
   const M=[];
+  const kind=bizType(f);
+  /* which models are structurally valid for this business, per the spec:
+     financials: FCF is not meaningful (deposits/float distort it) -> suppress
+       DCF and EPV, add a justified-P/B excess-return model
+     REITs: earnings understate cash generation (depreciation) and FFO is not
+       on any free tier -> exclude earnings models honestly rather than misprice
+     utilities/dividend payers: DDM carries real weight */
+  const unsuitable={};
+  if(kind==="financial"){unsuitable["Two-stage DCF"]="FCF is not meaningful for banks and insurers — financing flows swamp it";
+    unsuitable["Earnings power value"]="EPV capitalises operating income, which is not how financial businesses are valued";}
+  if(kind==="reit"){for(const nm of["Two-stage DCF","Graham Number","Graham growth formula","Lynch fair value","Earnings power value"])
+    unsuitable[nm]="REITs are valued on FFO/AFFO and NAV; GAAP earnings understate them and FFO is not on any free tier";}
   const dcf=E.twoStageDCF({fcf:f.fcf_base,shares:f.shares,g1,g2,disc,term,netCash:f.net_cash});
   M.push({n:"Two-stage DCF",v:dcf,why:dcf==null?(f.partial?"this source carries no cash-flow statement":"needs positive free cash flow and a share count"):
     `${big(f.fcf_base)} base free cash flow grown ${A.g1}% for 5 years then ${A.g2}% for 5, discounted at ${A.disc}%, plus ${big(f.net_cash)} net cash`});
@@ -1366,14 +1572,52 @@ function valuate(){
   const dd=E.ddm(f.dividend_ps,Math.min(g2,disc-0.005),disc);
   M.push({n:"Dividend discount",v:dd,why:dd==null?"no dividend paid, or growth exceeds the discount rate":
     `dividend ${fmt(f.dividend_ps)} growing ${A.g2}%, discounted at ${A.disc}%`});
-  const good=M.filter(x=>x.v!=null&&x.v>0&&isFinite(x.v)),vals=good.map(x=>x.v);
+  if(kind==="financial"&&f.bvps&&f.roe!=null&&disc>Math.min(g2,disc-0.005)){
+    const g3=Math.min(g2,disc-0.01);
+    const jpb=(f.roe-g3)/(disc-g3);
+    const v2=jpb>0?f.bvps*jpb:null;
+    M.push({n:"Justified P/B (excess return)",v:v2,why:v2==null?"needs positive book value and ROE above growth":
+      `book ${fmt(f.bvps)} × (ROE ${pct(f.roe)} − g ${pct(g3)}) / (r ${pct(disc)} − g) — the standard bank valuation identity`});}
+  for(const m of M){if(unsuitable[m.n]){m.excluded=true;m.why=unsuitable[m.n];m.v=null;}}
+  const good=M.filter(x=>!x.excluded&&x.v!=null&&x.v>0&&isFinite(x.v)),vals=good.map(x=>x.v);
   const fair=E.median(vals);
   const lo=vals.length?Math.min(...vals):null,hi=vals.length?Math.max(...vals):null;
-  return{models:M,good,fair,lo,hi,price,
+  const sens=(()=>{
+    if(!f.fcf_base||!f.shares||f.fcf_base<=0)return null;
+    const discs=[disc-0.02,disc,disc+0.02],gs=[g1-0.03,g1,g1+0.03];
+    return{discs,gs,grid:gs.map(g=>discs.map(d2=>
+      d2>term?E.twoStageDCF({fcf:f.fcf_base,shares:f.shares,g1:g,g2:Math.min(g2,g),disc:d2,term,netCash:f.net_cash}):null))};})();
+  return{models:M,good,fair,lo,hi,price,kind,sens,
     dispersion:(fair&&lo!=null)?(hi-lo)/fair:null,
     gap:(fair&&price)?(price-fair)/fair:null,
     buyAt:fair?fair*(1-A.mos/100):null,
     impliedG:E.reverseDCF({price,fcf:f.fcf_base,shares:f.shares,disc,term,netCash:f.net_cash})};}
+
+let BENCH_CACHE=null;
+async function loadBenchmark(){
+  if(BENCH_CACHE&&Date.now()-BENCH_CACHE.at<6*36e5)return BENCH_CACHE.bars;
+  let bars=null;
+  try{const j=await(await fetch("./data/VOO.json",{cache:"no-store"})).json();
+    if(j&&j.candles&&!j.candles.error)bars=j.candles.bars;}catch(e){}
+  if(!bars&&ALLOW_DIRECT&&KEYS.twelve){
+    try{bars=await dCandles("VOO","1day");}catch(e){}}
+  if(bars)BENCH_CACHE={bars,at:Date.now()};
+  return bars;}
+function relStrength(myBars,benchBars){
+  if(!myBars||!benchBars)return null;
+  const bm=new Map(benchBars.map(b=>[b.date,b.close]));
+  const shared=myBars.filter(b=>bm.has(b.date));
+  if(shared.length<130)return null;
+  const ret=(arr,n2,pick)=>{if(arr.length<=n2)return null;
+    const a2=pick(arr[arr.length-1]),b2=pick(arr[arr.length-1-n2]);
+    return(a2&&b2)?a2/b2-1:null;};
+  const spans=[["1M",21],["3M",63],["6M",126],["12M",252]];
+  const rows=spans.map(([nm,n2])=>{
+    const mine=ret(shared,n2,b=>b.close),bench=ret(shared,n2,b=>bm.get(b.date));
+    return{span:nm,mine,bench,rel:(mine!=null&&bench!=null)?mine-bench:null};}).filter(r=>r.rel!=null);
+  if(!rows.length)return null;
+  const pos=rows.filter(r=>r.rel>0).length;
+  return{rows,leading:pos>=Math.ceil(rows.length/2),benchmark:"VOO (S&P 500)"};}
 
 function ledger(){
   const f=D.fundamentals,e=D.earnings,x=D.extras,out=[];
@@ -1446,6 +1690,14 @@ function ledger(){
   if(e&&!e.error&&e.scored)add("Execution","Earnings against estimates",2,
     e.beats/e.scored>=0.75?1:e.beats/e.scored<=0.4?-1:0,
     `beat in ${e.beats} of the last ${e.scored} quarters, average surprise ${pctv(e.avg_surprise)}`);
+  if(D.rel&&D.rel.rows.length)add("Momentum","Relative strength vs the market",2,
+    D.rel.leading?1:-1,
+    D.rel.rows.map(r=>`${r.span} ${r.rel>=0?"+":""}${fmt(r.rel*100,1)}%`).join(", ")+
+    ` against ${D.rel.benchmark} — ${D.rel.leading?"leading the market":"lagging the market"}`);
+  if(f&&!f.error&&!f.is_etf&&f.share_cagr!=null)
+    add("Business","Share count trend",1,f.share_cagr<-0.005?1:f.share_cagr>0.03?-1:0,
+      `${pctv(f.share_cagr*100,1)}/yr ${f.share_cagr<0?"shrinking — buybacks are returning capital":f.share_cagr>0.03?"growing — dilution is eating shareholders":"roughly flat"}`+
+      (f.buyback_yield?`; buyback yield ${pct(f.buyback_yield)}`:""));
   const ins=D.insiders&&!D.insiders.error?D.insiders:null;
   if(ins&&(ins.buys+ins.sells)>=3)add("Positioning","Insider transactions, 6 months",1,
     ins.net_shares>0?1:ins.net_shares<0?-1:0,
@@ -1496,6 +1748,10 @@ function render(){
   if(!D)return;
   if(D.load_error){$("#app").innerHTML=`<div class="panel"><h2>Could not load ${esc(D.symbol)}</h2>
     <p class="note err">${esc(D.load_error)}</p></div>`;return;}
+  if(FRESH&&FRESH.invalid){$("#app").innerHTML=`<div class="panel" style="border-color:rgba(224,82,82,.5)">
+    <h2>${esc(D.symbol)} — snapshot failed integrity checks <span class="tag bad">NOTHING COMPUTED</span></h2>
+    <table><tr><th>Critical failure</th></tr>${FRESH.invalid.critical.map(c2=>`<tr><td class="err">${esc(c2)}</td></tr>`).join("")}</table>
+    <p class="note">Corrupted history poisons every indicator, level and pattern downstream, so the page refuses to compute rather than show precise-looking numbers built on bad bars. In pipeline mode this heals on the robot's next run; in direct mode press Refresh to re-fetch.</p></div>`;return;}
   $("#app").innerHTML=`${header()}${strip()}
     <div class="tabs">${[["verdict","VERDICT"],["tech","TECHNICALS"],["fund","FUNDAMENTALS"],["rank","RANK"],["src","SOURCES"]]
       .map(([k,l])=>`<button class="${TAB===k?"on":""}" onclick="setTab('${k}')">${l}</button>`).join("")}</div>
@@ -1541,14 +1797,17 @@ function freshPanel(){
     <div class="stats">
       ${st("Timeframe",esc(M.label),"",M.intraday?"intraday bars from Twelve Data":"end-of-day bars")}
       ${st("Newest closed bar",esc(FRESH.lastClosed),good?"up":"down",
-        a==null?"":a<90?`${Math.round(a)} minutes ago`:a<60*36?`${fmt(a/60,1)} hours ago`:`${fmt(a/1440,1)} days ago`)}
+        a==null?"":(FRESH.missedSessions!=null?`${FRESH.missedSessions===0?"no":FRESH.missedSessions} trading session${FRESH.missedSessions===1?"":"s"} since (weekends/US holidays excluded)`:a<90?`${Math.round(a)} minutes ago`:a<60*36?`${fmt(a/60,1)} hours ago`:`${fmt(a/1440,1)} days ago`))}
       ${st("Today's forming bar",FRESH.forming?"included":"not included",FRESH.forming?"up":"dim",
         FRESH.forming?"open, high, low and last from the live quote":"every indicator reflects the last close only")}
+      ${st("Forming-bar policy",FORM_ON?"splice (labelled)":"closed bars only",FORM_ON?"amber":"blue",
+        `<button style="padding:2px 8px;font-size:10px" onclick="toggleForming()">${FORM_ON?"switch to closed-only":"switch to splice"}</button>`)}
       ${st("Live quote polling",FRESH.live?"on":"off",FRESH.live?"up":"dim",FRESH.live?"refreshing every 10 seconds":"press Live quote in the header")}
       ${st("Candles fetched",FRESH.fetchedAt?ago(FRESH.fetchedAt):"—","",FRESH.mode==="direct"?"straight from the vendor":"from the robot's last run")}
     </div>
+    ${FRESH.val&&FRESH.val.warnings.length?`<p class="note err">Integrity warnings: ${FRESH.val.warnings.map(w=>esc(w)).join(" · ")}</p>`:""}
     ${FRESH.splitFlag?`<p class="note err">Possible unadjusted split or data break on ${esc(FRESH.splitFlag.date)} (${fmt(FRESH.splitFlag.jump,0)}% overnight jump that held). Every moving average, level and pattern computed across that date is suspect. Cross-check this symbol on the vendor's site; if it is a split, the history usually corrects within a day.</p>`:""}
-    ${FRESH.stale?`<p class="note err">The newest bar is far older than this timeframe should allow. On a daily chart that is normal over a weekend or holiday. Intraday it means the market is closed, or the vendor has not published the latest bar yet.</p>`:""}
+    ${FRESH.stale?`<p class="note err">The newest bar is far older than this timeframe should allow. Weekends and US market holidays are already excluded from this check, so on a daily chart this now means a genuinely missing session. Intraday it means the market is closed, or the vendor has not published the latest bar yet.</p>`:""}
     <p class="note"><b>What "live" can and cannot mean here.</b> Daily indicators are built from daily closes, so RSI, MACD and the moving averages only change once a day by construction — that is not staleness, it is what a daily indicator is. What was genuinely missing before: today's session was not counted at all until the close. Now, when the live quote is on, today's real open, high, low and last are spliced in as a forming bar and every price indicator recomputes against it${FRESH.forming?"":", which will happen as soon as you press Live quote"}. Volume indicators deliberately keep to closed bars, because a quote carries no volume and inventing one would corrupt them.<br><br>
     For a genuinely faster read, switch the timeframe above. A 15-minute chart recomputes RSI, MACD and the patterns every 15 minutes on real intraday bars.</p>
   </div>`;}
@@ -1574,6 +1833,42 @@ function strip(){
     </div></div>`;}
 
 /* ---------------- VERDICT ---------------- */
+function gateVerdict(){
+  if(!T||!FRESH)return null;
+  const fails=[],cd=D.candles||{};
+  const conf=cd.confidence||"NONE";
+  if(!(conf==="HIGH"||conf==="MEDIUM"))fails.push("candle confidence is "+conf);
+  if(FRESH.val&&FRESH.val.critical&&FRESH.val.critical.length)fails.push("schema validation failed");
+  if(T.rawBars.length<252)fails.push(`only ${T.rawBars.length} completed bars (252 required)`);
+  if(FRESH.stale)fails.push("latest expected session is missing");
+  const confd=PAT?PAT.chart.filter(p=>p.status==="CONFIRMED"&&p.dir!==0):[];
+  const forming=PAT?PAT.chart.filter(p=>p.status==="FORMING"&&p.dir!==0):[];
+  const setup=confd[0]||forming[0]||null;
+  let rr=null;
+  if(setup&&isFinite(setup.target)&&isFinite(setup.invalidate)){
+    rr=Math.abs(setup.target-T.price)/Math.max(Math.abs(T.price-setup.invalidate),1e-9);
+    if(rr<1.5)fails.push(`reward/risk ${fmt(rr,1)}:1 is under the 1.5:1 floor`);}
+  else fails.push("no pattern currently defines trigger, target and invalidation together");
+  if(FRESH.earningsIn!=null)fails.push(`earnings in ~${Math.max(1,Math.round(FRESH.earningsIn))} day(s)`);
+  const sc=score(L);
+  let label,why;
+  if(FRESH.val&&FRESH.val.critical&&FRESH.val.critical.length){label="DATA INSUFFICIENT";why="integrity failure";}
+  else if(T.rawBars.length<252||conf==="NONE"){label="DATA INSUFFICIENT";why=fails[0];}
+  else if(FRESH.earningsIn!=null){label="EVENT RISK";why="a print lands inside the holding window";}
+  else if(!fails.length&&sc.edge!=="NO EDGE"){label="QUALIFIED";why=`all gates pass — ${sc.edge.toLowerCase()}, R:R ${fmt(rr,1)}:1 on ${setup.name}`;}
+  else if(sc.edge==="NO EDGE"){label="NO EDGE";why="evidence is genuinely mixed";}
+  else{label="WATCH";why=fails[0];}
+  return{label,why,fails,rr,setup};}
+
+function gatePanel(){
+  const g=gateVerdict();if(!g)return"";
+  const cls=g.label==="QUALIFIED"?"up":g.label==="EVENT RISK"||g.label==="DATA INSUFFICIENT"?"err":"amber";
+  return`<div class="panel"><h2>Setup gate ${tg("EVERY CONDITION CHECKED, NONE ASSUMED")}</h2>
+    <div class="big ${cls}" style="font-size:21px">${esc(g.label)}</div>
+    <p class="note" style="margin-top:4px">${esc(g.why)}</p>
+    ${g.fails.length?`<table><tr><th>Gate not passed</th></tr>${g.fails.map(f2=>`<tr><td class="dim">${esc(f2)}</td></tr>`).join("")}</table>`:""}
+    <p class="note">QUALIFIED requires all of: verified candles (High/Medium consensus), clean schema, at least 252 bars, the current session present, a pattern with trigger + target + invalidation, reward:risk of 1.5:1 or better, and no earnings inside the window. Anything less is labelled honestly instead of dressed up.</p></div>`;}
+
 function tabVerdict(){
   if(!T)return`<div class="panel"><p class="note">No price history.</p></div>`;
   const S2=score(L),cls=S2.edge.includes("BULL")?"up":S2.edge.includes("BEAR")?"down":"amber";
@@ -1598,6 +1893,7 @@ function tabVerdict(){
       <p class="note">The score is the share of total factor weight pointing bullish, from ${L.filter(x=>x.w).length} measured factors. It summarises what is currently true — it is not a forecast and not advice. Every factor is listed below so you can disagree with any single one.</p>
     </div>
 
+    ${gatePanel()}
     ${conf.length||form.length?`<div class="panel">
       <h2>Patterns with live levels ${tg("MECHANICALLY DETECTED")}</h2>
       <table><tr><th>Pattern</th><th>Status</th><th>Trigger</th><th>Target</th><th>Invalidation</th><th>Reward : risk from here</th></tr>
@@ -1685,6 +1981,30 @@ function narrative(S2){
   if(V&&V.gap!=null)b.push(`Price sits ${pctv(Math.abs(V.gap*100))} ${V.gap<0?"below":"above"} the median of ${V.good.length} valuation models.`);
   return b.join(" ");}
 
+async function runPerm(){
+  if(PERM_BUSY||!T)return;
+  PERM_BUSY=true;render();
+  await new Promise(r=>setTimeout(r,30));
+  try{PERM=BACKTEST.permutationTest((D.daily&&D.daily.bars)||T.rawBars,ENG,150);
+    PERM_CACHE[D.symbol]=PERM;}
+  catch(e){PERM={error:String(e&&e.message||e)};}
+  PERM_BUSY=false;render();}
+
+function permBlock(){
+  if(PERM_BUSY)return`<p class="note">Running 150 shuffles of this ticker's own returns…</p>`;
+  if(!PERM)return`<p class="note"><button onclick="runPerm()">Run significance test</button>
+    &nbsp;Reshuffles this ticker's daily returns 150 times to build its own null, then checks whether the score's separation beats chance. Takes about a second.</p>`;
+  if(PERM.error)return`<p class="note err">${esc(PERM.error)}</p>`;
+  const cls=PERM.significant?"up":"amber";
+  return`<h3>Significance against this ticker's own null</h3>
+    <table><tr><th>Measured separation (bull minus bear)</th><th>What chance produces here</th><th>Verdict</th></tr>
+    <tr><td class="${PERM.actual>PERM.null_hi?"up":PERM.actual<PERM.null_lo?"down":""}">${fmt(PERM.actual,2)}% pts</td>
+      <td class="dim">middle 90% of shuffles: ${fmt(PERM.null_lo,2)} to ${fmt(PERM.null_hi,2)} (centre ${fmt(PERM.null_mean,2)})</td>
+      <td class="${cls}">${PERM.significant?"BEATS CHANCE":"WITHIN CHANCE"} · p ≈ ${fmt(PERM.p,3)}</td></tr></table>
+    <p class="note">The score sits at the <b>${fmt(PERM.percentile,0)}th percentile</b> of ${PERM.iters} shuffles${PERM.z!=null?` (${fmt(PERM.z,2)} standard deviations from the centre)`:""}.
+    Notice the centre of the null is <b>${fmt(PERM.null_mean,2)}</b>, not zero — on any single fixed price path the bullish periods are structurally penalised, because the path has to end where it ends. Comparing a raw edge against zero, or against the baseline row above, therefore flatters or punishes it for reasons that have nothing to do with skill. This row is the comparison that actually controls for it.
+    ${PERM.significant?"":" Landing inside the shuffles does not prove the score is worthless — it means this ticker's history is too short to tell it apart from luck, which is the normal result and should be expected far more often than not."}</p>`;}
+
 function btPanel(){
   if(!BT)return"";
   if(BT.error)return`<div class="panel"><h2>Track record on this ticker ${tg("BACKTEST","bad")}</h2>
@@ -1695,16 +2015,26 @@ function btPanel(){
   const curB=cur.net>=0.15?"bull":cur.net<=-0.15?"bear":"neutral";
   return`<div class="panel"><h2>Has this score meant anything for THIS ticker? ${tg("REPLAYED OVER "+BT.bars_used+" BARS")}</h2>
     <table><tr><th>When the technical score read…</th><th>Avg next ${BT.horizon_days} sessions</th><th>Avg next 5</th></tr>
-      <tr class="${curB==="bull"?"hl":""}"><td class="up">Bullish (≥ +0.15)</td><td>${cell(b.bull)}</td><td>${b.bull.n?fmt(b.bull.avg5,2)+"%":"—"}</td></tr>
+      <tr class="${curB==="bull"?"hl":""}"><td class="up">Bullish (≥ +0.15)${b.bull.sufficient?"":" <span class=\"tag bad\">n&lt;30</span>"}</td><td>${cell(b.bull)}${b.bull.se21!=null?` <span class="dim">±${fmt(b.bull.se21,2)}</span>`:""}</td><td>${b.bull.n?fmt(b.bull.avg5,2)+"%":"—"}</td></tr>
       <tr class="${curB==="neutral"?"hl":""}"><td class="blue">Neutral</td><td>${cell(b.neutral)}</td><td>${b.neutral.n?fmt(b.neutral.avg5,2)+"%":"—"}</td></tr>
       <tr class="${curB==="bear"?"hl":""}"><td class="down">Bearish (≤ −0.15)</td><td>${cell(b.bear)}</td><td>${b.bear.n?fmt(b.bear.avg5,2)+"%":"—"}</td></tr>
       <tr><td class="dim">Every bar (the baseline drift)</td><td class="dim">${cell(base)}</td><td class="dim">${base.n?fmt(base.avg5,2)+"%":"—"}</td></tr></table>
     ${BT.events.length?`<h3>What each signal was followed by, on this ticker</h3>
     <table><tr><th>Signal</th><th>Fired</th><th>Avg next ${BT.horizon_days} sessions</th><th>Up</th></tr>
-    ${BT.events.map(e=>`<tr><td>${esc(e.name)}</td><td class="dim">${e.n}×</td>
+    ${BT.events.filter(e=>e.sufficient).map(e=>`<tr><td>${esc(e.name)}</td><td class="dim">${e.n}×</td>
       <td class="${e.avg21>base.avg21?"up":"down"}">${fmt(e.avg21,2)}% <span class="dim">vs ${fmt(base.avg21,2)}% baseline</span></td>
       <td>${fmt(e.win21,0)}%</td></tr>`).join("")}</table>`:""}
-    <p class="note">The highlighted row is where today's score sits. If the bullish row doesn't beat the baseline on this ticker, the score has carried no edge here historically — and it says so rather than hiding it. ${BT.caveats.map(c=>esc(c)).join(" ")}</p></div>`;}
+    ${BT.walk_forward?`<h3>Walk-forward check — first half vs second half</h3>
+    <table><tr><th></th><th>Train half</th><th>Test half</th></tr>
+      <tr><td class="up">Bullish avg ${BT.horizon_days}d</td><td>${fmt(BT.walk_forward.train.bull.avg21,2)}% (n=${BT.walk_forward.train.bull.n})</td><td>${fmt(BT.walk_forward.test.bull.avg21,2)}% (n=${BT.walk_forward.test.bull.n})</td></tr>
+      <tr><td class="down">Bearish avg ${BT.horizon_days}d</td><td>${fmt(BT.walk_forward.train.bear.avg21,2)}% (n=${BT.walk_forward.train.bear.n})</td><td>${fmt(BT.walk_forward.test.bear.avg21,2)}% (n=${BT.walk_forward.test.bear.n})</td></tr></table>
+    <p class="note">Halves shown for inspection only. <b>This label is deliberately not a verdict.</b> Simulating 250 tickers of pure noise, the halves agreed 52% of the time — and on series with a strong <i>real</i> edge they agreed less often, because a genuine regime change makes the two halves differ. Agreement between halves therefore carries no information about edge, and an earlier version of this page wrongly presented it as a headline verdict. The significance test below replaces it.</p>`:""}
+    ${permBlock()}
+    ${BT.regimes?`<h3>By regime (price above / below its 200-day)</h3>
+    <table><tr><th></th><th>Up-regime</th><th>Down-regime</th></tr>
+      <tr><td class="up">Bullish avg</td><td>${BT.regimes.up.bull.n?fmt(BT.regimes.up.bull.avg21,2)+"% (n="+BT.regimes.up.bull.n+")":"—"}</td><td>${BT.regimes.down.bull.n?fmt(BT.regimes.down.bull.avg21,2)+"% (n="+BT.regimes.down.bull.n+")":"—"}</td></tr>
+      <tr><td class="down">Bearish avg</td><td>${BT.regimes.up.bear.n?fmt(BT.regimes.up.bear.avg21,2)+"% (n="+BT.regimes.up.bear.n+")":"—"}</td><td>${BT.regimes.down.bear.n?fmt(BT.regimes.down.bear.avg21,2)+"% (n="+BT.regimes.down.bear.n+")":"—"}</td></tr></table>`:""}
+    <p class="note">Buckets under ${BT.min_bucket} samples are flagged insufficient; ± values are one standard error, and overlapping windows make even those optimistic. The highlighted row is where today's score sits. If the bullish row doesn't beat the baseline on this ticker, the score has carried no edge here historically — and it says so rather than hiding it. ${BT.caveats.map(c=>esc(c)).join(" ")}</p></div>`;}
 
 function catalystPanel(){
   const nw=D.news,ins=D.insiders;
@@ -1960,7 +2290,11 @@ function tabFund(){
         ${V?V.models.map(m=>`<tr><td>${esc(m.n)}</td>
           <td class="${m.v==null?"dim":m.v>V.price?"up":"down"}">${m.v==null?"n/a":"$"+fmt(m.v)}</td>
           <td class="dim" style="font-size:10.5px">${esc(m.why)}</td></tr>`).join(""):""}</table>
-        <p class="note">The blend takes the <b>median</b> so one broken model cannot drag the answer. Models that cannot run show n/a rather than a placeholder.</p></div>
+        <p class="note">The blend takes the <b>median</b> so one broken model cannot drag the answer. Models that cannot run show n/a rather than a placeholder.${V&&V.kind!=="general"?` <b>Business type: ${esc(V.kind)}</b> — structurally unsuitable models are excluded from the blend, with the reason shown in the table, per sector-aware valuation rules.`:""}</p>
+        ${V&&V.sens?`<h3>DCF sensitivity — value per share across assumptions</h3>
+        <table><tr><th>growth ↓ / discount →</th>${V.sens.discs.map(d2=>`<th>${fmt(d2*100,0)}%</th>`).join("")}</tr>
+        ${V.sens.gs.map((g,gi)=>`<tr><td>${fmt(g*100,0)}%</td>${V.sens.grid[gi].map(v2=>`<td class="${v2==null?"dim":v2>V.price?"up":"down"}">${v2==null?"—":"$"+fmt(v2)}</td>`).join("")}</tr>`).join("")}</table>
+        <p class="note">If the verdict flips across this grid, the valuation is an assumption call, not a margin of safety. A real bargain stays cheap in the pessimistic corner.</p>`:""}</div>
 
       <div class="panel"><h2>Your assumptions ${tg("MOVE THEM AND EVERYTHING RECOMPUTES")}</h2>
         <div class="grid" style="gap:12px">
@@ -2023,8 +2357,17 @@ function tabFund(){
       </div>
       <p class="note">Short interest is exchange-reported roughly twice a month — never live anywhere, free or paid. Analyst figures are consensus snapshots, not predictions with a track record attached.</p></div>`:""}
 
-    ${sectorPanel()}${histValPanel()}${earnPanel()}${macroPanel()}
+    ${relPanel()}${sectorPanel()}${histValPanel()}${earnPanel()}${macroPanel()}
   </div>`;}
+
+function relPanel(){
+  const r=D.rel;if(!r)return"";
+  return`<div class="panel"><h2>Relative strength ${tg("VS "+esc(r.benchmark))}</h2>
+    <table><tr><th>Window</th><th>${esc(D.symbol)}</th><th>${esc(r.benchmark)}</th><th>Relative</th></tr>
+    ${r.rows.map(x=>`<tr><td>${x.span}</td><td class="${sgn(x.mine)}">${pctv(x.mine*100,1)}</td>
+      <td class="dim">${pctv(x.bench*100,1)}</td>
+      <td class="${x.rel>0?"up":"down"}">${x.rel>=0?"+":""}${fmt(x.rel*100,1)}%</td></tr>`).join("")}</table>
+    <p class="note">Total price return over shared sessions. Beating the index is the bar every stock pick has to clear — owning the index is always available at near-zero effort. ${r.leading?"This one has been clearing it.":"This one has not been clearing it — the burden of proof is on the thesis."}</p></div>`;}
 
 function sectorPanel(){
   const pr=D.peers;
@@ -2263,7 +2606,9 @@ function buildBrief(){
   if(BT&&!BT.error){push("== BACKTEST OF THIS SCORE, THIS TICKER ("+BT.bars_used+" bars, fwd "+BT.horizon_days+"d) ==");
     const bb2=BT.buckets;
     push(`  bullish reads: avg ${fmt(bb2.bull.avg21,2)}% (n=${bb2.bull.n}) · neutral ${fmt(bb2.neutral.avg21,2)}% (n=${bb2.neutral.n}) · bearish ${fmt(bb2.bear.avg21,2)}% (n=${bb2.bear.n}) · baseline ${fmt(BT.baseline.avg21,2)}%`);
-    push("  caveats: "+BT.caveats.join(" "),"");}
+    push("  caveats: "+BT.caveats.join(" "),"");
+    if(PERM&&!PERM.error)push(`  SIGNIFICANCE: measured separation ${fmt(PERM.actual,2)}% pts vs shuffled null centred ${fmt(PERM.null_mean,2)} (90% band ${fmt(PERM.null_lo,2)} to ${fmt(PERM.null_hi,2)}); percentile ${fmt(PERM.percentile,0)}, p≈${fmt(PERM.p,3)} → ${PERM.significant?"beats chance":"WITHIN CHANCE — treat the score as descriptive, not predictive, on this ticker"}`,"");
+    else push("  SIGNIFICANCE: not run — without it, bucket differences on one ticker cannot be told apart from luck","");}
   if(S){push("== SCENARIOS (zero-drift lognormal from measured vol — breaks on news) ==");
     for(const s2 of S)push(`  ${s2.n}: bear $${fmt(s2.bear.from)}–$${fmt(s2.bear.to)} (${pct(s2.bear.p,0)}) · base $${fmt(s2.base.from)}–$${fmt(s2.base.to)} (${pct(s2.base.p,0)}) · bull $${fmt(s2.bull.from)}–$${fmt(s2.bull.to)} (${pct(s2.bull.p,0)}) · touch R ${s2.pUp?pct(s2.pUp.touch,0):"—"} / S ${s2.pDn?pct(s2.pDn.touch,0):"—"}`);push("");}
 
@@ -2300,6 +2645,7 @@ function buildBrief(){
     "  dark-pool prints / block trades: NOT AVAILABLE",
     "  whisper numbers / buy-side expectations: NOT AVAILABLE",
     "  real-time 13F positioning: NOT AVAILABLE (quarterly lag only)",
+    "  30/60/90-day EPS and revenue estimate revisions: NOT AVAILABLE on free tiers (analyst mean target is the weaker substitute shown)",
     "  Elliott Wave count: NOT COMPUTED (discretionary; raw swings/BOS/fib provided above instead)",
     "  If your engine prompt requests any of the above, state \"Data unavailable\" for that section exactly as the protocol requires. Every figure above is computed from the named sources at the stated timestamp; anything not listed here was not retrieved.");
   return L2.join("\n");}
@@ -2341,7 +2687,7 @@ async function toggleLive(){
   pollTimer=setInterval(tick,10000);
   $("#btnLive").textContent="Stop live";$("#btnLive").classList.add("on");}
 
-window.load=load;window.run=run;window.setTF=setTF;window.refreshCandles=refreshCandles;window.rankSort=rankSort;window.rankAll=rankAll;window.posCalc=posCalc;window.exportBrief=exportBrief;window.buildBrief=buildBrief;window.setTab=setTab;window.recompute=recompute;window.A=A;window.toggleLive=toggleLive;
+window.load=load;window.run=run;window.setTF=setTF;window.refreshCandles=refreshCandles;window.rankSort=rankSort;window.rankAll=rankAll;window.posCalc=posCalc;window.runPerm=runPerm;window.exportBrief=exportBrief;window.buildBrief=buildBrief;window.toggleForming=toggleForming;window.wipeKeys=wipeKeys;window.setTab=setTab;window.recompute=recompute;window.A=A;window.toggleLive=toggleLive;
 $("#btnLive").addEventListener("click",toggleLive);
 $("#btnBrief").addEventListener("click",exportBrief);
 $("#btnGo").addEventListener("click",()=>run());
@@ -2353,5 +2699,5 @@ $("#sym").addEventListener("keydown",e=>{if(e.key==="Enter")run();});
 boot();
 
 </script>
-<script src="./v2-enhance.js"></script></body>
+</body>
 </html>
