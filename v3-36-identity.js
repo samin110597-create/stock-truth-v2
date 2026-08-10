@@ -1,10 +1,38 @@
 (()=>{'use strict';
-function style(){if(document.getElementById('v36identitystyle'))return;const s=document.createElement('style');s.id='v36identitystyle';s.textContent=`#buildTag,#v31badge{display:none!important}#v36Identity{display:inline-flex;align-items:center;gap:7px;margin-left:8px;padding:4px 8px;border:1px solid rgba(122,155,196,.38);border-radius:999px;font-size:10px;font-weight:750;letter-spacing:.04em;color:var(--ink,#e8e5dd);white-space:nowrap}.v36-workspace-title{font-size:inherit;font-weight:inherit;margin:0}.v36-version-note{color:var(--faint,#8c909a);font-size:10px;font-weight:500;margin-left:6px}`;document.head.appendChild(s);}
-function identity(){style();let id=document.getElementById('v36Identity');if(!id){id=document.createElement('span');id.id='v36Identity';id.innerHTML='<span>V3.6 ACTIVE</span><span style="opacity:.55">·</span><span>EXACT SETUP VALIDATION</span>';const anchor=document.querySelector('#buildTag')||document.querySelector('#v31badge');if(anchor?.parentElement)anchor.parentElement.appendChild(id);else{const h=document.querySelector('header')||document.querySelector('.topbar')||document.body;h.prepend(id);}}
- for(const p of document.querySelectorAll('.v34-panel')){const h=p.querySelector(':scope > h2');if(h&&!h.dataset.v36renamed){h.dataset.v36renamed='1';const tag=h.querySelector('.tag')?.outerHTML||'';h.innerHTML=`Technical setup workspace · V3.6 ${tag}<span class="v36-version-note">clean chart · exact replay</span>`;}}
- for(const h of document.querySelectorAll('.panel > h2')){if(/^V3\.4 technical thesis/i.test((h.textContent||'').trim()))h.textContent='V3.6 technical thesis · exact setup validation';}
- document.title='Stock Truth V3.6 — exact setup validation';
+function style(){
+  if(document.getElementById('v36identitystyle'))return;
+  const s=document.createElement('style');s.id='v36identitystyle';
+  s.textContent=`#buildTag,#v31badge{display:none!important}#v36Identity{display:inline-flex;align-items:center;gap:7px;margin-left:8px;padding:4px 8px;border:1px solid rgba(122,155,196,.38);border-radius:999px;font-size:10px;font-weight:750;letter-spacing:.04em;color:var(--ink,#e8e5dd);white-space:nowrap}.v36-version-note{color:var(--faint,#8c909a);font-size:10px;font-weight:500;margin-left:6px}`;
+  document.head.appendChild(s);
 }
-function install(){if(window.__ST_V36_IDENTITY)return;window.__ST_V36_IDENTITY=true;identity();let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;identity();});}).observe(document.body,{childList:true,subtree:true});}
+function identity(){
+  style();
+  let id=document.getElementById('v36Identity');
+  if(!id){
+    id=document.createElement('span');id.id='v36Identity';
+    const anchor=document.querySelector('#buildTag')||document.querySelector('#v31badge');
+    if(anchor&&anchor.parentElement)anchor.parentElement.appendChild(id);else{const h=document.querySelector('header')||document.querySelector('.topbar')||document.body;h.prepend(id);}
+  }
+  id.innerHTML='<span>V3.6 ACTIVE</span><span style="opacity:.55">·</span><span>EXACT SETUP VALIDATION</span>';
+  for(const p of document.querySelectorAll('.v34-panel')){
+    const h=p.querySelector(':scope > h2');if(!h)continue;
+    const tag=h.querySelector('.tag')?.outerHTML||'';
+    const desired=`Technical setup workspace · V3.6 ${tag}<span class="v36-version-note">clean chart · exact replay</span>`;
+    if(h.innerHTML!==desired)h.innerHTML=desired;
+  }
+  for(const h of document.querySelectorAll('.panel > h2')){
+    const t=(h.textContent||'').trim();
+    if(/^V3\.[0-5](?:\.\d+)? technical thesis/i.test(t)||/^V3\.4 technical thesis/i.test(t))h.textContent='V3.6 technical thesis · exact setup validation';
+  }
+  const mode=document.querySelector('#modeTag');if(mode&&/V3\.[0-5]/i.test(mode.textContent||''))mode.textContent=(mode.textContent||'').replace(/V3\.[0-5](?:\.\d+)?/ig,'V3.6');
+  document.title='Stock Truth V3.6 — exact setup validation';
+}
+function install(){
+  if(window.__ST_V36_IDENTITY)return;
+  window.__ST_V36_IDENTITY=true;
+  identity();
+  let queued=false;
+  new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;identity();});}).observe(document.body,{childList:true,subtree:true,characterData:true});
+}
 install();
 })();
