@@ -13,16 +13,16 @@ function patchDetails(){
       try{PAT={chart:PAT_ENG.chartPatterns(b,T.price,atrA[i]),candles:PAT_ENG.candlePatterns(b,6),volume:PAT_ENG.volumeEvents(b),wyckoff:PAT_ENG.wyckoffProxy(b)};}catch{}
       try{SIG=PAT_ENG.triggeredSignals({bars:b,c,e20:T.e20,e50:T.e50,e200:T.e200,s50:T.s50,s200:T.s200,rsiArr:ENG.rsi(c),macdObj:mac,adxObj:ax,bbObj:bb,atrArr:atrA,price:T.price,hi52:T.hi52,lo52:T.lo52});}catch{}
     }
-  }catch(e){console.warn('V3.1 detail sync',e);}
+  }catch(e){console.warn('V4 detail sync',e);}
 }
 async function boot(){
   try{
     const r=await fetch('https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade-precision.js?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('precision layer HTTP '+r.status);
     let code=await r.text();
-    code=code.replaceAll('/api/horizon-model-v2','/api/horizon-model-v3').replaceAll("'Model P(up)'","'P(up) estimate'");
+    code=code.replaceAll('/api/horizon-model-v2','/api/horizon-model-v4').replaceAll("'Model P(up)'","'P(up) estimate'");
     (0,eval)(code);
-  }catch(e){console.warn('V3.1 precision bootstrap',e);return;}
+  }catch(e){console.warn('V4 precision bootstrap',e);return;}
   let tries=0;
   const t=setInterval(()=>{
     tries++;
