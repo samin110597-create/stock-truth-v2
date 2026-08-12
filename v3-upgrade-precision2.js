@@ -20,12 +20,11 @@ async function boot(){
     const r=await fetch('https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade-precision.js?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('precision layer HTTP '+r.status);
     let code=await r.text();
-    if(window.__ST_V4_LOCAL_BUILD){
-      const from='(0,eval)(code);applyPatch();';
-      const to="if(window.__ST_V4_LOCAL_BUILD){code=code.replace('if(s)loadHM(s);','if(s){}');}(0,eval)(code);if(window.__ST_V4_LOCAL_INSTALL)window.__ST_V4_LOCAL_INSTALL();applyPatch();";
-      if(!code.includes(from))throw new Error('local V4 hook point not found in precision loader');
-      code=code.replace(from,to);
-    }else throw new Error('V4 local model engine is not loaded');
+    if(!window.__ST_V4_PATCH_CODE)throw new Error('V4 local horizon hook is not loaded');
+    const from='(0,eval)(code);applyPatch();';
+    const to='if(window.__ST_V4_PATCH_CODE)code=window.__ST_V4_PATCH_CODE(code);(0,eval)(code);applyPatch();';
+    if(!code.includes(from))throw new Error('V4 precision hook point not found');
+    code=code.replace(from,to);
     (0,eval)(code);
   }catch(e){console.warn('V4 precision bootstrap',e);return;}
   let tries=0;
