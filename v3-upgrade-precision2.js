@@ -19,7 +19,9 @@ async function boot(){
   try{
     const r=await fetch('https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade-precision.js?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('precision layer HTTP '+r.status);
-    (0,eval)(await r.text());
+    let code=await r.text();
+    code=code.replaceAll('/api/horizon-model-v2','/api/horizon-model-v3').replaceAll("'Model P(up)'","'P(up) estimate'");
+    (0,eval)(code);
   }catch(e){console.warn('V3.1 precision bootstrap',e);return;}
   let tries=0;
   const t=setInterval(()=>{
