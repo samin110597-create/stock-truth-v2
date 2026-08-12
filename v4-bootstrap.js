@@ -6,8 +6,9 @@ function warning(){let x=document.getElementById('stV4LoadWarning');if(!failures
 (async()=>{
   await load('v4-identity-lock.js',true);
   const local=await load('v4-local-model.js',true);
-  const precision=local?await load('v3-upgrade-precision2.js',true):false;
-  if(precision){let n=0;await new Promise(resolve=>{const t=setInterval(()=>{n++;if(window.__ST_V31||n>240){clearInterval(t);resolve();}},25);});if(!window.__ST_V31)failures.push({name:'v3-upgrade-precision2.js',error:'precision layer did not initialize',required:true});if(!window.__ST_V4_LOCAL_INSTALLED)failures.push({name:'v4-local-model.js',error:window.__ST_V4_LOCAL_INSTALL_ERROR||'local model did not install',required:true});}
+  const hook=local?await load('v4-local-hook.js',true):false;
+  const precision=hook?await load('v3-upgrade-precision2.js',true):false;
+  if(precision){let n=0;await new Promise(resolve=>{const t=setInterval(()=>{n++;if(window.__ST_V31||n>240){clearInterval(t);resolve();}},25);});if(!window.__ST_V31)failures.push({name:'v3-upgrade-precision2.js',error:'precision layer did not initialize',required:true});if(!window.__ST_V4_LOCAL_HOOK)failures.push({name:'v4-local-hook.js',error:'local horizon hook did not initialize',required:true});}
   for(const name of['v3-split-price-layer.js','v3-hedge-layer.js','v3-ui-fix.js','v3-corporate-action-integrity.js','v3-structure-thesis.js','v3-priority-clean.js','v3-precision-overlay.js'])await load(name,false);
   await load('v4-trade-matrix-ui.js',true);
   try{if(typeof render==='function'&&typeof D!=='undefined'&&D)render();}catch(e){failures.push({name:'render',error:String(e?.message||e),required:false});}
