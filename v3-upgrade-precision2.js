@@ -17,9 +17,11 @@ function patchDetails(){
 }
 async function boot(){
   try{
-    const r=await fetch('https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade-precision.js?v='+Date.now(),{cache:'no-store'});
+    const base=new URL('./',document.currentScript?.src||location.href).href;
+    const r=await fetch(base+'v3-upgrade-precision.js?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('precision layer HTTP '+r.status);
     let code=await r.text();
+    code=code.replace('https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade.js?v=',base+'v3-upgrade.js?v=');
     if(!window.__ST_V4_PATCH_CODE)throw new Error('V4 local horizon hook is not loaded');
     const from='(0,eval)(code);applyPatch();';
     const to='if(window.__ST_V4_PATCH_CODE)code=window.__ST_V4_PATCH_CODE(code);(0,eval)(code);applyPatch();';

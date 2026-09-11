@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const ROOT='https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/';
+const ROOT=new URL('./',document.currentScript?.src||location.href).href;
 const failures=[];
 async function load(name,required=false){try{const r=await fetch(ROOT+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(name+' HTTP '+r.status);(0,eval)(await r.text());return true;}catch(e){failures.push({name,error:String(e?.message||e),required});console.warn('V4 layer failed',name,e);return false;}}
 function warning(){let x=document.getElementById('stV4LoadWarning');if(!failures.length){x?.remove();return;}if(!x){x=document.createElement('div');x.id='stV4LoadWarning';const h=document.querySelector('h1');(h||document.body).insertAdjacentElement(h?'afterend':'afterbegin',x);}const critical=failures.some(f=>f.required);x.innerHTML=`<b>${critical?'V4 PARTIAL/CRITICAL LOAD FAILURE':'V4 PARTIAL LOAD'}</b><br>${failures.map(f=>`${f.name}: ${f.error}`).join('<br>')}<br>No older predictive model is substituted.`;}
@@ -13,7 +13,7 @@ function warning(){let x=document.getElementById('stV4LoadWarning');if(!failures
   await load('v4-trade-matrix-ui.js',true);
   try{if(typeof render==='function'&&typeof D!=='undefined'&&D)render();}catch(e){failures.push({name:'render',error:String(e?.message||e),required:false});}
   warning();
-  window.__ST_V4_BOOT={version:'4.1-local',failures:[...failures],ready:!failures.some(f=>f.required)};
+  window.__ST_V4_BOOT={version:'4.2-local-bundle',failures:[...failures],ready:!failures.some(f=>f.required)};
   try{const b=document.getElementById('stV4Identity');if(b&&!window.__ST_V4_BOOT.ready){b.classList.add('bad');b.textContent='V4 PARTIAL LOAD · CHECK WARNING';}}catch{}
 })();
 })();

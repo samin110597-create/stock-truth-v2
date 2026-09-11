@@ -1,4 +1,4 @@
-name: Build full Stock Truth on GitHub Pages
+name: Build full Stock Truth institutional terminal on GitHub Pages
 
 on:
   push:
@@ -6,7 +6,14 @@ on:
     paths:
       - '.github/workflows/github-pages.yml'
       - 'v2-enhance.js'
-      - 'api/stock.js'
+      - 'v3-*.js'
+      - 'v4-*.js'
+      - 'api/stock*.js'
+      - 'api/technical-bars-v1.js'
+      - 'api/market-context-v1.js'
+      - 'api/quarterly-v1.js'
+      - 'api/sec.js'
+      - 'lib/sec-fundamentals.js'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +37,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build full original Stock Truth terminal for GitHub Pages
+      - name: Build full institutional Stock Truth terminal
         shell: bash
         run: |
           set -euo pipefail
@@ -38,8 +45,21 @@ jobs:
           git clone --quiet --branch original-stock-truth --single-branch https://github.com/samin110597-create/stock-truth.git /tmp/stock-truth-original
           mkdir -p docs
           cp /tmp/stock-truth-original/docs/index.html docs/index.html
-          cp v2-enhance.js docs/v2-enhance.js
           touch docs/.nojekyll
+
+          # Ship every runtime layer with the Pages artifact. The live page then
+          # loads executable code from the same deployment rather than from raw
+          # GitHub URLs that can drift independently of the published build.
+          for f in \
+            v2-enhance.js \
+            v4-bootstrap.js v4-identity-lock.js v4-local-model.js v4-local-hook.js v4-trade-matrix-ui.js \
+            v3-upgrade.js v3-upgrade-precision.js v3-upgrade-precision2.js \
+            v3-split-price-layer.js v3-hedge-layer.js v3-ui-fix.js \
+            v3-corporate-action-integrity.js v3-structure-thesis.js v3-priority-clean.js v3-precision-overlay.js
+          do
+            test -f "$f"
+            cp "$f" "docs/$f"
+          done
 
           python - <<'PY'
           from pathlib import Path
@@ -54,11 +74,10 @@ jobs:
                   raise SystemExit(f'Unable to patch original terminal section: {start}')
               return text[:a] + replacement + '\n\n' + text[b:]
 
-          h = h.replace('<title>Stock Truth — analyst terminal</title>', '<title>Stock Truth v2 — full analyst terminal</title>')
-          h = h.replace('const BUILD_TAG="v2.4 · 2026-08-06";', 'const BUILD_TAG="v2.5 · FULL ORIGINAL TERMINAL · secure any-ticker backend · 2026-08-08";')
+          h = h.replace('<title>Stock Truth — analyst terminal</title>', '<title>Stock Truth — Institutional Live Research Terminal</title>')
+          h = h.replace('const BUILD_TAG="v2.4 · 2026-08-06";', 'const BUILD_TAG="v4.2 · INSTITUTIONAL LIVE · completed-bar analytics · source-traced data";')
           h = h.replace('</style>', '''
           #keybox{display:none!important}
-          #tfbar button.tf:not([data-tf="1day"]){display:none!important}
           </style>''', 1)
 
           h = section(h, 'async function boot(){', 'async function run(symRaw){', r'''async function boot(){
@@ -69,9 +88,9 @@ jobs:
             }
             const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · engine self-test ✓";bt2.classList.remove("dim");bt2.classList.add("up");}
             INDEX={tickers:[]};MODE="pipeline";TF="1day";
-            $("#modeTag").textContent="GITHUB PAGES · FULL STOCK TRUTH · ANY TICKER";
+            $("#modeTag").textContent="INSTITUTIONAL LIVE RESEARCH · ANY TICKER";
             $("#modeTag").classList.remove("bad");
-            $("#modeNote").textContent="This is the full original Stock Truth terminal. Any valid ticker is fetched securely by the v2 data service. Missing fields say unavailable instead of being invented.";
+            $("#modeNote").textContent="Live/current fields come from the configured server data providers and carry source/fetch metadata. Technicals, targets and forecasts are computed research outputs, never represented as exchange facts or guaranteed future prices.";
             drawTickerBar();
             const first=recents()[0]||"AAPL";
             await run(first);
@@ -85,9 +104,9 @@ jobs:
           }''')
 
           h = section(h, 'async function load(sym){', 'function drawTickerBar(){', r'''async function load(sym){
-            $("#app").innerHTML=`<div class="panel"><h2>Loading ${esc(sym)} <span class="tag pulse">FULL STOCK TRUTH</span></h2><p class="note">Loading adjusted closed-bar history, technicals, fundamentals, earnings and analyst context where the sources return it.</p></div>`;
+            $("#app").innerHTML=`<div class="panel"><h2>Loading ${esc(sym)} <span class="tag pulse">LIVE SOURCES + COMPLETED-BAR MODEL</span></h2><p class="note">Loading market history, quote context, SEC/Yahoo fundamentals and current research inputs where the providers return them. Missing data remains unavailable.</p></div>`;
             try{
-              const r=await fetch(`https://stock-truth-v2.vercel.app/api/stock?symbol=${encodeURIComponent(sym)}`,{cache:"no-store"});
+              const r=await fetch(`https://stock-truth-v2.vercel.app/api/stock-v5?symbol=${encodeURIComponent(sym)}`,{cache:"no-store"});
               const j=await r.json();
               if(!r.ok)throw new Error(j.error||("HTTP "+r.status));
               D=j;D.symbol=D.symbol||sym;D.direct=false;
@@ -103,35 +122,39 @@ jobs:
             finally{const b2=$("#btnRefresh");if(b2)b2.textContent="Refresh";}
           }''')
 
-          h = section(h, 'async function setTF(tf){', 'function recents(){', r'''async function setTF(tf){
-            TF="1day";localStorage.setItem("tf","1day");
-            document.querySelectorAll("#tfbar button.tf").forEach(b=>b.classList[b.getAttribute("data-tf")==="1day"?"add":"remove"]("on"));
-            const n=$("#modeNote");if(n)n.textContent="Primary signals use completed daily bars. Weekly and monthly MA/EMA structure is shown in the v2 multi-timeframe truth layer without pretending correlated averages are independent evidence.";
-          }''')
-
           h = section(h, 'function spliceForming(raw,q){', 'function compute(){', r'''function spliceForming(raw,q){
             return{bars:raw.slice(),forming:false};
           }''')
 
-          h = h.replace('</body>', '<script src="./v2-enhance.js"></script></body>')
+          # The enhancement establishes the original terminal compatibility
+          # layer; V4 then installs the truthful multi-horizon/precision stack.
+          h = h.replace('</body>', '<script src="./v2-enhance.js"></script><script src="./v4-bootstrap.js"></script></body>')
           p.write_text(h, encoding='utf-8')
           PY
 
-          grep -q 'FULL STOCK TRUTH' docs/index.html
-          grep -q 'tabTech' docs/index.html
-          grep -q 'tabFund' docs/index.html
-          grep -q 'tabSrc' docs/index.html
-          grep -q 'BACKTEST' docs/index.html
-          grep -q 'stock-truth-v2.vercel.app/api/stock' docs/index.html
+          # Use the latest compatible data backend from the enhancement layer too.
+          sed -i 's#/api/stock-v4#/api/stock-v5#g' docs/v2-enhance.js
+
+          # Static build assertions: fail deployment instead of silently publishing
+          # a partial/old terminal.
+          grep -q 'INSTITUTIONAL LIVE RESEARCH' docs/index.html
+          grep -q 'stock-truth-v2.vercel.app/api/stock-v5' docs/index.html
+          grep -q 'v2-enhance.js' docs/index.html
+          grep -q 'v4-bootstrap.js' docs/index.html
+          grep -q 'stock-v5' docs/v2-enhance.js
+          test -s docs/v4-local-model.js
+          test -s docs/v3-upgrade-precision.js
+          test -s docs/v3-structure-thesis.js
+          test -s docs/v3-precision-overlay.js
 
       - name: Commit generated GitHub Pages files
         shell: bash
         run: |
           git config user.name 'stock-truth-pages-bot'
           git config user.email 'stock-truth-pages-bot@users.noreply.github.com'
-          git add docs/index.html docs/v2-enhance.js docs/.nojekyll
+          git add docs
           if ! git diff --cached --quiet; then
-            git commit -m 'site: publish full Stock Truth terminal on GitHub Pages'
+            git commit -m 'site: publish institutional V4 terminal bundle'
             git push origin HEAD:main
           fi
 
