@@ -8,11 +8,11 @@ function section(text,start,end,replacement){
 
 module.exports=async function handler(req,res){
   try{
-    const r=await fetch(SOURCE,{headers:{'User-Agent':'StockTruthV2/3.0'}});
+    const r=await fetch(SOURCE,{headers:{'User-Agent':'StockTruthV2/4.2'}});
     if(!r.ok)throw new Error(`original terminal returned HTTP ${r.status}`);
     let h=await r.text();
-    h=h.replace('<title>Stock Truth — analyst terminal</title>','<title>Stock Truth v2 — analyst terminal</title>');
-    h=h.replace('const BUILD_TAG="v2.4 · 2026-08-06";','const BUILD_TAG="v2.4 ORIGINAL TERMINAL · secure any-ticker v2 backend · 2026-08-08";');
+    h=h.replace('<title>Stock Truth — analyst terminal</title>','<title>Stock Truth — Institutional Live Research Terminal</title>');
+    h=h.replace('const BUILD_TAG="v2.4 · 2026-08-06";','const BUILD_TAG="v4.2 · INSTITUTIONAL LIVE · completed-bar analytics · source-traced data";');
     h=h.replace('</style>','\n#keybox{display:none!important} #tfbar button.tf:not([data-tf="1day"]){display:none!important}\n</style>');
 
     h=section(h,'async function boot(){','async function run(symRaw){',`async function boot(){
@@ -23,9 +23,9 @@ module.exports=async function handler(req,res){
   }
   const bt2=$("#buildTag");if(bt2){bt2.textContent="build "+BUILD_TAG+" · engine self-test ✓";bt2.classList.remove("dim");bt2.classList.add("up");}
   INDEX={tickers:[]};MODE="pipeline";TF="1day";
-  $("#modeTag").textContent="V2 SECURE ANY-TICKER MODE — NO BROWSER API KEYS";
+  $("#modeTag").textContent="INSTITUTIONAL LIVE RESEARCH · ANY TICKER";
   $("#modeTag").classList.remove("bad");
-  $("#modeNote").textContent="The original Stock Truth terminal is restored. Any valid ticker is fetched by the secure Vercel backend; missing data is shown as unavailable, never invented.";
+  $("#modeNote").textContent="Current provider fields are source-traced. Technicals, entries, stops, targets and forecasts are derived research outputs from completed bars; unavailable data stays unavailable and unverified edge stays unverified.";
   drawTickerBar();
   const first=recents()[0]||"AAPL";
   await run(first);
@@ -39,9 +39,9 @@ module.exports=async function handler(req,res){
 }`);
 
     h=section(h,'async function load(sym){','function drawTickerBar(){',`async function load(sym){
-  $("#app").innerHTML=\`<div class="panel"><h2>Loading \${esc(sym)} <span class="tag pulse">SECURE ANY-TICKER DATA</span></h2><p class="note">Pulling adjusted closed-bar history plus all fundamentals/earnings/analyst context the secure sources actually return.</p></div>\`;
+  $("#app").innerHTML=\`<div class="panel"><h2>Loading \${esc(sym)} <span class="tag pulse">LIVE SOURCES + COMPLETED-BAR MODEL</span></h2><p class="note">Loading market history, quote context, SEC/Yahoo fundamentals and current research inputs where the providers return them. Missing data remains unavailable.</p></div>\`;
   try{
-    const r=await fetch(\`/api/stock?symbol=\${encodeURIComponent(sym)}\`,{cache:"no-store"});
+    const r=await fetch(\`/api/stock-v5?symbol=\${encodeURIComponent(sym)}\`,{cache:"no-store"});
     const j=await r.json();
     if(!r.ok)throw new Error(j.error||("HTTP "+r.status));
     D=j;D.symbol=D.symbol||sym;D.direct=false;
@@ -65,12 +65,12 @@ module.exports=async function handler(req,res){
     h=section(h,'async function setTF(tf){','function recents(){',`async function setTF(tf){
   TF="1day";localStorage.setItem("tf","1day");
   document.querySelectorAll("#tfbar button.tf").forEach(b=>b.classList[b.getAttribute("data-tf")==="1day"?"add":"remove"]("on"));
-  const n=$("#modeNote");if(n)n.textContent="The restored terminal uses completed daily bars for all primary signals. Weekly/monthly MA/EMA structure is added by the v2 precision layer below the original analysis.";
+  const n=$("#modeNote");if(n)n.textContent="Primary signal calculations stay on completed daily bars. The institutional layers add completed weekly/monthly structure and separately sourced intraday context rather than mixing a live partial candle into the validated model.";
 }`);
 
-    h=h.replace('</body>','<script src="/v2-enhance.js"></script></body>');
-    res.statusCode=200;res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','s-maxage=300, stale-while-revalidate=900');res.end(h);
+    h=h.replace('</body>','<script src="/v2-enhance.js"></script><script src="/v4-bootstrap.js"></script></body>');
+    res.statusCode=200;res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','s-maxage=60, stale-while-revalidate=180');res.end(h);
   }catch(e){
-    res.statusCode=500;res.setHeader('Content-Type','text/plain; charset=utf-8');res.end('Stock Truth v2 terminal failed to load: '+String(e?.message||e));
+    res.statusCode=500;res.setHeader('Content-Type','text/plain; charset=utf-8');res.end('Stock Truth institutional terminal failed to load: '+String(e?.message||e));
   }
 };
