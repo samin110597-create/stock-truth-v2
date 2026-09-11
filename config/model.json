@@ -1,0 +1,12 @@
+{
+  "version": "5.0.0-causal-swing",
+  "name": "Stock Truth consolidated V3/V4 successor",
+  "production": ["src/bars.mjs", "src/technicals.mjs", "src/structure.mjs", "src/reversal.mjs", "src/setups.mjs", "src/validation.mjs", "src/analysis.mjs"],
+  "completedBarsOnly": true,
+  "pivotConfirmationBars": 3,
+  "swingHorizonSessions": 21,
+  "positionHorizonSessions": 63,
+  "entryExpirySessions": 5,
+  "costBasisPointsPerSide": 10,
+  "probabilityPolicy": "No calibrated probability is currently published. Scores and historical frequencies are distinct."
+}

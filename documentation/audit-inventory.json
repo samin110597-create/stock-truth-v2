@@ -1,0 +1,2638 @@
+{
+  "stock-truth-v2": [
+    {
+      "file": ".github/workflows/deploy-pages.yml",
+      "lines": 42,
+      "sha256": "71e6c3ba52b608990c1c3bacfa65f90366ff3572d19fe0616ea5be7c444d4a43",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".github/workflows/github-pages.yml",
+      "lines": 173,
+      "sha256": "038e5447c4f087be1e7713e3c4d10f5c31bc94df79462294fd173f67166c3603",
+      "urls": [
+        "https://github.com/samin110597-create/stock-truth.git",
+        "https://stock-truth-v2.vercel.app/api/stock-v5"
+      ],
+      "exports": [
+        "boot",
+        "run",
+        "boot",
+        "run",
+        "load",
+        "run",
+        "load",
+        "drawTickerBar",
+        "load",
+        "refreshCandles",
+        "startAutoRefresh",
+        "refreshCandles",
+        "spliceForming",
+        "compute",
+        "spliceForming"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 2,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": ".github/workflows/optimize-v2.yml",
+      "lines": 39,
+      "sha256": "c6aa27ecb1e4b02955316c0d0a4e39f457d758af04c3cd161a6d29dd7978d244",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "MODEL_ROADMAP.md",
+      "lines": 129,
+      "sha256": "444b895a6f6be579474e62b05e3f1e91f0408d677f3e2e008a8a22490a7c489a",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "README.md",
+      "lines": 26,
+      "sha256": "421162745db05e6e1cb4600454062404b1a0525ee4ef2adf9074b250a4dd00f2",
+      "urls": [],
+      "exports": [
+        "instead"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "api/app.js",
+      "lines": 76,
+      "sha256": "29c2d62765cafb71b5555744a94315fead70942dcddf5f9a8cc1ccc171b4b20e",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth/original-stock-truth/docs/index.html"
+      ],
+      "exports": [
+        "section",
+        "handler",
+        "boot",
+        "run",
+        "boot",
+        "run",
+        "load",
+        "run",
+        "load",
+        "drawTickerBar",
+        "load",
+        "spliceForming",
+        "compute",
+        "spliceForming",
+        "refreshCandles",
+        "startAutoRefresh",
+        "refreshCandles",
+        "setTF",
+        "recents",
+        "setTF"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 2
+      }
+    },
+    {
+      "file": "api/horizon-model-v1.js",
+      "lines": 20,
+      "sha256": "e6e4398cafab59fb55e93457a1e3255bc39cd164891b5380f75f4355d739dd3f",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "chart",
+        "bars",
+        "ema",
+        "sma",
+        "rsi",
+        "atr",
+        "adx",
+        "median",
+        "quant",
+        "featureSet",
+        "fit",
+        "metrics",
+        "thin",
+        "model",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 13,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/horizon-model-v2.js",
+      "lines": 28,
+      "sha256": "0231f136682594cd649cc51d833980129bfa71ace25b7ea36ade379bf5a1bb9d",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "chart",
+        "completedBars",
+        "sma",
+        "ema",
+        "rma",
+        "rsi",
+        "atr",
+        "adx",
+        "median",
+        "quant",
+        "featureSet",
+        "fit",
+        "metrics",
+        "thin",
+        "model",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 16,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/horizon-model-v3.js",
+      "lines": 36,
+      "sha256": "a39af0ddb196bab0fd6e4d1cfe54019246c1471da09e83b3e1b55988a5d094e8",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "chart",
+        "completedBars",
+        "sma",
+        "ema",
+        "rma",
+        "rsi",
+        "atr",
+        "adx",
+        "median",
+        "quant",
+        "stdev",
+        "dateKey",
+        "alignBenchmark",
+        "featureSet",
+        "fitLogit",
+        "distStd",
+        "analogProb",
+        "ensembleFit",
+        "fitCal",
+        "aucScore",
+        "metrics",
+        "thin",
+        "binomTail",
+        "wilson",
+        "selectIdx",
+        "foldPlan",
+        "model",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 16,
+        "probability": 3,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/horizon-model-v4.js",
+      "lines": 23,
+      "sha256": "8952364abf209cc156cf50753654a4a2d7abc7830c6bc727ff04a1ce9c11d5e6",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "quant",
+        "wilson",
+        "chartBars",
+        "ema",
+        "rma",
+        "atr",
+        "rsi",
+        "featureSet",
+        "distance",
+        "analogAt",
+        "oosAnalog",
+        "barrier",
+        "scoreBarrier",
+        "thinIdx",
+        "tradePlan",
+        "researchHorizon",
+        "swingPick",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 9,
+        "probability": 5,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/market-context-v1.js",
+      "lines": 28,
+      "sha256": "e9f2fc77191865849a64153fd17ac73851a1eb3d485e6c2355898711ff1f3797",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "sectorEtf",
+        "chart",
+        "splitEvents",
+        "nyDate",
+        "makeBars",
+        "ema",
+        "rma",
+        "adx",
+        "regime",
+        "align",
+        "returns",
+        "stats",
+        "rel",
+        "volPct",
+        "drawdown",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 23,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/quarterly-v1.js",
+      "lines": 15,
+      "sha256": "c0f4dd7b6c7b792a5f06d2f060906eafe1d1ec3d5f7a0f607957eb84c48a7c77",
+      "urls": [
+        "https://fc.yahoo.com/",
+        "https://finance.yahoo.com/",
+        "https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries/"
+      ],
+      "exports": [
+        "send",
+        "clean",
+        "num",
+        "cookieFrom",
+        "session",
+        "getJson",
+        "quarterLabel",
+        "add",
+        "extract",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 4
+      }
+    },
+    {
+      "file": "api/sec.js",
+      "lines": 44,
+      "sha256": "f44f608a0c6a8c7944bb3ebd48610209cace6d69f270eafb3e2c96eb9e4c1775",
+      "urls": [
+        "https://data.sec.gov/api/xbrl/companyfacts/CIK",
+        "https://github.com/samin110597-create/stock-truth-v2",
+        "https://www.sec.gov/files/company_tickers.json"
+      ],
+      "exports": [
+        "send",
+        "get",
+        "clean",
+        "normTicker",
+        "rowsFor",
+        "annualFirstReported",
+        "annualLatestRestated",
+        "summarize",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 4,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/stock-intraday.js",
+      "lines": 61,
+      "sha256": "c289173dd97ae84223ed15f3493ff302f49ada468d67ab26062fe0c598b585c2",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "cleanSymbol",
+        "cleanTf",
+        "getJson",
+        "makeBars",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 9,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/stock-v4.js",
+      "lines": 47,
+      "sha256": "77d7f1544ca55442976c04ee89ed94bf8a82c0f99c4f24cf29f49adae921efcb",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/stock"
+      ],
+      "exports": [
+        "send",
+        "clean",
+        "usable",
+        "mergeFundamentals",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/stock-v5.js",
+      "lines": 82,
+      "sha256": "3c691cb49dc58b014fe00a2aa0998a08d81b4aea410023999ecf032107892085",
+      "urls": [
+        "https://fc.yahoo.com/",
+        "https://finance.yahoo.com/",
+        "https://query1.finance.yahoo.com/v8/finance/chart/",
+        "https://query2.finance.yahoo.com/v1/finance/search"
+      ],
+      "exports": [
+        "send",
+        "clean",
+        "n",
+        "now",
+        "cookieFrom",
+        "getJson",
+        "yahooSession",
+        "yahooJson",
+        "yahooChart",
+        "yahooContext",
+        "yahooNews",
+        "nyDate",
+        "makeBars",
+        "extractCik",
+        "currentYahoo",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 11,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 3
+      }
+    },
+    {
+      "file": "api/stock.js",
+      "lines": 151,
+      "sha256": "3c027644a5c71995c42f5e6f54c1201f7aee53940e0444bd7cc4dc03735a09b2",
+      "urls": [
+        "https://query1.finance.yahoo.com/v10/finance/quoteSummary/",
+        "https://query1.finance.yahoo.com/v8/finance/chart/",
+        "https://query2.finance.yahoo.com/v1/finance/search",
+        "https://query2.finance.yahoo.com/v10/finance/quoteSummary/"
+      ],
+      "exports": [
+        "send",
+        "cleanSymbol",
+        "nowISO",
+        "nyDate",
+        "fetchJson",
+        "raw",
+        "num",
+        "div",
+        "cagr",
+        "yahooChart",
+        "yahooContext",
+        "yahooNews",
+        "makeBars",
+        "yearlyStatements",
+        "richContext",
+        "snapshot",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 11,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "api/technical-bars-v1.js",
+      "lines": 80,
+      "sha256": "905ed0b0de6cef47e2b8d0224ed5018e6690c8db8f8d1d08066b0b3c53599940",
+      "urls": [
+        "https://query1.finance.yahoo.com/v8/finance/chart/"
+      ],
+      "exports": [
+        "send",
+        "chart",
+        "nyDate",
+        "splitEvents",
+        "providerBars",
+        "nearestBefore",
+        "nearestAfter",
+        "normalizeIfNeeded",
+        "buildBars",
+        "handler"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 17,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "app.js",
+      "lines": 311,
+      "sha256": "a17633ac911562dfb9636b17b38c5c33f4ad55cf77d3c95c2b6ce19ddf207bc9",
+      "urls": [],
+      "exports": [
+        "getStock",
+        "sma",
+        "ema",
+        "rsi",
+        "atr",
+        "rollingStd",
+        "returns",
+        "weekKey",
+        "resample",
+        "timeframePack",
+        "mapCompletedToDaily",
+        "alignSeries",
+        "buildFeatureEngine",
+        "fitLogistic",
+        "confusion",
+        "chooseThreshold",
+        "wilsonLower",
+        "walkForward",
+        "currentContext",
+        "tfRows",
+        "renderMatrix",
+        "renderFundamentals",
+        "renderBacktest",
+        "drawChart",
+        "analyze"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 17,
+        "probability": 1,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/.nojekyll",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/index.html",
+      "lines": 2361,
+      "sha256": "aea884220e9dabc64595661da6a98f883eced707a1b10ef8257d55a0a977b04d",
+      "urls": [
+        "https://api.polygon.io/v2/aggs/ticker/",
+        "https://api.twelvedata.com/time_series",
+        "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
+        "https://financialmodelingprep.com/api/v3/",
+        "https://financialmodelingprep.com/stable/",
+        "https://finnhub.io/api/v1/company-news",
+        "https://finnhub.io/api/v1/quote",
+        "https://finnhub.io/api/v1/stock/insider-transactions",
+        "https://finnhub.io/api/v1/stock/metric",
+        "https://finnhub.io/api/v1/stock/peers",
+        "https://finnhub.io/api/v1/stock/profile2",
+        "https://finnhub.io/api/v1/stock/recommendation",
+        "https://fonts.googleapis.com/css2",
+        "https://stock-truth-v2.vercel.app/api/stock-v5",
+        "https://www.alphavantage.co/query"
+      ],
+      "exports": [
+        "takes",
+        "sma",
+        "ema",
+        "rsi",
+        "macd",
+        "stoch",
+        "williamsR",
+        "cci",
+        "mfi",
+        "roc",
+        "trueRanges",
+        "atr",
+        "adx",
+        "bollinger",
+        "obv",
+        "realizedVol",
+        "maxDrawdown",
+        "normCdf",
+        "levelProb",
+        "volCone",
+        "regression",
+        "swings",
+        "levels",
+        "lastBOS",
+        "fvgs",
+        "orderBlocks",
+        "fib",
+        "pivots",
+        "aggregate",
+        "trendOf",
+        "twoStageDCF",
+        "reverseDCF",
+        "grahamNumber",
+        "grahamGrowth",
+        "lynchValue",
+        "epv",
+        "ddm",
+        "median",
+        "candlePatterns",
+        "pivotPoints",
+        "chartPatterns",
+        "volumeEvents",
+        "wyckoffProxy",
+        "triggeredSignals",
+        "techScoreSeries",
+        "fwd",
+        "backtest",
+        "loadKeys",
+        "bindKeys",
+        "cacheGet",
+        "cacheSet",
+        "jget",
+        "dCandles",
+        "dPoly",
+        "dCross",
+        "dQuote",
+        "dProfile",
+        "dAnalysts",
+        "fmpGet",
+        "dFundFMP",
+        "dFundFinnhub",
+        "dFundAV",
+        "dFundamentals",
+        "dEarnings",
+        "dNews",
+        "dInsiders",
+        "dPeers",
+        "runDirect",
+        "refreshCandles",
+        "startAutoRefresh",
+        "setTF",
+        "recents",
+        "pushRecent",
+        "selfTest",
+        "boot",
+        "run",
+        "load",
+        "drawTickerBar",
+        "parseBarTime",
+        "todayKey",
+        "spliceForming",
+        "compute",
+        "valuate",
+        "ledger",
+        "score",
+        "scenarios",
+        "setTab",
+        "recompute",
+        "render",
+        "header",
+        "freshLine",
+        "freshPanel",
+        "strip",
+        "tabVerdict",
+        "ev",
+        "narrative",
+        "btPanel",
+        "catalystPanel",
+        "tabRank",
+        "rankSort",
+        "rankAll",
+        "posCalc",
+        "honesty",
+        "tabTech",
+        "tabFund",
+        "sectorPanel",
+        "histValPanel",
+        "earnPanel",
+        "macroPanel",
+        "tabSrc",
+        "drawPrice",
+        "drawScen",
+        "drawFund",
+        "briefLine",
+        "buildBrief",
+        "exportBrief",
+        "toggleLive"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 2,
+        "probability": 2,
+        "vercel": 1,
+        "fetch\\(": 4
+      }
+    },
+    {
+      "file": "docs/v2-enhance.js",
+      "lines": 43,
+      "sha256": "868ceb578747516c7aeee396396ef55d12fd2c2470fb214f4c0e130207ffafa2",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/stock-v5"
+      ],
+      "exports": [
+        "smaArr",
+        "emaArr",
+        "rsi",
+        "atr",
+        "returns",
+        "rollingStd",
+        "weekKey",
+        "resample",
+        "timeframePack",
+        "mapCompletedToDaily",
+        "alignSeries",
+        "buildFeatureEngine",
+        "fitLogistic",
+        "confusion",
+        "chooseThreshold",
+        "wilsonLower",
+        "thinCalls",
+        "walkForward",
+        "histVolRange",
+        "analogStats",
+        "midpoint",
+        "aroon",
+        "cmf",
+        "vwap",
+        "donchian",
+        "macdNow",
+        "supertrend",
+        "advanced",
+        "tfRows",
+        "forecastCard",
+        "imbalance",
+        "render"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 22,
+        "probability": 1,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v3-corporate-action-integrity.js",
+      "lines": 13,
+      "sha256": "b9283fc9985144737f491fd01a0b9390bf72c412b39d8cb09ce0d59fc2871b29",
+      "urls": [],
+      "exports": [
+        "ca",
+        "splitName",
+        "splitPanel",
+        "fundamentalPanel",
+        "markVersion",
+        "addSplitMarkers"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 10,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v3-hedge-layer.js",
+      "lines": 26,
+      "sha256": "9d1b6ff094c413dbe05a87dddaea5e555dd24e1908249666f8a169844e579c5f",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/market-context-v1"
+      ],
+      "exports": [
+        "H",
+        "rows",
+        "applyRows",
+        "state",
+        "technicalDesk",
+        "avwap",
+        "profile",
+        "workspaceData",
+        "workspace",
+        "draw",
+        "loadContext",
+        "context",
+        "brief",
+        "hfTab",
+        "activate"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 8,
+        "probability": 1,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v3-precision-overlay.js",
+      "lines": 35,
+      "sha256": "c1377ddeaf0891adbe24bd46abdc7d3f6765f50a640217ddc6fd200c0356075c",
+      "urls": [],
+      "exports": [
+        "rma",
+        "rsi",
+        "pivots",
+        "alt",
+        "classical",
+        "latestSweep",
+        "wyEvent",
+        "elliottCandidate",
+        "lensSnapshot",
+        "lensDir",
+        "score",
+        "ensureUI",
+        "readLevel",
+        "drawOverlay",
+        "drawRSI",
+        "style",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 7,
+        "probability": 1,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v3-priority-clean.js",
+      "lines": 17,
+      "sha256": "74294558dc4c4f0c5aeecc7e8fd81ce40e43582ea3715a504ce09037e2b1f5b5",
+      "urls": [],
+      "exports": [
+        "numText",
+        "dirInfo",
+        "lensSnapshot",
+        "bestSetup",
+        "ensureStyle",
+        "levelCard",
+        "compactPanel",
+        "drawClean",
+        "hideRedundant",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 5,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v3-split-price-layer.js",
+      "lines": 22,
+      "sha256": "2a9c4d9bd3c41149c3f8ce53c25345f036cf61cd76c50323f22a85d2c1474916",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/technical-bars-v1"
+      ],
+      "exports": [
+        "apply",
+        "kick"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v3-structure-thesis.js",
+      "lines": 33,
+      "sha256": "7e26150fc308d6b7477df5eab8ed86d959355360caac38b26883eee97e8bd213",
+      "urls": [],
+      "exports": [
+        "rsiW",
+        "pivots",
+        "alternate",
+        "recentRange",
+        "fvg",
+        "liquidityPools",
+        "sweep",
+        "orderBlock",
+        "patternEngine",
+        "wyckoff",
+        "elliott",
+        "rsiDivergence",
+        "ict",
+        "model",
+        "biasClass",
+        "stat",
+        "thesisPanel",
+        "workspace",
+        "draw",
+        "directionBanner",
+        "style",
+        "cleanup",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 5,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v3-ui-fix.js",
+      "lines": 80,
+      "sha256": "a3271fd3e736ea5a200e1384bb5974f93fe012ce0b221c08b52d88f3bf9f061d",
+      "urls": [],
+      "exports": [
+        "injectStyle",
+        "enforceClosedBars",
+        "panelTitle",
+        "cleanup",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v3-upgrade-precision.js",
+      "lines": 32,
+      "sha256": "3bca0652679838ff65375b018ac78f306acd145209715b92e38791cd02b9f8e9",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade.js"
+      ],
+      "exports": [
+        "ema",
+        "sma",
+        "rma",
+        "rsi",
+        "atr",
+        "adx",
+        "macd",
+        "mfi",
+        "obv",
+        "linSlope",
+        "median",
+        "dayKey",
+        "rvol",
+        "aggregateComplete",
+        "trendState",
+        "pivots",
+        "structure",
+        "levels",
+        "precisionRows",
+        "computePrecision",
+        "precisionPanel",
+        "markVersion",
+        "applyPatch"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 15,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v3-upgrade-precision2.js",
+      "lines": 46,
+      "sha256": "3570de28b981d37eebbaee7abcfbfe2d3405e811042b7913b88e7a27706c4b02",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade.js"
+      ],
+      "exports": [
+        "patchDetails",
+        "boot"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v3-upgrade.js",
+      "lines": 33,
+      "sha256": "dd72fe98b2e58758544905f965a5e17fce241d1e622f53b4c894d81b9c430a63",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/horizon-model-v1"
+      ],
+      "exports": [
+        "cls3",
+        "loadLedger",
+        "saveLedger",
+        "histFor",
+        "barsFor",
+        "resolveLedger",
+        "recordLedger",
+        "loadHM",
+        "horizonCards",
+        "avwap",
+        "breakoutIndex",
+        "workspaceData",
+        "workspacePanel",
+        "drawWorkspace",
+        "modelLab"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 7,
+        "probability": 0,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v4-bootstrap.js",
+      "lines": 19,
+      "sha256": "5ceb1ffe5c676bb26866ba392566bb07093a5099d3e79d88eff471c2287f6502",
+      "urls": [],
+      "exports": [
+        "load",
+        "warning"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v4-identity-lock.js",
+      "lines": 11,
+      "sha256": "a66abe533dc88dabe1b97c6f60b530cd4f70e07aa7ec1a7d43bc8e9b3cb8da27",
+      "urls": [],
+      "exports": [
+        "style",
+        "txt",
+        "identity",
+        "schedule"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v4-local-hook.js",
+      "lines": 10,
+      "sha256": "169bb48466511c1d96c7e6992421238b79cbc3fb14225bf66c0b8d99558b80c2",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "docs/v4-local-model.js",
+      "lines": 24,
+      "sha256": "699e76be884b1ad5d69f72a21d48716ce278e0ec48088b59c8c60731609deb18",
+      "urls": [],
+      "exports": [
+        "ema",
+        "rma",
+        "atr",
+        "rsi",
+        "prepBars",
+        "featureSet",
+        "distance",
+        "analogAt",
+        "oosAnalog",
+        "barrier",
+        "scoreBarrier",
+        "thinIdx",
+        "tradePlan",
+        "researchHorizon",
+        "swingPick",
+        "build"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 11,
+        "probability": 5,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v4-trade-matrix-ui.js",
+      "lines": 14,
+      "sha256": "e75310ce15b588359dbb8f5b361e34fdedf34ca8d5d3b2a29a7b0cf4592ea8de",
+      "urls": [],
+      "exports": [
+        "patchLedger",
+        "style",
+        "card",
+        "setHTML",
+        "renderMatrix",
+        "schedule"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 4,
+        "probability": 1,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "index.html",
+      "lines": 38,
+      "sha256": "1fff4588919e9362d3009d9336a5774051c724bae796d2d362ced3ac772ddfa9",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "lib/sec-fundamentals.js",
+      "lines": 104,
+      "sha256": "600ce38e3474b5ef81b03c05dd3174fe4cadb30d312eeeac5bc9fdd211ad8678",
+      "urls": [
+        "https://data.sec.gov/api/xbrl/companyfacts/CIK",
+        "https://www.sec.gov/files/company_tickers.json"
+      ],
+      "exports": [
+        "get",
+        "tickerMap",
+        "normTicker",
+        "n",
+        "ratio",
+        "days",
+        "pickMetric",
+        "annual",
+        "latest",
+        "byYear",
+        "cagr",
+        "valueAt",
+        "metricHistory",
+        "secFundamentals",
+        "withMarketPrice"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 10,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "sec-panel.js",
+      "lines": 22,
+      "sha256": "ad52205ea29d7aa7a164557652b46d5e451a8337530b3dc99841fe0036937250",
+      "urls": [],
+      "exports": [
+        "addAuditCaveat",
+        "load",
+        "detect"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 3,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v2-enhance.js",
+      "lines": 43,
+      "sha256": "74918091c02e7bb33a96498b35f6e8ac74bde990cd6d92d3b499ee47ccbeea2a",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/stock-v4"
+      ],
+      "exports": [
+        "smaArr",
+        "emaArr",
+        "rsi",
+        "atr",
+        "returns",
+        "rollingStd",
+        "weekKey",
+        "resample",
+        "timeframePack",
+        "mapCompletedToDaily",
+        "alignSeries",
+        "buildFeatureEngine",
+        "fitLogistic",
+        "confusion",
+        "chooseThreshold",
+        "wilsonLower",
+        "thinCalls",
+        "walkForward",
+        "histVolRange",
+        "analogStats",
+        "midpoint",
+        "aroon",
+        "cmf",
+        "vwap",
+        "donchian",
+        "macdNow",
+        "supertrend",
+        "advanced",
+        "tfRows",
+        "forecastCard",
+        "imbalance",
+        "render"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 22,
+        "probability": 1,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v2-institutional.js",
+      "lines": 167,
+      "sha256": "6a26630e95ea802fd0cdb11cb6190ea4c915f79ff127f8bacab423065a0238e0",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/quarterly-v1"
+      ],
+      "exports": [
+        "institutionalScore",
+        "cat",
+        "mtf",
+        "liquidity",
+        "volRegime",
+        "btState",
+        "decisionStack",
+        "verdictPanel",
+        "techCommand",
+        "loadQuarterly",
+        "qPanel",
+        "destroy",
+        "chart",
+        "drawQ",
+        "softenForecastLanguage"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 7,
+        "probability": 1,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-351-polish.js",
+      "lines": 8,
+      "sha256": "0441879cbf9fd757554df38737cee7c447c554a4a64cfc7f9ffdd2b3f3472875",
+      "urls": [],
+      "exports": [
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-36-identity.js",
+      "lines": 38,
+      "sha256": "222349c0a952acd3d42dfd341da8e4987f25fd48699d32ec671651a7680b34d4",
+      "urls": [],
+      "exports": [
+        "style",
+        "identity",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-corporate-action-integrity.js",
+      "lines": 13,
+      "sha256": "b9283fc9985144737f491fd01a0b9390bf72c412b39d8cb09ce0d59fc2871b29",
+      "urls": [],
+      "exports": [
+        "ca",
+        "splitName",
+        "splitPanel",
+        "fundamentalPanel",
+        "markVersion",
+        "addSplitMarkers"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 10,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-exact-validation.js",
+      "lines": 48,
+      "sha256": "021a264f44bcd53c434a247df41b293b4d3b1bf105e191cf3fffbb6e0ad93068",
+      "urls": [],
+      "exports": [
+        "tf",
+        "horizon",
+        "priorRange",
+        "avgVol",
+        "atrRank",
+        "regime",
+        "detectAt",
+        "pivotsKnownAt",
+        "structuralLevels",
+        "outcome",
+        "collect",
+        "nonOverlap",
+        "baseline",
+        "wilson",
+        "erf",
+        "pValue",
+        "holdout",
+        "summarize",
+        "currentSelection",
+        "updateDisplayedLevels",
+        "run",
+        "style",
+        "cls",
+        "card",
+        "row",
+        "renderBox",
+        "mark",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 5,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-hedge-layer.js",
+      "lines": 26,
+      "sha256": "9d1b6ff094c413dbe05a87dddaea5e555dd24e1908249666f8a169844e579c5f",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/market-context-v1"
+      ],
+      "exports": [
+        "H",
+        "rows",
+        "applyRows",
+        "state",
+        "technicalDesk",
+        "avwap",
+        "profile",
+        "workspaceData",
+        "workspace",
+        "draw",
+        "loadContext",
+        "context",
+        "brief",
+        "hfTab",
+        "activate"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 8,
+        "probability": 1,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-precision-overlay.js",
+      "lines": 35,
+      "sha256": "c1377ddeaf0891adbe24bd46abdc7d3f6765f50a640217ddc6fd200c0356075c",
+      "urls": [],
+      "exports": [
+        "rma",
+        "rsi",
+        "pivots",
+        "alt",
+        "classical",
+        "latestSweep",
+        "wyEvent",
+        "elliottCandidate",
+        "lensSnapshot",
+        "lensDir",
+        "score",
+        "ensureUI",
+        "readLevel",
+        "drawOverlay",
+        "drawRSI",
+        "style",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 7,
+        "probability": 1,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-priority-clean.js",
+      "lines": 17,
+      "sha256": "74294558dc4c4f0c5aeecc7e8fd81ce40e43582ea3715a504ce09037e2b1f5b5",
+      "urls": [],
+      "exports": [
+        "numText",
+        "dirInfo",
+        "lensSnapshot",
+        "bestSetup",
+        "ensureStyle",
+        "levelCard",
+        "compactPanel",
+        "drawClean",
+        "hideRedundant",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 5,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-setup-validation.js",
+      "lines": 57,
+      "sha256": "07d433cd4ecb155af2139df11c46f6beac4f4ca0ca078cf70c784a44e74a455e",
+      "urls": [],
+      "exports": [
+        "tf",
+        "horizon",
+        "ema",
+        "atr",
+        "avgVol",
+        "arrays",
+        "atrRank",
+        "regime",
+        "priorRange",
+        "detectAt",
+        "outcome",
+        "collect",
+        "nonOverlap",
+        "baseline",
+        "wilson",
+        "summarize",
+        "primaryDir",
+        "run",
+        "statusClass",
+        "ensureStyle",
+        "metric",
+        "renderPanel",
+        "mark",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 8,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-split-price-layer.js",
+      "lines": 22,
+      "sha256": "2a9c4d9bd3c41149c3f8ce53c25345f036cf61cd76c50323f22a85d2c1474916",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/technical-bars-v1"
+      ],
+      "exports": [
+        "apply",
+        "kick"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-structure-thesis.js",
+      "lines": 33,
+      "sha256": "7e26150fc308d6b7477df5eab8ed86d959355360caac38b26883eee97e8bd213",
+      "urls": [],
+      "exports": [
+        "rsiW",
+        "pivots",
+        "alternate",
+        "recentRange",
+        "fvg",
+        "liquidityPools",
+        "sweep",
+        "orderBlock",
+        "patternEngine",
+        "wyckoff",
+        "elliott",
+        "rsiDivergence",
+        "ict",
+        "model",
+        "biasClass",
+        "stat",
+        "thesisPanel",
+        "workspace",
+        "draw",
+        "directionBanner",
+        "style",
+        "cleanup",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 5,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-transparency.js",
+      "lines": 16,
+      "sha256": "35fa4b272a9d62e4aa7296888cf315baf29c66a2214181d92c51011964df90c6",
+      "urls": [],
+      "exports": [
+        "style",
+        "frameworkRows",
+        "metricsRows",
+        "clsStatus",
+        "addFrameworkEvidence",
+        "addValidation",
+        "revealExisting",
+        "mark",
+        "apply",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 2,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-ui-fix.js",
+      "lines": 80,
+      "sha256": "a3271fd3e736ea5a200e1384bb5974f93fe012ce0b221c08b52d88f3bf9f061d",
+      "urls": [],
+      "exports": [
+        "injectStyle",
+        "enforceClosedBars",
+        "panelTitle",
+        "cleanup",
+        "install"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v3-upgrade-precision.js",
+      "lines": 32,
+      "sha256": "3bca0652679838ff65375b018ac78f306acd145209715b92e38791cd02b9f8e9",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade.js"
+      ],
+      "exports": [
+        "ema",
+        "sma",
+        "rma",
+        "rsi",
+        "atr",
+        "adx",
+        "macd",
+        "mfi",
+        "obv",
+        "linSlope",
+        "median",
+        "dayKey",
+        "rvol",
+        "aggregateComplete",
+        "trendState",
+        "pivots",
+        "structure",
+        "levels",
+        "precisionRows",
+        "computePrecision",
+        "precisionPanel",
+        "markVersion",
+        "applyPatch"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 15,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-upgrade-precision2.js",
+      "lines": 46,
+      "sha256": "3570de28b981d37eebbaee7abcfbfe2d3405e811042b7913b88e7a27706c4b02",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade.js"
+      ],
+      "exports": [
+        "patchDetails",
+        "boot"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-upgrade-precision3.js",
+      "lines": 4,
+      "sha256": "550729475e41c8480dd3f945d2644610e350311829340af00cbf1ee1e6486ae7",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-corporate-action-integrity.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-hedge-layer.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-precision-overlay.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-priority-clean.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-split-price-layer.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-structure-thesis.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-ui-fix.js",
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/v3-upgrade-precision2.js"
+      ],
+      "exports": [
+        "load"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v3-upgrade.js",
+      "lines": 33,
+      "sha256": "dd72fe98b2e58758544905f965a5e17fce241d1e622f53b4c894d81b9c430a63",
+      "urls": [
+        "https://stock-truth-v2.vercel.app/api/horizon-model-v1"
+      ],
+      "exports": [
+        "cls3",
+        "loadLedger",
+        "saveLedger",
+        "histFor",
+        "barsFor",
+        "resolveLedger",
+        "recordLedger",
+        "loadHM",
+        "horizonCards",
+        "avwap",
+        "breakoutIndex",
+        "workspaceData",
+        "workspacePanel",
+        "drawWorkspace",
+        "modelLab"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 7,
+        "probability": 0,
+        "vercel": 1,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v4-bootstrap.js",
+      "lines": 19,
+      "sha256": "5ceb1ffe5c676bb26866ba392566bb07093a5099d3e79d88eff471c2287f6502",
+      "urls": [],
+      "exports": [
+        "load",
+        "warning"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v4-identity-lock.js",
+      "lines": 11,
+      "sha256": "a66abe533dc88dabe1b97c6f60b530cd4f70e07aa7ec1a7d43bc8e9b3cb8da27",
+      "urls": [],
+      "exports": [
+        "style",
+        "txt",
+        "identity",
+        "schedule"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 1,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v4-local-hook.js",
+      "lines": 10,
+      "sha256": "169bb48466511c1d96c7e6992421238b79cbc3fb14225bf66c0b8d99558b80c2",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "v4-local-model.js",
+      "lines": 24,
+      "sha256": "699e76be884b1ad5d69f72a21d48716ce278e0ec48088b59c8c60731609deb18",
+      "urls": [],
+      "exports": [
+        "ema",
+        "rma",
+        "atr",
+        "rsi",
+        "prepBars",
+        "featureSet",
+        "distance",
+        "analogAt",
+        "oosAnalog",
+        "barrier",
+        "scoreBarrier",
+        "thinIdx",
+        "tradePlan",
+        "researchHorizon",
+        "swingPick",
+        "build"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 11,
+        "probability": 5,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "v4-trade-matrix-ui.js",
+      "lines": 14,
+      "sha256": "e75310ce15b588359dbb8f5b361e34fdedf34ca8d5d3b2a29a7b0cf4592ea8de",
+      "urls": [],
+      "exports": [
+        "patchLedger",
+        "style",
+        "card",
+        "setHTML",
+        "renderMatrix",
+        "schedule"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 4,
+        "probability": 1,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "vercel.json",
+      "lines": 16,
+      "sha256": "944eff5e96f5dc373a465635406aaab49caa83307f59d815f79342fe734834a6",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    }
+  ],
+  "stock-truth-legacy": [
+    {
+      "file": ".github/workflows/fetch.yml",
+      "lines": 54,
+      "sha256": "9b54f954ec3c698298f4e726fae473843b56f54d095e9566d7a8ceb7415d7afb",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".github/workflows/ml-prediction.yml",
+      "lines": 126,
+      "sha256": "c001de1495c96f75d988a901a92488086db3acc9c52524cd830e20072ab9f758",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".github/workflows/split-sites-once.yml",
+      "lines": 46,
+      "sha256": "869b3cee1e1f0e04ab43c39abc64678b092aae5cbd8f7dedae9e7369cbceea4f",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".github/workflows/split-sites.yml",
+      "lines": 60,
+      "sha256": "4e5116ea1f768e796581638f85fcdd9371c2ae1dcf076cd3b6b8075daf47df63",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".github/workflows/validate.yml",
+      "lines": 54,
+      "sha256": "0d0e2bf3995ede51b0dce3fb297545bdb6a23768352a98ade3aff7b9d268a19f",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": ".gitignore",
+      "lines": 3,
+      "sha256": "fa5b2d4433b835933b22140e01833a4972a0ee8532d76951286e3dd071994af0",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "DEPLOYMENT.md",
+      "lines": 21,
+      "sha256": "5667a2143d5ea0907f83d2e2d2848bdbd9c1569464d243fcc603e6bca02c19f1",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "MODEL.md",
+      "lines": 66,
+      "sha256": "c4b41e1c351b577e2f9e696a5154dc318ec9eeb6a845a3910b3ed077d67f2b7b",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 2,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "README.md",
+      "lines": 374,
+      "sha256": "a76600fd7045a9036e0cbb848ebfa54be6bcfc989cffbb1ca6935ae3735e1497",
+      "urls": [
+        "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
+        "https://finnhub.io/api/v1/quote",
+        "https://fonts.googleapis.com/css2"
+      ],
+      "exports": [
+        "boot",
+        "pick",
+        "render",
+        "renderValuation",
+        "drawChart",
+        "toggleLive"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 3
+      }
+    },
+    {
+      "file": "docs/.nojekyll",
+      "lines": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/AMZN.json",
+      "lines": 7744,
+      "sha256": "5db70361746727fca3ea5e9e17b6c32713f97f87beb2867f59c0dfdeca419170",
+      "urls": [
+        "https://finnhub.io/api/news",
+        "https://www.amazon.com/"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/GOOG.json",
+      "lines": 7709,
+      "sha256": "321558bd0535f962058f05ff57764fdf333dcc1ae04163be0b422e5a59eb1594",
+      "urls": [
+        "https://abc.xyz/",
+        "https://finnhub.io/api/news"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/META.json",
+      "lines": 7753,
+      "sha256": "3dfabd121b720ea23755d51d7a8be40e70c774baaf38ba4d6477e2d94eac2d7b",
+      "urls": [
+        "https://finnhub.io/api/news",
+        "https://www.meta.com/"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/NVDA.json",
+      "lines": 7753,
+      "sha256": "415517200ca6eed222226280ec532f83a4da08f7caf328e97d194fefab630ad0",
+      "urls": [
+        "https://finnhub.io/api/news",
+        "https://www.nvidia.com/"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/index.json",
+      "lines": 67,
+      "sha256": "42ac66855a27be7080e71b370406e4957a451e08346282244ba6cc1c30b248e1",
+      "urls": [
+        "https://www.alphavantage"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/AMZN.json",
+      "lines": 275,
+      "sha256": "a2d1321f921388f94042893500d05c8aaa6b58163c2f47d34ea0b0abe3539ba3",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 8,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/GOOG.json",
+      "lines": 275,
+      "sha256": "c2e6d4544c8003c83e82ab3351f46d9f01afe3903af240116dfc5762a71f9af2",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 8,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/META.json",
+      "lines": 275,
+      "sha256": "53f21100b764cd0d67b4dbf9d7e6bf21d44bfc70d8804d6c13ca00a8df15401f",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 8,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/NVDA.json",
+      "lines": 275,
+      "sha256": "566b605ab56c2d2a8be7a8e9939e78eabecc22c8fde2cd8fac5314dfd880b4b7",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 8,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/forward-ledger.json",
+      "lines": 6774,
+      "sha256": "4b12ebeb6066610bdd466115c63bcced8ff31ed31d42208031a4a4a447e35dc8",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/forward-summary.json",
+      "lines": 20,
+      "sha256": "85e882b472fbd8fd6b89c4a4a76edaeff9c0085f7e409e59a80c4dec4d876ec7",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/data/ml/index.json",
+      "lines": 28,
+      "sha256": "f23fcb8545f0859e0835b20d1ac963a574ebbcbc92e387d08dcdb752ce2229ea",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/index.html",
+      "lines": 2501,
+      "sha256": "570cd1a7346d3f02ab06c9b0896300135d92ba944903169332a42d74f4192faf",
+      "urls": [
+        "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
+        "https://fonts.googleapis.com/css2"
+      ],
+      "exports": [
+        "takes",
+        "sma",
+        "ema",
+        "rsi",
+        "macd",
+        "stoch",
+        "williamsR",
+        "cci",
+        "mfi",
+        "roc",
+        "trueRanges",
+        "atr",
+        "adx",
+        "bollinger",
+        "obv",
+        "realizedVol",
+        "maxDrawdown",
+        "normCdf",
+        "levelProb",
+        "volCone",
+        "regression",
+        "swings",
+        "levels",
+        "lastBOS",
+        "fvgs",
+        "orderBlocks",
+        "fib",
+        "pivots",
+        "aggregate",
+        "trendOf",
+        "twoStageDCF",
+        "reverseDCF",
+        "grahamNumber",
+        "grahamGrowth",
+        "lynchValue",
+        "epv",
+        "ddm",
+        "median",
+        "candlePatterns",
+        "pivotPoints",
+        "chartPatterns",
+        "volumeEvents",
+        "wyckoffProxy",
+        "triggeredSignals",
+        "techScoreSeries",
+        "fwd",
+        "backtest",
+        "validateSnapshot",
+        "fetchJSON",
+        "refreshCandles",
+        "setTF",
+        "recents",
+        "pushRecent",
+        "selfTest",
+        "boot",
+        "run",
+        "load",
+        "drawTickerBar",
+        "parseBarTime",
+        "todayKey",
+        "spliceForming",
+        "compute",
+        "valuate",
+        "ledger",
+        "score",
+        "scenarios",
+        "setTab",
+        "recompute",
+        "render",
+        "header",
+        "freshLine",
+        "freshPanel",
+        "strip",
+        "pillarModel",
+        "coverageModel",
+        "peerRelative",
+        "setupSnapshot",
+        "evidenceShortlist",
+        "positioningOverview",
+        "mlHorizon",
+        "mlPercent",
+        "mlTone",
+        "mlStatusText",
+        "mlMetric",
+        "mlPrice",
+        "mlOverview",
+        "mlHorizonPanel",
+        "tabML",
+        "tabVerdict",
+        "tabEvidence",
+        "ev",
+        "narrative",
+        "btPanel",
+        "catalystPanel",
+        "tabRank",
+        "rankSort",
+        "rankAll",
+        "posCalc",
+        "honesty",
+        "tabTech",
+        "tabFund",
+        "sectorPanel",
+        "histValPanel",
+        "earnPanel",
+        "macroPanel",
+        "tabSrc",
+        "drawPrice",
+        "drawScen",
+        "drawFund",
+        "briefLine",
+        "buildBrief",
+        "exportBrief",
+        "toggleLive"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 6,
+        "probability": 7,
+        "vercel": 0,
+        "fetch\\(": 2
+      }
+    },
+    {
+      "file": "docs/v2/index.html",
+      "lines": 158,
+      "sha256": "cccf612c2d9e730d3e3f8ea06420228048106e860276e4c678efccd31b26e155",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth-v2/main/",
+        "https://samin110597-create.github.io/stock-truth/data/",
+        "https://stock-truth-v2.vercel.app/api/stock",
+        "https://stock-truth-v2.vercel.app/api/stock-intraday",
+        "https://stock-truth-v2.vercel.app/api/stock-v4",
+        "https://stock-truth-v2.vercel.app/api/stock-v5"
+      ],
+      "exports": [
+        "setTF",
+        "setTF",
+        "runSecure",
+        "load",
+        "load",
+        "publishV2"
+      ],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 6,
+        "fetch\\(": 6
+      }
+    },
+    {
+      "file": "docs/v3/index.html",
+      "lines": 14,
+      "sha256": "c3d01f6156c66eae0a1fc30c8c01d96beac8aa7f446f68ddb846a12927e444a8",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v36/index.html",
+      "lines": 11,
+      "sha256": "190642987462f820303e19b5eac1a30949df3a7dda282867feaa76b3f033134c",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v36g/index.html",
+      "lines": 11,
+      "sha256": "190642987462f820303e19b5eac1a30949df3a7dda282867feaa76b3f033134c",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "docs/v4/index.html",
+      "lines": 32,
+      "sha256": "f2cf9d6d21de9d5b9bd8a51ac097d6f8662915275480b6cb1f45cf6af65b9e8c",
+      "urls": [
+        "https://raw.githubusercontent.com/samin110597-create/stock-truth/main/docs/v2/index.html"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 1
+      }
+    },
+    {
+      "file": "requirements-ml.txt",
+      "lines": 4,
+      "sha256": "8dde9ed0cf861d7a83fa5204afce1709faefff0f2f61fd3284bd4a8841ff1cc3",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "requirements.txt",
+      "lines": 2,
+      "sha256": "8e34b4e16f23bf7ba2f344dabb5bffc57699a877559d59bc6588dfa832829980",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "scripts/fetch_data.py",
+      "lines": 813,
+      "sha256": "be66f848ab9cea2cc6740d23c601f29fd5ce6f089ea852a6846fe7766a60dff4",
+      "urls": [
+        "https://api.polygon.io/v1/marketstatus/now",
+        "https://api.polygon.io/v2/aggs/ticker/",
+        "https://api.twelvedata.com/time_series",
+        "https://financialmodelingprep.com/api/v3/",
+        "https://financialmodelingprep.com/stable/",
+        "https://finnhub.io/api/v1/company-news",
+        "https://finnhub.io/api/v1/quote",
+        "https://finnhub.io/api/v1/stock/insider-transactions",
+        "https://finnhub.io/api/v1/stock/metric",
+        "https://finnhub.io/api/v1/stock/peers",
+        "https://finnhub.io/api/v1/stock/profile2",
+        "https://finnhub.io/api/v1/stock/recommendation",
+        "https://www.alphavantage.co/query"
+      ],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "scripts/ml_forward_ledger.py",
+      "lines": 86,
+      "sha256": "79acae86425070fc5d9399adbeb31382ad8d55b44cc665dd13955db4a4818d37",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "scripts/ml_predict.py",
+      "lines": 618,
+      "sha256": "1eaf7cf330718fd7425822d0e95dfce6a6e8dddcd4b2939f80b8c82c46dbf279",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 6,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "scripts/ml_predict_runner.py",
+      "lines": 36,
+      "sha256": "c541b0c95a72b0e1334ce4a050c7bac64545702045111cc964224f476d88d15e",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "scripts/ml_predict_v2.py",
+      "lines": 246,
+      "sha256": "c67543ba3a423947dc50c1a463fbbaad061b0e1ba877df3441c7bea2162d7333",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 3,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    },
+    {
+      "file": "watchlist.json",
+      "lines": 3,
+      "sha256": "4903d2f69bcba54c885680d09f7e19fddf182ca309470a4255b8fd6c108ba3cd",
+      "urls": [],
+      "exports": [],
+      "risk_patterns": {
+        "eval\\(": 0,
+        "Math.random": 0,
+        "Number\\(": 0,
+        "probability": 0,
+        "vercel": 0,
+        "fetch\\(": 0
+      }
+    }
+  ]
+}
