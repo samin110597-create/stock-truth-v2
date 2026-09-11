@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+.snapshot-store/
+__pycache__/
+*.pyc
+test-results/
+.venv/

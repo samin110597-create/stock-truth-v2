@@ -1,0 +1,103 @@
+name: Stock Truth — validate, collect, and deploy GitHub Pages
+on:
+  push:
+    branches: [main, work/github-only-truth-terminal]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 13-21 * * 1-5'
+    - cron: '17 22 * * 1-5'
+permissions:
+  contents: read
+concurrency:
+  group: stock-truth-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: pip install -r requirements.txt
+      - name: Unit integrity gates
+        run: npm test
+      - name: Restore optional data supplements
+        run: node scripts/snapshot-store.mjs restore
+      - name: Generate the exchange calendar
+        run: python scripts/generate_calendar.py
+      - name: Fetch completed bars and filed facts
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: python -u scripts/collect.py
+      - name: Analyze available snapshots and append immutable setup ledger
+        if: hashFiles('data/raw/*.json') != ''
+        run: npm run analyze
+      - name: Save collected snapshots without changing production source
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: node scripts/snapshot-store.mjs publish
+      - run: npm run build
+      - run: npm run check
+      - name: Save validation report and reviewable static build
+        uses: actions/upload-artifact@v4
+        with:
+          name: terminal-review-${{ github.sha }}
+          path: |
+            dist
+            data/validation-report.json
+      - name: Upload GitHub Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure existing GitHub Pages site
+        uses: actions/configure-pages@v5
+      - name: Deploy the exact tested artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify deployed production commit
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os,time,urllib.request
+          url=os.environ['SITE_URL'].rstrip('/')+'/build.json'
+          for attempt in range(6):
+              try:
+                  result=json.load(urllib.request.urlopen(url+'?commit='+os.environ['EXPECTED_SHA'],timeout=15))
+                  if result['commit']==os.environ['EXPECTED_SHA']:
+                      print('LIVE artifact verified:',result['model_version'],result['commit'])
+                      break
+              except Exception:
+                  pass
+              time.sleep(10)
+          else:
+              raise SystemExit('Production build metadata did not match deployed commit')
+          PY

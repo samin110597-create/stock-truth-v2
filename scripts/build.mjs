@@ -1,0 +1,15 @@
+import fs from 'node:fs';import path from 'node:path';import {execFileSync} from 'node:child_process';
+import {MODEL_VERSION} from '../src/setups.mjs';
+const root=process.cwd(),out=path.join(root,'dist');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
+for(const dir of ['web','src','config'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
+if(!fs.existsSync('data/calendar.json'))throw new Error('Generate exchange calendar before building');
+fs.mkdirSync(path.join(out,'data'),{recursive:true});fs.copyFileSync('data/calendar.json',path.join(out,'data/calendar.json'));
+for(const name of ['raw','analysis','index.json','ledger.json','collection.json'])if(fs.existsSync('data/'+name))fs.cpSync('data/'+name,path.join(out,'data',name),{recursive:true});
+fs.mkdirSync(path.join(out,'vendor'));fs.copyFileSync('node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.mjs',path.join(out,'vendor/lightweight-charts.mjs'));
+fs.mkdirSync(path.join(out,'licenses'));for(const name of ['LICENSE','NOTICE'])if(fs.existsSync('node_modules/lightweight-charts/'+name))fs.copyFileSync('node_modules/lightweight-charts/'+name,path.join(out,'licenses',name));
+fs.copyFileSync('documentation/licenses/NOTICE',path.join(out,'licenses/NOTICE'));
+fs.writeFileSync(path.join(out,'.nojekyll'),'');
+fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./web/"><title>Stock Truth</title></head><body><a href="./web/">Open Stock Truth research terminal</a></body></html>');
+const commit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:MODEL_VERSION,commit,built_at:new Date().toISOString(),production_modules:JSON.parse(fs.readFileSync('config/model.json')).production}));
+console.log('Built GitHub Pages static artifact with model '+MODEL_VERSION);
