@@ -30,3 +30,9 @@ SEC integration remains filing-first. Market context keeps SPY/QQQ comparisons. 
 The browser public history provider is unofficial, may limit history depth, and does not declare its adjustment methodology. That uncertainty is visible. New tickers can therefore have short history, missing intraday/fundamentals and insufficient validation. A ticker is not added to the scan universe merely by searching for it.
 
 This release does not include order-book data, institutional transaction proof, dark pools, options flows, sentiment/breadth feeds, a calibrated direction model, prospective statistically verified edge, or simulated replacements for any of those fields.
+
+## September 13 follow-up: concept and precision repair
+
+The September 11 replacement lost the original tabbed decision workflow, evidence panels, technical studies and risk sizing. The live page also allowed a short setup without a prominent SHORT label, repeatedly constructed plans from old reversal evidence, and rejected sound older history because its latest source row was invalid.
+
+Release 5.1 restores the original terminal concept on the consolidated local modules. It adds completed-bar entry confirmation, surviving-sweep checks, stable plan replay, post-signal session checks, source/calendar recency, bounded explicit daily-source reconciliation, strict missing-component handling, native RSI/MACD chart panes and an accessible tabbed workflow. The legacy V3/V4 executable patch chain remains archived. Twenty-two targeted integrity tests cover the repaired behavior. No claim of higher predictive accuracy or a verified trading edge is made; replay statistics remain explicitly retrospective and sample-limited.

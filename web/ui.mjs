@@ -1,0 +1,12 @@
+import {finite} from '../src/numeric.mjs';
+export const $=s=>document.querySelector(s);
+export const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const fmt=(x,n=2)=>finite(x)?x.toLocaleString('en-US',{minimumFractionDigits:n,maximumFractionDigits:n}):'—';
+export const money=x=>finite(x)?'$'+fmt(x):'—';
+export const pct=x=>finite(x)?fmt(x*100,1)+'%':'—';
+export const compact=x=>finite(x)?new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(x):'—';
+export const when=x=>!x?'Unavailable':new Date(typeof x==='number'?x*1000:x).toLocaleString('en-US',{timeZone:'America/New_York',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+export const cls=s=>/INVALID|STOP|SELL|BEAR|SHORT/.test(s)?'down':/BULL|LONG|BUY/.test(s)?'up':/WAIT|WATCH|UNVERIFIED|STALE|REVIEW|TESTED/.test(s)?'amber':'';
+export const pill=(s,c='')=>`<span class="pill ${c||cls(s||'')}">${esc(s||'UNAVAILABLE')}</span>`;
+export const metric=(label,value,sub='')=>`<div class="metric"><div class="label">${esc(label)}</div><div class="value">${value}</div><div class="sub">${esc(sub)}</div></div>`;
+export const line=(k,v)=>`<div class="tech-line"><span>${esc(k)}</span><span>${v}</span></div>`;

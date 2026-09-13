@@ -2,7 +2,7 @@
 
 **Type any supported stock/ETF ticker and analyze it immediately.** Ticker entry is not gated by the scan watchlist or a GitHub Actions run. The browser requests public price/history data and computes the active model locally in a Web Worker. Components that cannot be sourced remain unavailable.
 
-Production: GitHub Pages, `main`, generated `dist/` artifact. Entry: `/stock-truth-v2/web/`. The dashboard displays the exact source commit and model version. Current model: **5.0.0-causal-swing**, the consolidated successor to the audited V3/V4 layers.
+Production: GitHub Pages, `main`, generated `dist/` artifact. Entry: `/stock-truth-v2/web/`. The dashboard displays the exact source commit and model version. Current model: **5.1.0-restored-terminal**, the consolidated successor to the audited V3/V4 layers.
 
 ## One production path
 
@@ -14,7 +14,7 @@ All executable modules and Lightweight Charts are shipped in the same Pages arti
 
 - A browser-compatible Stock Analysis public quote/history endpoint is attempted for every entered symbol. It requires no embedded key or proxy. Ticker identity is verified; current public coverage is U.S. stocks/ETFs, and an unknown/unsupported symbol returns an honest component error. This is an **unofficial endpoint, not a supported API contract**. It may stop working, restrict depth, or reject requests. We do not bypass authentication, paywalls, rate limits or browser protections.
 - Daily OHLCV drives local technical, structure, reversal, setup and thesis calculations. Weekly/monthly candles are resampled only when all scheduled sessions are complete. A closing-price-only chart cannot be converted into fictitious OHLCV.
-- GitHub Actions optionally adds longer Yahoo daily history, 5-minute/hourly bars, SEC companyfacts, market benchmarks, scans and an append-only setup ledger. A deeper daily source replaces the whole series only after overlapping completed closes pass a cross-check. Different providers' candles are never spliced together.
+- GitHub Actions optionally adds longer Yahoo daily history, 5-minute/hourly bars, SEC companyfacts, market benchmarks, scans and an append-only setup ledger. A deeper daily source can be reconciled with up to five newer sourced daily candles only after at least ten overlapping dates agree in open, high, low and close within 0.5%. Original prices and per-row sources are retained. A rejected trailing row may be resolved only by an actual replacement; interior omissions, price-basis differences and unresolved split anomalies reject reconciliation. No quote becomes a historical candle.
 - Browser-only intraday and SEC fundamentals are unavailable when a source cannot support the request. That does not block available daily analysis. Public endpoints do not guarantee exchange real-time data: the header reports timestamps and unspecified provider latency.
 - `config/watchlist.json` controls scans and quick access only. It does **not** restrict the search input.
 
@@ -24,10 +24,10 @@ All executable modules and Lightweight Charts are shipped in the same Pages arti
 - Null remains null. Warmup values, missing volume, missing fundamentals and unsupported timeframes are never replaced by invented prices or zero-valued facts.
 - Confirmed pivots have a three-bar delay. ATR impulse, time separation, participation and post-pivot displacement determine swing degree. BOS/CHoCH only uses levels known at that time.
 - Reversals have watch/developing/confirmed states. Absorption, distribution, capitulation, sweeps, divergence and OHLCV VWAP are explicitly **proxies**, not proof of institutional orders.
-- Setup stops follow structural invalidation. Targets use actual known pivot levels or a measured structural range. The nearest obstacle is not skipped to exaggerate R:R. Strict and Adaptive thresholds are fixed; missing evidence reduces the score.
+- Every setup requires a completed rejection/reclaim or structural-break candle; proximity or oversold alone does not qualify. Setup stops follow structural invalidation. Targets use actual known pivot levels or a measured structural range. The nearest obstacle is not skipped to exaggerate R:R. Strict and Adaptive thresholds are fixed; missing evidence reduces the score.
 - A score of 80/100 is not an 80% probability. Historical target frequencies, Wilson intervals and sample counts are separately labeled. No calibrated directional probability or verified predictive edge is currently claimed.
 - Historical setup replay is causal, non-overlapping and uses a one-bar embargo. Stops win unresolved same-bar target/stop collisions; entry-bar targets are not credited; adverse gaps and fixed 10 bps per-side costs are included. This is **retrospective replay, not untouched out-of-sample evidence**.
-- Issued setup records never rewrite entry/stop/targets. Changed plans receive new IDs. Browser history is local to that browser; scheduled history is stored in the `data-snapshots` branch with append-only observations.
+- Issued setup records never rewrite entry/stop/targets. A plan is replayed from its original confirmation until it expires or resolves. An old sweep/break cannot keep reissuing a moving plan. New confirmations receive new IDs. Post-signal session stop/target tests suppress fresh entries; a quote is never evidence of a user fill. Browser history is local to that browser; scheduled history is stored in the `data-snapshots` branch with append-only observations.
 
 ## Develop and verify
 
@@ -48,9 +48,11 @@ The deterministic test fixtures are isolated from production and never presented
 
 ## GitHub deployment
 
-One workflow, `.github/workflows/terminal.yml`, validates branches/PRs. On `main`, it collects optional datasets, appends setup observations, saves data to `data-snapshots`, builds, checks and uploads the artifact, deploys Pages, then verifies the production commit.
+The original charcoal/amber terminal concept is restored: Verdict, Technicals, Fundamentals, Rank, Model lab and Sources; bullish/bearish evidence; conditional scenarios; Strict/Adaptive swing/position trade matrix; local risk sizing; candles, volume, EMA20/50/200, RSI/MACD panes and native candle markers. The technical BUY/SELL stance is separate from entry permission. Multi-horizon history is descriptive, never invented forecast odds.
 
-GitHub Pages must have **Settings → Pages → Build and deployment → Source: GitHub Actions** selected. The connected integration previously returned `Resource not accessible by integration` when attempting to enable it. No application code can override this account/repository setting.
+One workflow, `.github/workflows/terminal.yml`, validates branches/PRs. On `main`, it collects and reconciles optional datasets, appends setup observations, saves data to `data-snapshots`, builds, checks and uploads the artifact, deploys Pages, then verifies the production commit.
+
+GitHub Pages is enabled and deployments were observed succeeding on September 13, 2026. The production URL is https://samin110597-create.github.io/stock-truth-v2/web/. Data-provider or snapshot-publication failures do not block a tested application build. Source syntax, calculation tests, artifact checks and Pages deployment remain required gates.
 
 Scheduled collection: `:17` and `:47`, 13:00–21:59 UTC weekdays, plus 22:17 UTC. Scheduling is best effort and can be delayed. U.S. calendar checks exclude holidays and incomplete candles. SEC facts are cached for 24 hours. Direct quote/history retrieval occurs when a ticker is entered or refreshed.
 

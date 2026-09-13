@@ -9,7 +9,7 @@ fs.mkdirSync(path.join(out,'vendor'));fs.copyFileSync('node_modules/lightweight-
 fs.mkdirSync(path.join(out,'licenses'));for(const name of ['LICENSE','NOTICE'])if(fs.existsSync('node_modules/lightweight-charts/'+name))fs.copyFileSync('node_modules/lightweight-charts/'+name,path.join(out,'licenses',name));
 fs.copyFileSync('documentation/licenses/NOTICE',path.join(out,'licenses/NOTICE'));
 fs.writeFileSync(path.join(out,'.nojekyll'),'');
-fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./web/"><title>Stock Truth</title></head><body><a href="./web/">Open Stock Truth research terminal</a></body></html>');
+fs.writeFileSync(path.join(out,'index.html'),'<!doctype html><html lang="en"><head><meta charset="utf-8"><script>location.replace("./web/"+location.search+location.hash)</script><title>Stock Truth</title></head><body><a href="./web/">Open Stock Truth research terminal</a></body></html>');
 const commit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:MODEL_VERSION,commit,built_at:new Date().toISOString(),production_modules:JSON.parse(fs.readFileSync('config/model.json')).production}));
 console.log('Built GitHub Pages static artifact with model '+MODEL_VERSION);

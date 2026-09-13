@@ -1,31 +1,15 @@
-# Release acceptance record
+# Release 5.1 acceptance record
 
-## Passed locally
+## Local verification — September 13, 2026
 
-- Twelve targeted integrity tests: null handling, EMA warmup, flat/rising/falling RSI, invalid/forming/duplicate OHLCV rejection, zero volume/range, causal pivot extension, conservative stop/target collisions, entry-bar ordering, opening gaps, short-side barriers, incomplete provider candles, unrestricted ticker validation and Wilson intervals.
-- Fresh Yahoo datasets collected for NVDA, MU, VRT, CRWV, CIFR, SNDK, GOOG, META, AVGO, MRVL, SPY and additional benchmarks.
-- Complete analysis processed for 16 securities, with finite-number and stop/target orientation gates.
-- Static production checks ensure no Vercel endpoint or executable remote-code loader in the deployed source; pinned local chart bundle and visible model/build identity.
+- 22 integrity tests pass. New coverage includes multi-source OHLC agreement, legitimate trailing-row repair, rejection of interior gaps/split anomalies, calendar freshness, weekly causality, completed reaction candles, fixed-band entry gaps, post-signal stop/target checks, risk sizing, historical plan immutability and an uncached symbol whose quote source fails.
+- Optional daily datasets for 31 real securities were reconciled using independently sourced recent candles. The model does not need these files to analyze another ticker.
+- Real-history analysis is run for all 31 securities with finite-number and stop/target orientation gates. Sample sizes and conservative retrospective results are retained; this does not establish a verified edge.
+- Production syntax, forbidden host/runtime-loader checks and the built Pages artifact are checked.
+- The restored UI includes Verdict, Technicals, Fundamentals, Rank, Model lab and Sources; evidence panels, fixed trade matrix, local sizing and native indicator panes.
 
-## Unseen-ticker acceptance — pending browser verification
+## Deployment and browser acceptance
 
-TXRH is not in the scan watchlist or collected snapshot universe. Public HTTP probes retrieved TXRH quote identity and 128 daily-history rows, including the current forming row. Those are real returned values, not a stored demonstration dataset. A successful HTTP probe is not yet proof of browser behavior.
+The previously deployed 5.0 page was inspected live, and GitHub Pages is enabled. Release 5.1 still requires PR checks, merge, deployment, matching build identity, visual inspection and an unseen-ticker test before it can be called live and verified. These observations will be appended after the real page is tested.
 
-Required final browser sequence:
-1. Open the actual Pages terminal and analyze NVDA.
-2. Enter TXRH without changing repository/config/data.
-3. Verify TXRH source identity, chart candles, newly computed indicators, structure and ticker-specific thesis.
-4. Verify unavailable fundamentals/intraday degrade independently.
-5. Switch rapidly between different tickers and verify late responses cannot replace the active ticker.
-6. Enter an invalid/nonexistent ticker and ensure prior quote/chart/setup are cleared.
-
-The cloud browser could not open the local loopback preview (`ERR_BLOCKED_BY_CLIENT`). It must inspect the real GitHub Pages URL after deployment. No browser safety restriction was disabled to work around this.
-
-## Pending gates
-
-- GitHub PR checks and integration.
-- GitHub Pages enablement if still disabled.
-- Deployed build SHA and real-page inspection.
-- Unseen-ticker browser acceptance above.
-
-Until those pass, status is **CODED / LOCALLY VALIDATED**, not **LIVE + VERIFIED**.
+The browser cannot access the local loopback preview. No browser access restriction is bypassed; visual acceptance uses the actual Pages deployment.

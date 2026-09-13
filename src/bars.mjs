@@ -34,7 +34,7 @@ export function dataHealth(raw,now=Date.now()/1000) {
   const block=raw?.timeframes?.['1D'], bars=block?.bars||[], q=raw?.quote||{};
   const age=Date.parse(block?.fetched_at||'')/1000;
   const stale=!finite(age)||(now-age>7200&&raw?.market?.state==='OPEN')||now-age>7*86400||block?.status==='STALE';
-  const invalid=block?.quality==='REVIEW'||!bars.length;
+  const invalid=block?.quality==='REVIEW'||block?.status==='REVIEW'||canonical(block,now).errors.length>0||!bars.length;
   return {status:!bars.length?'UNAVAILABLE':stale?'STALE':invalid?'REVIEW':'PASS',
     tradeable:!stale&&!invalid,quote_age_seconds:finite(q.as_of)?Math.max(0,now-q.as_of):null,
     fetched_age_seconds:finite(age)?Math.max(0,now-age):null,

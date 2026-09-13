@@ -7,7 +7,9 @@ export function resolveSetup(b,setup,signalIndex=setup.signal_i){
     const x=b[i];
     // An opening gap through invalidation cancels an unfilled order.
     if(dir*(x.open-s.stop)<=0)return {state:'CANCELLED GAP THROUGH STOP',entered:false,end_i:i};
+    if(!s.model_version?.startsWith('5.0.')&&(dir>0?x.open<s.entry_zone.low:x.open>s.entry_zone.high))return {state:'CANCELLED GAP BEYOND ENTRY ZONE',entered:false,end_i:i};
     if(dir>0?x.low<=limit:x.high>=limit){entryIndex=i;fill=dir>0?Math.min(limit,x.open):Math.max(limit,x.open);break;}
+    if(!s.model_version?.startsWith('5.0.')&&s.targets[0]&&(dir>0?x.high>=s.targets[0].price:x.low<=s.targets[0].price))return {state:'TARGET TESTED BEFORE ENTRY',entered:false,end_i:i};
   }
   if(entryIndex===null)return {state:b.length-1<signalIndex+s.entry_expiry_sessions?'PENDING ENTRY':'ENTRY EXPIRED',entered:false,end_i:expiry};
   const risk=dir*(fill-s.stop);if(risk<=0)return {state:'CANCELLED INVALID FILL',entered:false,end_i:entryIndex};
@@ -29,6 +31,20 @@ export function resolveSetup(b,setup,signalIndex=setup.signal_i){
   const complete=end>=entryIndex+s.time_exit_sessions||outcomes.every(Boolean)||stopIndex!==null;
   outcomes.forEach((v,k)=>{if(!v)outcomes[k]={result:complete?'TIME EXIT':'OPEN',r:complete?dir*(b[end].close-fill)/risk-cost:null,i:end};});
   return {state:complete?'RESOLVED':'OPEN',entered:true,entry_i:entryIndex,fill,stop_i:stopIndex,ambiguous,targets:outcomes,end_i:Math.max(...outcomes.map(o=>o.i)),complete};
+}
+export function activeSetup(b,tech,st,rev,mode,horizon,symbol){
+  const start=59,seen=new Set();
+  let active=null,last=null;
+  for(let i=start;i<b.length;i++){
+    if(active){const result=resolveSetup(b.slice(0,i+1),active,active.signal_i);last={setup:active,result};
+      if(result.state==='PENDING ENTRY'||result.state==='OPEN')continue;active=null;
+    }
+    const candidate=setupAt(b,tech,st,rev,i,mode,horizon,{symbol}).setup;
+    if(candidate&&!seen.has(candidate.anchor_id)){seen.add(candidate.anchor_id);active=candidate;}
+  }
+  if(!active)return {setup:null,last_setup:last,status:b.length<60?'INSUFFICIENT DATA':'NO EDGE',reason:'No active confirmed setup. Require a new reclaim, breakout, retest, or reversal; old stops and targets are not recycled.'};
+  const resolution=resolveSetup(b,active,active.signal_i);
+  return {setup:active,resolution,last_setup:last,status:'UNVERIFIED LEAN',reason:null};
 }
 export function historicalValidation(b,tech,st,rev,mode='Adaptive',horizon='SWING',symbol=null){
   // Fixed-rule forward replay. No parameters are selected on this history.

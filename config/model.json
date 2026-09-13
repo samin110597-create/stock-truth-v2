@@ -1,7 +1,17 @@
 {
-  "version": "5.0.0-causal-swing",
-  "name": "Stock Truth consolidated V3/V4 successor",
-  "production": ["src/bars.mjs", "src/technicals.mjs", "src/structure.mjs", "src/reversal.mjs", "src/setups.mjs", "src/validation.mjs", "src/analysis.mjs"],
+  "version": "5.1.0-restored-terminal",
+  "name": "Stock Truth V3/V4 concept \u2014 confirmed setup engine",
+  "production": [
+    "src/bars.mjs",
+    "src/technicals.mjs",
+    "src/structure.mjs",
+    "src/reversal.mjs",
+    "src/setups.mjs",
+    "src/validation.mjs",
+    "src/analysis.mjs",
+    "src/risk.mjs",
+    "src/research.mjs"
+  ],
   "completedBarsOnly": true,
   "pivotConfirmationBars": 3,
   "swingHorizonSessions": 21,

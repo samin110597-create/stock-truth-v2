@@ -14,8 +14,9 @@ export function structure(b,tech,right=3){
         const rv=tech.series.rvol[j],separation=previous?j-previous.i:right*2;
         const displacement=Math.abs(b[i].close-price)/a;
         const quality=Math.round(clamp(impulse/3,0,1)*40+clamp(separation/12,0,1)*20+(finite(rv)?clamp((rv-.5)/1.5,0,1)*15:0)+clamp(displacement/1.5,0,1)*25);
+        const threshold=quality>=65?65:quality>=40?40:0,comparable=pivots.filter(p=>p.type===type&&p.quality>=threshold).at(-1);
         pivots.push({i:j,confirmed_at:i,ts:b[j].ts,confirmed_ts:b[i].end_ts,price,type,
-          label:!previous?type:type==='H'?(price>previous.price?'HH':price<previous.price?'LH':'EQH'):(price>previous.price?'HL':price<previous.price?'LL':'EQL'),
+          label:!comparable?type:type==='H'?(price>comparable.price?'HH':price<comparable.price?'LH':'EQH'):(price>comparable.price?'HL':price<comparable.price?'LL':'EQL'),
           quality,degree:quality>=65?'MAJOR':quality>=40?'MEANINGFUL':'MINOR',impulse_atr:impulse});
       }
     }
