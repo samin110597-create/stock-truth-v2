@@ -50,7 +50,7 @@ The deterministic test fixtures are isolated from production and never presented
 
 The original charcoal/amber terminal concept is restored: Verdict, Technicals, Fundamentals, Rank, Model lab and Sources; bullish/bearish evidence; conditional scenarios; Strict/Adaptive swing/position trade matrix; local risk sizing; candles, volume, EMA20/50/200, RSI/MACD panes and native candle markers. The technical BUY/SELL stance is separate from entry permission. Multi-horizon history is descriptive, never invented forecast odds.
 
-One workflow, `.github/workflows/terminal.yml`, validates branches/PRs. On `main`, it collects and reconciles optional datasets, appends setup observations, saves data to `data-snapshots`, builds, checks and uploads the artifact, deploys Pages, then verifies the production commit.
+One workflow, `.github/workflows/terminal.yml`, validates branches/PRs. Code pushes restore optional snapshots, run analysis and integrity gates, and deploy the tested artifact without waiting for provider collection. Scheduled/manual runs additionally collect, reconcile and save source data. Every release versions the complete local module graph and CSS by commit, including Worker imports, to prevent mixed old-engine/new-layout browser caches.
 
 GitHub Pages is enabled and deployments were observed succeeding on September 13, 2026. The production URL is https://samin110597-create.github.io/stock-truth-v2/web/. Data-provider or snapshot-publication failures do not block a tested application build. Source syntax, calculation tests, artifact checks and Pages deployment remain required gates.
 

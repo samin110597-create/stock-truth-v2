@@ -41,20 +41,20 @@ jobs:
         run: python scripts/generate_calendar.py
       - name: Fetch completed bars and filed facts
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         env:
           POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: python -u scripts/collect.py
       - name: Reconcile optional daily supplements from independent source
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: node scripts/refresh-daily.mjs
       - name: Analyze available snapshots and append immutable setup ledger
         if: hashFiles('data/raw/*.json') != ''
         run: npm run analyze
       - name: Save collected snapshots without changing production source
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: node scripts/snapshot-store.mjs publish
       - run: npm run build
       - run: npm run check
