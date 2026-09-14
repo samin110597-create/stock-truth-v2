@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "status": "LIVE_VERIFIED",
+  "verified_at": "2026-09-14T00:52:10.895Z",
+  "model_version": "5.1.0-restored-terminal",
+  "commit": "7a161dd7d502d25373d77dca64010678da30464a",
+  "page_url": "https://samin110597-create.github.io/stock-truth-v2/web/?ticker=NVDA&release=7a161dd7d502d25373d77dca64010678da30464a",
+  "pull_requests": [
+    4,
+    5
+  ],
+  "deployment_run": 34793582424,
+  "unit_tests_passed": 22,
+  "real_securities_analyzed": 31,
+  "browser_checks": {
+    "release_identity": "PASS: HTML, application module and displayed engine/build match 7a161dd7.",
+    "nvda": {
+      "daily_bars": 2514,
+      "last_close": 218.2899932861328,
+      "last_date": "2026-09-11",
+      "retrieval": "DIRECT BROWSER"
+    },
+    "unseen_ticker": {
+      "symbol": "OLLI",
+      "prior_repository_word_search": "No OLLI symbol before acceptance; no watchlist/config/snapshot inserted.",
+      "daily_bars": 128,
+      "last_close": 73.56,
+      "last_date": "2026-09-11",
+      "rsi_14_displayed": 48.4,
+      "ema_20_displayed": 74.27,
+      "ema_50_displayed": 74.77,
+      "atr_14_displayed": 3.33,
+      "support_displayed": 73.46,
+      "resistance_displayed": 78.53,
+      "structure": "LH / LL",
+      "thesis": "OLLI-specific bearish trend / range-compression thesis and conditional scenarios.",
+      "plan": "WAIT — NO QUALIFYING SETUP",
+      "chart_updated": true,
+      "prior_ticker_cleared": true,
+      "manual_repository_edit_required": false
+    },
+    "missing_components": "PASS: OLLI intraday and fundamentals unavailable; daily, weekly and monthly data still analyzed. EMA150/200 warmup and validation probability remain unavailable.",
+    "failed_lookup": "PASS: ZZINVALIDZZZ returned HTTP 404; quote, chart and decision cleared.",
+    "rapid_switch": "PASS: MU request was still fetching when NVDA replaced it; final chart and status remained NVDA.",
+    "active_plan": "PASS: ALAB explicitly shows SHORT; frozen Sep 8 plan and ENTRY TESTED — MANAGE EXISTING PLAN.",
+    "risk_sizing": "PASS: hypothetical $10,000 / 1% inputs produced 7 shares, $99.05 planned stop loss, $2,137.24 notional; inputs cleared afterward.",
+    "interface": "PASS: original charcoal/amber tabbed workflow; candle chart, EMA studies and RSI/MACD panes, evidence, trade matrix, sources, model lab, ranking and local sizing.",
+    "limitations": "Public endpoints are unofficial. No calibrated probability, verified edge or higher win-rate claim."
+  },
+  "observations": {
+    "nvda": [
+      "{\"build\":\"5.1.0-restored-terminal · 7a161dd7\",\"chart\":{\"bars\":\"2514\",\"lastClose\":\"218.2899932861328\",\"lastDate\":\"2026-09-11\",\"symbol\":\"NVDA\"},\"decision\":\"THE READ\\nTECHNICAL STANCE\\nSELL\\nBEARISH REVERSAL DEVELOPING\\n\\nWeighted technical stance. BUY/SELL describes the evidence balance; entry permission comes from the separate confirmed trade plan. This is not a win probability.\\n\\nEvidence coverage 100/100 · five grouped families\\n\\nADAPTIVE SWING PLAN\\nNO ACTIVE PLAN\\nWAIT — NO QUALIFYING SETUP\\nNO EDGEINSUFFICIENT DATA\\nBUY / ENTRY ZONE\\n—\\nConfirmation required\\nFIXED STOP\\n—\\nStructural invalidation required\\nTP1\\n—\\nNo fabricated target\\nTP2 / TP3\\n— / —\\nOnly justified structural levels\\n\\nNo active confirmed setup. Require a new reclaim, breakout, retest, or reversal; old stops and targets are not recycled.\",\"status\":\"NVDA · DIRECT BROWSER · calculated Sep 13, 2026, 08:46 PM EDT · completed-bar signals\",\"thesis\":\"PRICE ACTION THESIS\\nCURRENT STATE\\n\\nNVDA closed at $218.29: mixed daily trend, hh / hl. bearish reversal developing. RSI 49.8; volume 0.69× its prior 20-bar average.\\n\\nBULL CASE\\n\\nA completed close above $227.92, followed by a successful retest, would strengthen continuation.\\n\\nBASE CASE\\n\\nWhile price remains between $216.51 and $227.92, wait for a confirmed reaction at either boundary.\\n\\nBEAR CASE\\n\\nA completed break below $216.51 would weaken support; wait for a new structure assessment.\\n\\nBEST ACTION\\n\\nWAIT — NO QUALIFYING SETUP\\n\\nScenarios are conditional interpretations. A stance score is not a probability.\"}"
+    ],
+    "olli": [
+      "{\"build\":\"5.1.0-restored-terminal · 7a161dd7\",\"chart\":{\"bars\":\"128\",\"lastClose\":\"73.56\",\"lastDate\":\"2026-09-11\",\"symbol\":\"OLLI\"},\"decision\":\"THE READ\\nTECHNICAL STANCE\\nSELL\\nRANGE COMPRESSION\\n\\nWeighted technical stance. BUY/SELL describes the evidence balance; entry permission comes from the separate confirmed trade plan. This is not a win probability.\\n\\nEvidence coverage 100/100 · five grouped families\\n\\nADAPTIVE SWING PLAN\\nNO ACTIVE PLAN\\nWAIT — NO QUALIFYING SETUP\\nNO EDGEINSUFFICIENT DATA\\nBUY / ENTRY ZONE\\n—\\nConfirmation required\\nFIXED STOP\\n—\\nStructural invalidation required\\nTP1\\n—\\nNo fabricated target\\nTP2 / TP3\\n— / —\\nOnly justified structural levels\\n\\nNo active confirmed setup. Require a new reclaim, breakout, retest, or reversal; old stops and targets are not recycled.\",\"identity\":\"OLLI\\nOLLI · NASDAQ\\n$73.56\\n+2.28% sourced quote\\nCLOSEDPASS\\nStock Analysis public quote endpoint\\nSep 11, 2026, 04:00 PM EDT · provider latency unspecified\\nSESSION VOLUME\\n1.33M\\nQuote source; may be delayed\\nSESSION HIGH / LOW\\n$73.94 / $71.53\\n2026-09-11\\nATR 14\\n$3.33\\nCompleted daily bars\\nDAILY RVOL\\n0.74×\\nVersus prior 20 bars\\nMARKET CAP\\n—\\nUnavailable without sourced cap\\nHISTORY\\n128 bars\\nLast completed 2026-09-11\",\"mtf\":\"MULTI-TIMEFRAME ALIGNMENT\\nSHORT UNAVAILABLE 0/4 usable\\nSWING BEARISH 1/3 usable\\nLONG UNAVAILABLE 0/2 usable\\nTIMEFRAME\\tTREND\\tSTRUCTURE\\tRSI\\tVOLATILITY\\tSUPPORT / RESISTANCE\\tREVERSAL\\tDATA\\n5M\\tUNAVAILABLE\\t—\\t—\\t—\\t— / —\\t—\\tUNAVAILABLE\\n15M\\tUNAVAILABLE\\t—\\t—\\t—\\t— / —\\t—\\tUNAVAILABLE\\n30M\\tUNAVAILABLE\\t—\\t—\\t—\\t— / —\\t—\\tUNAVAILABLE\\n1H\\tUNAVAILABLE\\t—\\t—\\t—\\t— / —\\t—\\tUNAVAILABLE\\n4H\\tUNAVAILABLE\\t—\\t—\\t—\\t— / —\\t—\\tUNAVAILABLE\\n1D\\tBEARISH\\tLH / LL\\t48.4\\tCONTRACTION\\t$73.46 / $78.53\\tNO REVERSAL\\tCOMPLETED BAR\\n1W\\tINSUFFICIENT DATA\\tINSUFFICIENT SWINGS\\t41.0\\tINSUFFICIENT DATA\\t$60.29 / $81.80\\tNO REVERSAL\\tCOMPLETED BAR\\n1M\\tINSUFFICIENT DATA\\tINSUFFICIENT SWINGS\\t—\\tINSUFFICIENT DATA\\t— / —\\tNO REVERSAL\\tCOMPLETED BAR\\n\\nStale or reviewed frames are excluded from alignment. The selected chart timeframe never changes the swing/position holding horizon.\",\"status\":\"OLLI · DIRECT BROWSER · calculated Sep 13, 2026, 08:47 PM EDT · completed-bar signals\",\"thesis\":\"PRICE ACTION THESIS\\nCURRENT STATE\\n\\nOLLI closed at $73.56: bearish daily trend, lh / ll. range compression. RSI 48.4; volume 0.74× its prior 20-bar average.\\n\\nBULL CASE\\n\\nA completed close above $78.53, followed by a successful retest, would strengthen continuation.\\n\\nBASE CASE\\n\\nWhile price remains between $73.46 and $78.53, wait for a confirmed reaction at either boundary.\\n\\nBEAR CASE\\n\\nA completed break below $73.46 would weaken support; wait for a new structure assessment.\\n\\nBEST ACTION\\n\\nWAIT — NO QUALIFYING SETUP\\n\\nScenarios are conditional interpretations. A stance score is not a probability.\"}\nTECHNICAL EVIDENCE · 1D\nTREND\nShort / intermediate\nBEARISH / BEARISH\nEMA 9\n$73.88\nEMA 20\n$74.27\nEMA 50\n$74.77\nEMA 100\n$79.27\nEMA 150\n—\nEMA 200\n—\nSMA 50 / 200\n$72.29 / —\nMOMENTUM\nRSI 14\n48.4\nMACD / signal\n-0.204 / 0.097\nMACD histogram\n-0.300\nROC 10\n2.87%\nStochastic K / D\n40.8 / 30.0\nWilliams %R\n-59.2\nCCI 20\n-76.2\nADX / +DI / −DI\n12.1 / 21.0 / 24.3\nVOLATILITY\nATR 14\n$3.33\nATR %\n4.53%\nRealized vol / bar\n3.1%\nBollinger upper\n$78.63\nBollinger lower\n$70.73\nBollinger width\n10.6%\nRegime\nCONTRACTION\nDonchian high / low\n$79.53 / $70.02\nPARTICIPATION\nRVOL vs prior 20 bars\n0.74×\nSame-session-slot RVOL\nUnavailable\nSame-slot samples\n0\nMFI 14\n49.9\nCMF 20\n0.001\nOBV\n-9,605,849\nSession VWAP proxy\n—\nAnchored VWAP proxy\n$74.40\nChannels, slopes and long-term context\n\nIndicators are deterministic calculations on sourced completed bars. OHLCV-weighted VWAP is a proxy for transaction VWAP. Missing warmup values remain unavailable."
+    ],
+    "failed_lookup": [
+      "{\"chart\":{},\"decision\":\"\",\"identity\":\"ZZINVALIDZZZ\\n\\nDATA UNAVAILABLE\",\"status\":\"Direct public provider unavailable for ZZINVALIDZZZ: HTTP 404\"}"
+    ],
+    "final": [
+      "{\"activeTab\":\"Verdict\",\"build\":\"5.1.0-restored-terminal · 7a161dd7\",\"chart\":{\"bars\":\"2514\",\"lastClose\":\"218.2899932861328\",\"lastDate\":\"2026-09-11\",\"symbol\":\"NVDA\"},\"script\":\"https://samin110597-create.github.io/stock-truth-v2/web/app.mjs?release=7a161dd7d502d25373d77dca64010678da30464a\",\"status\":\"NVDA · DIRECT BROWSER · calculated Sep 13, 2026, 08:51 PM EDT · completed-bar signals\"}\nhttps://samin110597-create.github.io/stock-truth-v2/web/?ticker=NVDA&release=7a161dd7d502d25373d77dca64010678da30464a\n[\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:08.260Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:08.378Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:08.378Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:08.383Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:11.323Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:11.339Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.669Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.681Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.694Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.694Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.709Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  },\n  {\n    level: 'error',\n    message: 'Error sending browser metadata to extension: Object',\n    timestamp: '2026-09-14T00:51:14.709Z',\n    url: 'chrome-extension://kcdongibgcplmaagnmgpjhpjgmmaaaaa/content-script.bundle.js'\n  }\n]"
+    ]
+  }
+}
