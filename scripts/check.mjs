@@ -6,3 +6,11 @@ for(const file of files){const s=fs.readFileSync(file,'utf8');if(/vercel\.app|ra
 const html=fs.readFileSync('dist/web/index.html','utf8');if(!/analyze any ticker/i.test(html))throw Error('Arbitrary ticker UI missing');
 for(const file of ['dist/web/app.mjs','dist/web/worker.mjs','dist/vendor/lightweight-charts.mjs','dist/data/calendar.json','dist/licenses/LICENSE','dist/licenses/NOTICE','dist/build.json'])if(!fs.existsSync(file))throw Error('Missing deploy file '+file);
 console.log('Production syntax, host isolation and static artifact checks passed.');
+
+const release=JSON.parse(fs.readFileSync('dist/build.json')).commit;
+if(!html.includes('app.mjs?release='+release)||!html.includes('style.css?release='+release))throw Error('Unversioned entry asset');
+for(const file of files.filter(f=>f.endsWith('.mjs')&&(f.startsWith('web/')||f.startsWith('src/')))){
+  const built=fs.readFileSync('dist/'+file,'utf8');
+  if(/(["'])(\.\.?\/[^"'\s?]+\.mjs)\1/.test(built))throw Error('Unversioned local module in '+file);
+}
+console.log('Release identity is pinned across HTML, CSS, Worker, and nested module imports.');
