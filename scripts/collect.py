@@ -284,7 +284,7 @@ def resample(block, timeframe):
         'classification':'CALCULATION','native':False,'interval':timeframe,'resampled_from':block['interval'],
         'aggregation':'OHLCV, exchange sessions; no cross-session intraday buckets; final intraday bucket may be shorter.',
         'bars':rows,'forming_bars':[],'incomplete_groups_excluded':gaps,'last_completed_bar':rows[-1]['end_ts'] if rows else None,
-        'status':'COMPLETED BAR' if rows and block['status']!='STALE' else 'STALE' if rows else 'UNAVAILABLE'}
+        'status':('STALE' if block['status']=='STALE' else 'REVIEW' if block.get('quality')=='REVIEW' else 'COMPLETED BAR') if rows else 'UNAVAILABLE'}
 
 def collect_symbol(symbol,out):
     global NOW, NOW_TS
@@ -308,7 +308,7 @@ def collect_symbol(symbol,out):
     for tf,base in [('15M','5M'),('30M','5M'),('4H','1H'),('1W','1D'),('1M','1D')]:
         frames[tf]=resample(frames[base],tf)
     price=number(meta.get('regularMarketPrice'));qt=number(meta.get('regularMarketTime'))
-    quote={'classification':'SOURCE FACT' if price and qt else 'UNAVAILABLE','provider':'Yahoo Finance chart metadata','price':price,'as_of':qt,'fetched_at':iso(),'currency':meta.get('currency'),'delay':'UNSPECIFIED BY PROVIDER','status':'SNAPSHOT' if price and qt else 'UNAVAILABLE'}
+    quote={'classification':'SOURCE FACT' if price and qt else 'UNAVAILABLE','provider':'Yahoo Finance chart metadata','price':price,'as_of':qt,'fetched_at':iso(),'currency':meta.get('currency'),'delay':'UNSPECIFIED BY PROVIDER','status':'SNAPSHOT' if price and qt else 'UNAVAILABLE','session_date':datetime.fromtimestamp(qt,NY).date().isoformat() if qt else None,'volume':number(meta.get('regularMarketVolume')),'high':number(meta.get('regularMarketDayHigh')),'low':number(meta.get('regularMarketDayLow'))}
     try: fundamentals=sec_facts(symbol,old.get('fundamentals'))
     except Exception as exc:
         fundamentals=unavailable(str(exc),'SEC EDGAR companyfacts')

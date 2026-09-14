@@ -67,5 +67,5 @@ export function technicals(b,timeframe='1D'){
   const label=x=>x===null?'INSUFFICIENT DATA':x>=1?'BULLISH':x<=-1?'BEARISH':'MIXED';
   snapshot.short_trend=label(trendAt(9,20));snapshot.intermediate_trend=label(trendAt(20,50));snapshot.long_trend=label(trendAt(50,200));
   snapshot.classification='CALCULATION';snapshot.vwap_classification='PROXY';snapshot.realized_volatility_note='20-bar standard deviation of log returns; not annualized.';
-  return {snapshot,series:{close:c,atr:a,rsi:rs,ema:E,sma:S,macd,hist,adx,rvol,cmf,obv,bbWidth,vwap},bars:n};
+  return {snapshot,series:{close:c,atr:a,rsi:rs,ema:E,sma:S,macd,signal,hist,adx,rvol,cmf,obv,bbWidth,vwap},bars:n};
 }

@@ -4,7 +4,7 @@
 
 | Route | Role | Constraints |
 |---|---|---|
-| Stock Analysis public quote/history JSON | Direct browser arbitrary stock/ETF quote and OHLCV history | Unofficial; wildcard CORS was observed in HTTP probes; actual browser acceptance must also pass. No key, authentication cookie, proxy, or paywall bypass. Provider latency and split methodology are not declared by the endpoint. |
+| Stock Analysis public quote/history JSON | Direct browser arbitrary stock/ETF quote and OHLCV history | Unofficial; wildcard CORS and successful direct NVDA retrieval were observed on the live GitHub Pages page on September 13, 2026. Release-specific unseen-ticker acceptance is recorded separately. No key, authentication cookie, proxy, or paywall bypass. Provider latency and split methodology are not declared by the endpoint. |
 | Yahoo Finance chart | Optional Actions daily, hourly, 5-minute history and quote metadata | Unofficial, rate-limited, no uptime guarantee. Public browser CORS was absent in the HTTP probe, so it is not falsely claimed as a browser API. |
 | SEC EDGAR companyfacts | Official reported fundamentals from Actions | Depends on SEC availability and access. Filing dates preserved. Browser CORS availability is not assumed. |
 | Polygon aggregates | Optional daily-history fallback | Requires repository secret POLYGON_KEY and entitlement. Not assumed configured. No key reaches public artifacts. |
@@ -38,3 +38,9 @@ No proprietary TradingView indicators, charting-library bundle, or Pine Script w
 - https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
 
 GitHub Pages serves static assets. Schedules may be delayed; a committed build is not evidence of a successful live deployment. The workflow checks the deployed build SHA before reporting its HTTP verification stage.
+
+## September 13 source reconciliation
+
+The scheduled Yahoo history contained an invalid trailing September 11 daily row. The browser source returned valid OHLCV for that session. The revised adapter retains the older history only after checking all four OHLC prices on at least ten overlapping dates (up to twenty), with maximum 0.5% deviation. Up to five recent completed sessions can be appended, with the exact provider retained on every row. No ratio is applied to prices or volume. Missing interior sessions, unmatched rejected rows and unresolved split audits reject the supplement.
+
+`refresh-daily.mjs` uses the same adapter in scheduled jobs, so scans receive the same checks as interactive analysis. Cache reads, quote failures and unsupported fundamentals never prevent an independently available daily history from being analyzed.

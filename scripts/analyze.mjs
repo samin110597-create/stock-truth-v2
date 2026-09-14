@@ -12,7 +12,7 @@ for(const [symbol,raw] of Object.entries(raws)){
   for(const {setup:p} of Object.values(a.setups))if(p){
     const worst=p.dir>0?p.entry_zone.high:p.entry_zone.low;
     if(p.dir*(worst-p.stop)<=0||p.entry_zone.low>p.entry_zone.high||p.targets.some(t=>p.dir*(t.price-worst)<=0))issues.push('Invalid stop/target orientation');
-    if(a.health.tradeable){const id=setupIdentity(p);if(!ledger.some(x=>x.id===id))ledger.push({id,issued_at:new Date().toISOString(),data_sha256:raw.content_sha256||null,setup:structuredClone(p),events:[]});}
+    if(a.health.tradeable&&!p.live_check?.stop_tested&&!p.live_check?.target_tested){const id=setupIdentity(p);if(!ledger.some(x=>x.id===id))ledger.push({id,issued_at:new Date().toISOString(),data_sha256:raw.content_sha256||null,setup:structuredClone(p),events:[]});}
   }
   for(const record of ledger.filter(x=>x.setup.symbol===symbol)){
     const b=a.frames['1D'].bars,i=b.findIndex(b=>b.end_ts===record.setup.signal_ts);if(i<0)continue;
@@ -21,7 +21,7 @@ for(const [symbol,raw] of Object.entries(raws)){
   }
   if(issues.length)throw new Error(symbol+': '+issues.join('; '));
   fs.writeFileSync(path.join(dir,'analysis',symbol+'.json'),JSON.stringify(a));
-  symbols.push({symbol,name:a.name,action:s?.current_action||a.thesis.best_action,grade:s?.grade||null,score:s?.score||null,entry:s?.entry_zone||null,stop:s?.stop||null,tp1:s?.targets[0]?.price||null,health:a.health.status,source:a.frames['1D'].provenance?.provider,last_bar:a.frames['1D'].bars.at(-1)?.date});
+  symbols.push({symbol,name:a.name,direction:s?.direction||null,action:s?.current_action||a.thesis.best_action,grade:s?.grade||null,score:s?.score||null,entry:s?.entry_zone||null,stop:s?.stop||null,tp1:s?.targets[0]?.price||null,health:a.health.status,source:a.frames['1D'].provenance?.provider,last_bar:a.frames['1D'].bars.at(-1)?.date});
   reports.push({symbol,daily_bars:a.frames['1D'].bars.length,timeframes:Object.fromEntries(Object.entries(a.frames).map(([k,v])=>[k,v.bars.length])),strict_n:a.validation.Strict_SWING?.n||0,adaptive_n:a.validation.Adaptive_SWING?.n||0,adaptive_metrics:a.validation.Adaptive_SWING?.metrics,status:a.validation.Adaptive_SWING?.status,issues});
   console.log(symbol+' analyzed; '+a.frames['1D'].bars.length+' daily bars; '+(a.validation.Adaptive_SWING?.n||0)+' non-overlapping Adaptive samples');
 }
