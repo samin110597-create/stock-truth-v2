@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-17T17:42:17.538Z",
+  "generated_at": "2026-09-17T20:38:56.416Z",
   "method": "Retrospective causal replay; no verified OOS probability claims.",
   "tickers": [
     {
       "symbol": "AAOI",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -60,14 +60,14 @@
     },
     {
       "symbol": "AEHR",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -116,55 +116,55 @@
     },
     {
       "symbol": "ALAB",
-      "daily_bars": 625,
+      "daily_bars": 128,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 625,
-        "1W": 129,
-        "1M": 29
+        "1D": 128,
+        "1W": 25,
+        "1M": 5
       },
-      "strict_n": 2,
-      "adaptive_n": 2,
+      "strict_n": 0,
+      "adaptive_n": 0,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 2,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.019698767701023,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP2",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0284867173162189,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP3",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0284867173162189,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -172,14 +172,14 @@
     },
     {
       "symbol": "AMAT",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -228,14 +228,14 @@
     },
     {
       "symbol": "AMBA",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4645,
-        "15M": 1544,
-        "30M": 769,
+        "5M": 4674,
+        "15M": 1554,
+        "30M": 774,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -284,14 +284,14 @@
     },
     {
       "symbol": "APP",
-      "daily_bars": 1362,
+      "daily_bars": 1363,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 1362,
+        "1D": 1363,
         "1W": 282,
         "1M": 64
       },
@@ -340,14 +340,14 @@
     },
     {
       "symbol": "AVGO",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -396,14 +396,14 @@
     },
     {
       "symbol": "AXTI",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -452,14 +452,14 @@
     },
     {
       "symbol": "BE",
-      "daily_bars": 2047,
+      "daily_bars": 2048,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3474,
         "4H": 988,
-        "1D": 2047,
+        "1D": 2048,
         "1W": 424,
         "1M": 97
       },
@@ -508,55 +508,55 @@
     },
     {
       "symbol": "CIFR",
-      "daily_bars": 1483,
+      "daily_bars": 128,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 1483,
-        "1W": 307,
-        "1M": 70
+        "1D": 128,
+        "1W": 25,
+        "1M": 5
       },
-      "strict_n": 6,
-      "adaptive_n": 6,
+      "strict_n": 0,
+      "adaptive_n": 0,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 6,
-          "wins": 2,
-          "frequency": 0.3333333333333333,
+          "n": 0,
+          "wins": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0.09676933255921683,
-            "high": 0.7000116786584712
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -0.18810999074200116,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP2",
-          "n": 3,
-          "wins": 2,
-          "frequency": 0.6666666666666666,
+          "n": 0,
+          "wins": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0.2076549551264879,
-            "high": 0.9385096847238394
+            "low": null,
+            "high": null
           },
-          "mean_net_r": 1.083981263285175,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP3",
-          "n": 2,
-          "wins": 1,
-          "frequency": 0.5,
+          "n": 0,
+          "wins": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0.09452865480086614,
-            "high": 0.9054713451991339
+            "low": null,
+            "high": null
           },
-          "mean_net_r": 1.3312421910826926,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -564,14 +564,14 @@
     },
     {
       "symbol": "CRWV",
-      "daily_bars": 369,
+      "daily_bars": 370,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
-        "1H": 2563,
-        "4H": 729,
-        "1D": 369,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 2566,
+        "4H": 730,
+        "1D": 370,
         "1W": 76,
         "1M": 17
       },
@@ -620,14 +620,14 @@
     },
     {
       "symbol": "GOOG",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -676,43 +676,43 @@
     },
     {
       "symbol": "IREN",
-      "daily_bars": 1211,
+      "daily_bars": 128,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 1211,
-        "1W": 251,
-        "1M": 57
+        "1D": 128,
+        "1W": 25,
+        "1M": 5
       },
       "strict_n": 0,
-      "adaptive_n": 1,
+      "adaptive_n": 0,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0207245519321129,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP2",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0207245519321129,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP3",
@@ -732,14 +732,14 @@
     },
     {
       "symbol": "META",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -788,14 +788,14 @@
     },
     {
       "symbol": "MRVL",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -844,14 +844,14 @@
     },
     {
       "symbol": "MU",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -900,14 +900,14 @@
     },
     {
       "symbol": "NBIS",
-      "daily_bars": 477,
+      "daily_bars": 478,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
-        "1H": 3314,
-        "4H": 942,
-        "1D": 477,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3317,
+        "4H": 943,
+        "1D": 478,
         "1W": 99,
         "1M": 22
       },
@@ -956,14 +956,14 @@
     },
     {
       "symbol": "NVDA",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1012,14 +1012,14 @@
     },
     {
       "symbol": "ORCL",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1068,14 +1068,14 @@
     },
     {
       "symbol": "QQQ",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1124,14 +1124,14 @@
     },
     {
       "symbol": "SMH",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3478,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1180,14 +1180,14 @@
     },
     {
       "symbol": "SNDK",
-      "daily_bars": 399,
+      "daily_bars": 400,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
-        "1H": 2734,
-        "4H": 778,
-        "1D": 399,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 2737,
+        "4H": 779,
+        "1D": 400,
         "1W": 82,
         "1M": 18
       },
@@ -1236,14 +1236,14 @@
     },
     {
       "symbol": "SPY",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1292,14 +1292,14 @@
     },
     {
       "symbol": "USAR",
-      "daily_bars": 796,
+      "daily_bars": 797,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
-        "1H": 2636,
-        "4H": 750,
-        "1D": 796,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 2639,
+        "4H": 751,
+        "1D": 797,
         "1W": 165,
         "1M": 37
       },
@@ -1348,55 +1348,55 @@
     },
     {
       "symbol": "VPG",
-      "daily_bars": 2512,
+      "daily_bars": 128,
       "timeframes": {
-        "5M": 4538,
-        "15M": 1451,
-        "30M": 692,
+        "5M": 4564,
+        "15M": 1457,
+        "30M": 694,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
-        "1W": 521,
-        "1M": 119
+        "1D": 128,
+        "1W": 25,
+        "1M": 5
       },
-      "strict_n": 5,
-      "adaptive_n": 15,
+      "strict_n": 0,
+      "adaptive_n": 0,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 15,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": -1.3877787807814457e-17,
-            "high": 0.20388926630434784
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -0.9907468516564252,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP2",
-          "n": 11,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 2.7755575615628914e-17,
-            "high": 0.2588400172488141
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -0.9504820236275259,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP3",
-          "n": 8,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.3244156195108769
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -0.8977158274951462,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -1404,14 +1404,14 @@
     },
     {
       "symbol": "VRT",
-      "daily_bars": 2041,
+      "daily_bars": 2042,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2041,
+        "1D": 2042,
         "1W": 423,
         "1M": 96
       },
@@ -1460,14 +1460,14 @@
     },
     {
       "symbol": "VST",
-      "daily_bars": 2500,
+      "daily_bars": 2501,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2500,
+        "1D": 2501,
         "1W": 518,
         "1M": 118
       },
@@ -1516,14 +1516,14 @@
     },
     {
       "symbol": "XLE",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1572,14 +1572,14 @@
     },
     {
       "symbol": "XLI",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1628,14 +1628,14 @@
     },
     {
       "symbol": "XLK",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1684,14 +1684,14 @@
     },
     {
       "symbol": "XLU",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 4651,
-        "15M": 1550,
-        "30M": 775,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
         "1H": 3477,
         "4H": 989,
-        "1D": 2512,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
