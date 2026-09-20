@@ -157,21 +157,32 @@ def yahoo(symbol, interval):
         raise RuntimeError('Provider symbol does not match requested ticker')
     return canonical_yahoo(r,interval,url), r.get('meta',{})
 
-def polygon_daily(symbol):
-    key = os.environ.get('POLYGON_KEY')
+def market_api_key():
+    return os.environ.get('MASSIVE_KEY') or os.environ.get('POLYGON_KEY')
+
+def polygon_bars(symbol, interval):
+    key = market_api_key()
     if not key:
-        raise RuntimeError('POLYGON_KEY is not configured in this repository')
-    start = (NOW-timedelta(days=3652)).date().isoformat()
-    base = f'https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{start}/{NOW.date().isoformat()}'
-    rows = request(base+'?'+urllib.parse.urlencode({'adjusted':'true','sort':'asc','limit':50000,'apiKey':key})).get('results',[])
-    if not rows:
-        raise RuntimeError('Polygon returned no daily bars')
-    # Adapter uses same calendar / integrity checks; URLs never include API keys in artifacts.
-    r = {'meta':{'exchangeTimezoneName':'America/New_York','currency':'USD'},'timestamp':[x['t']//1000 for x in rows],
-         'indicators':{'quote':[{k:[x.get(v) for x in rows] for k,v in [('open','o'),('high','h'),('low','l'),('close','c'),('volume','v')]}]}}
-    p = canonical_yahoo(r,'1d',base+'?adjusted=true')
-    p.update(provider='Polygon aggregates',fallback_used=True,fallback_from='Yahoo Finance chart',adjustment='Polygon split-adjusted aggregates; split-event audit unavailable')
-    return p
+        raise RuntimeError('MASSIVE_KEY/POLYGON_KEY is not configured in this repository')
+    mult, span, days = {'1d':(1,'day',3652),'60m':(1,'hour',729),'5m':(5,'minute',60)}[interval]
+    start = (NOW-timedelta(days=days)).date().isoformat()
+    params = {'adjusted':'true','sort':'asc','limit':50000,'apiKey':key}
+    last_error = None
+    for host,provider in [('https://api.massive.com','Massive aggregates'),('https://api.polygon.io','Polygon aggregates')]:
+        base = f'{host}/v2/aggs/ticker/{urllib.parse.quote(symbol, safe="")}/range/{mult}/{span}/{start}/{NOW.date().isoformat()}'
+        try:
+            rows = request(base+'?'+urllib.parse.urlencode(params)).get('results',[])
+            if not rows:
+                raise RuntimeError('No aggregate bars returned')
+            r = {'meta':{'exchangeTimezoneName':'America/New_York','currency':'USD'},'timestamp':[x['t']//1000 for x in rows],
+                 'indicators':{'quote':[{k:[x.get(v) for x in rows] for k,v in [('open','o'),('high','h'),('low','l'),('close','c'),('volume','v')]}]}}
+            p = canonical_yahoo(r,interval,base+'?adjusted=true')
+            p.update(provider=provider,adjustment=provider+' split-adjusted aggregates; split-event audit unavailable',
+                     api_secret_used=True,credential_policy='GitHub Actions secret only; credential is not present in this artifact.')
+            return p
+        except Exception as exc:
+            last_error = exc
+    raise RuntimeError(f'Massive/Polygon aggregates unavailable: {last_error}')
 
 TAGS = {
  'revenue':(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet'],'USD',True),
@@ -293,18 +304,31 @@ def collect_symbol(symbol,out):
     try: old=json.loads(old_path.read_text())
     except (OSError,json.JSONDecodeError): old={}
     frames={};meta={};errors=[]
+    api_enabled=bool(market_api_key())
     for interval,key in [('1d','1D'),('60m','1H'),('5m','5M')]:
-        try:
-            frames[key],m=yahoo(symbol,interval)
-            if interval=='1d': meta=m
-        except Exception as exc:
-            errors.append({'provider':'Yahoo Finance chart','interval':interval,'error':str(exc)[:180]})
-            frames[key]=unavailable(str(exc),'Yahoo Finance chart')
-            if key=='1D' and os.environ.get('POLYGON_KEY'):
-                try: frames[key]=polygon_daily(symbol)
-                except Exception as ex: errors.append({'provider':'Polygon','error':str(ex)[:180]})
-            if frames[key]['status']=='UNAVAILABLE' and old.get('timeframes',{}).get(key,{}).get('bars'):
-                frames[key]={**old['timeframes'][key],'status':'STALE','fallback_used':True,'fallback_from':'Previously saved snapshot','latest_attempt_at':iso(),'latest_attempt_error':str(exc)[:180]}
+        frames[key]=None
+        if api_enabled:
+            try:
+                frames[key]=polygon_bars(symbol,interval)
+            except Exception as exc:
+                errors.append({'provider':'Massive/Polygon aggregates','interval':interval,'error':str(exc)[:180]})
+        if frames[key] is None:
+            try:
+                frames[key],m=yahoo(symbol,interval)
+                if interval=='1d': meta=m
+                if api_enabled:
+                    frames[key]['fallback_used']=True
+                    frames[key]['fallback_from']='Massive/Polygon aggregates'
+            except Exception as exc:
+                errors.append({'provider':'Yahoo Finance chart','interval':interval,'error':str(exc)[:180]})
+                frames[key]=unavailable(str(exc),'Yahoo Finance chart')
+        elif interval=='1d':
+            try:
+                _,meta=yahoo(symbol,'1d')
+            except Exception as exc:
+                errors.append({'provider':'Yahoo Finance metadata','interval':'1d','error':str(exc)[:180]})
+        if frames[key]['status']=='UNAVAILABLE' and old.get('timeframes',{}).get(key,{}).get('bars'):
+            frames[key]={**old['timeframes'][key],'status':'STALE','fallback_used':True,'fallback_from':'Previously saved snapshot','latest_attempt_at':iso(),'latest_attempt_error':errors[-1]['error'] if errors else 'Provider unavailable'}
     for tf,base in [('15M','5M'),('30M','5M'),('4H','1H'),('1W','1D'),('1M','1D')]:
         frames[tf]=resample(frames[base],tf)
     price=number(meta.get('regularMarketPrice'));qt=number(meta.get('regularMarketTime'))
@@ -331,7 +355,7 @@ def main():
         raise SystemExit('Invalid watchlist ticker')
     out=Path(args.output)
     summaries=[collect_symbol(s,out) for s in syms]
-    save(out/'collection.json',{'generated_at':iso(),'market':schedule_state(),'symbols':summaries,'sources_configured':{'yahoo':True,'SEC':True,'polygon':bool(os.environ.get('POLYGON_KEY'))},'schedule':'Every 30 minutes at :17 and :47 during 13:00–21:59 UTC weekdays; daily 22:17 UTC. GitHub schedules are best effort.'})
+    save(out/'collection.json',{'generated_at':iso(),'market':schedule_state(),'symbols':summaries,'sources_configured':{'yahoo':True,'SEC':True,'massive_or_polygon':bool(market_api_key()),'fmp':bool(os.environ.get('FMP_API_KEY') or os.environ.get('FMP_KEY')),'finnhub':bool(os.environ.get('FINNHUB_API_KEY') or os.environ.get('FINNHUB_KEY')),'alpha_vantage':bool(os.environ.get('ALPHA_VANTAGE_KEY') or os.environ.get('ALPHAVANTAGE_KEY')),'fred':bool(os.environ.get('FRED_API_KEY') or os.environ.get('FRED_KEY'))},'schedule':'Every 30 minutes at :17 and :47 during 13:00–21:59 UTC weekdays; daily 22:17 UTC. GitHub schedules are best effort.'})
     if not any(s['daily_bars'] for s in summaries):
         raise SystemExit('No daily bars: refusing to publish an empty market-data replacement')
 
