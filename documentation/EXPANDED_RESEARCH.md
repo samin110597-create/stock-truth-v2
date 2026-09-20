@@ -32,6 +32,10 @@ Up to 40 chronological test windows per horizon do not overlap. Each refit only 
 
 Forecasts refit when new completed daily data is retrieved. Quotes between closes are separate context. Insufficient history suppresses the affected horizon. Reviewed OHLCV suppresses forecasts. Stale price dates remain visible and trading actions remain governed by the existing health gate. There is no calibrated direction probability. Overlapping training labels, adjusted-history revisions, regime changes and the small number of long-horizon test windows limit inference. Forecast returns exclude dividends, costs and execution constraints.
 
+## Deployment and scheduled data
+
+Code pushes restore the most recently published, source-labeled data and deploy after validation. Only scheduled or manually dispatched data runs call the secured collection APIs. This avoids holding a code release behind a full market-data refresh. Existing Quant context and futures snapshots are preserved in the optional data branch; no credential is exposed. Arbitrary ticker lookup and fundamentals remain direct browser requests independent of the cache.
+
 ## Verification
 
 Deterministic tests check causal features and label embargoes, non-overlapping evaluation windows, invalid Elliott counts and retired hypotheses, Wyckoff event timing and invalidation, missing/zero financial fields, future filing rejection, ticker identity and component failure isolation. The existing setup, calendar, source reconciliation and standalone-Quant gates also run. Live acceptance verifies the release identifier, actual financial panels, forecasts, native overlays and an uncached ticker without source edits.
