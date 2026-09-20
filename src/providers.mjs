@@ -135,7 +135,7 @@ export async function retrieveTicker(symbol,calendar,signal,{snapshotBase='../da
   if(!direct){return {...cached,market:marketSchedule(calendar),timeframes:Object.fromEntries(TIMEFRAMES.map(tf=>[tf,refreshBlock(cached.timeframes?.[tf],tf,calendar)])),retrieval:'SCHEDULED SNAPSHOT FALLBACK',provider_errors:[...(cached.provider_errors||[]),{provider:'Direct browser provider',error:results[0].reason?.message}],fallback_used:true};}
   if(cached){
     direct.name=cached.name||symbol;
-    if(cached.fundamentals?.metrics)direct.fundamentals=cached.fundamentals;
+    if(cached.fundamentals)direct.fundamentals=cached.fundamentals;
     for(const tf of ['5M','15M','30M','1H','4H'])if(cached.timeframes?.[tf]?.bars?.length)direct.timeframes[tf]={...refreshBlock(cached.timeframes[tf],tf,calendar),supplement:'Scheduled GitHub snapshot'};
     const merged=reconcileDaily(cached.timeframes?.['1D'],direct.timeframes['1D'],calendar);direct.cross_check=merged.check;direct.timeframes['1D']=merged.block;
   }

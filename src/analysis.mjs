@@ -7,12 +7,15 @@ import {setupAt,MODEL_VERSION} from './setups.mjs';
 import {historicalValidation,activeSetup} from './validation.mjs';
 import {livePlanState} from './risk.mjs';
 import {researchRead,horizonResearch,chartContext} from './research.mjs';
+import {wyckoff} from './wyckoff.mjs';
+import {elliott} from './elliott.mjs';
+import {technicalForecast} from './forecast.mjs';
 export function analyzeFrame(block,timeframe){
   const clean=canonical(block),b=clean.bars;
   if(!b.length)return {timeframe,status:'UNAVAILABLE',reason:block?.reason||'No valid completed bars.',bars:[],provenance:block};
   const t=technicals(b,timeframe),s=structure(b,t),r=reversals(b,t,s);
   return {timeframe,status:clean.errors.length?'REVIEW':block.status||'COMPLETED BAR',bars:b,technicals:t.snapshot,structure:s.current,reversal:r.current,
-    events:s.events,pivots:s.pivots,reversal_events:r.events,context:chartContext(b,t,s),provenance:{...block,bars:undefined,forming_bars:undefined},_technical:t,_structure:s,_reversal:r};
+    wyckoff:wyckoff(b,t),elliott:elliott(b,t,s),events:s.events,pivots:s.pivots,reversal_events:r.events,context:chartContext(b,t,s),provenance:{...block,bars:undefined,forming_bars:undefined},_technical:t,_structure:s,_reversal:r};
 }
 function alignment(frames,keys){
   const z=keys.map(k=>frames[k]).filter(f=>f?.technicals&&!['STALE','REVIEW','UNAVAILABLE'].includes(f.status)&&f.technicals.intermediate_trend!=='INSUFFICIENT DATA');
@@ -46,6 +49,7 @@ export function analyze(raw,{validate=true,benchmarks={}}={}){
   const money=x=>finite(x)?'$'+x.toFixed(2):'an unconfirmed level';
   const adaptive=setups.Adaptive_SWING?.setup;
   const read=d.bars.length?researchRead(d.bars,d._technical,d._structure,d._reversal):{label:'UNAVAILABLE',families:[],bull:[],bear:[],neutral:[],coverage:0};
+  const forecast=d.bars.length&&d.provenance?.quality!=='REVIEW'?technicalForecast(d.bars,d._technical):{horizons:[],method:'Forecast withheld: insufficient or reviewed daily data.'};
   const horizons=d.bars.length?horizonResearch(d.bars,d._technical):[];
   const thesis={classification:'PROXY',current:!finite(c)?'Price history is unavailable for this ticker.':`${raw.symbol} closed at ${money(c)}: ${d.technicals.intermediate_trend.toLowerCase()} daily trend, ${d.structure.pattern.toLowerCase()}. ${read.phase.toLowerCase()}. RSI ${finite(d.technicals.rsi)?d.technicals.rsi.toFixed(1):'unavailable'}; volume ${finite(d.technicals.rvol)?d.technicals.rvol.toFixed(2)+'× its prior 20-bar average':'unavailable'}.`,
     bull:finite(res)?`A completed close above ${money(res)}, followed by a successful retest, would strengthen continuation.`:'No overhead confirmed resistance is available; do not invent a target.',
@@ -55,6 +59,6 @@ export function analyze(raw,{validate=true,benchmarks={}}={}){
   for(const f of Object.values(frames)){delete f._technical;delete f._structure;delete f._reversal;}
   return {schema_version:5,symbol:raw.symbol,name:raw.name,model_version:MODEL_VERSION,generated_at:new Date().toISOString(),source_data_timestamp:raw.fetched_at,
     quote:raw.quote,market:raw.market,health,frames,alignment:{short:alignment(frames,['5M','15M','30M','1H']),swing:alignment(frames,['4H','1D','1W']),long:alignment(frames,['1W','1M'])},
-    setups,validation,read,horizons,thesis,market_context:marketContext(raw,benchmarks),fundamentals:raw.fundamentals,provider_errors:raw.provider_errors||[],
+    setups,validation,read,horizons,forecast,thesis,market_context:marketContext(raw,benchmarks),fundamentals:raw.fundamentals,provider_errors:raw.provider_errors||[],
     classification_policy:{source_facts:'Provider quotes, OHLCV and filed SEC values.',calculations:'Indicators, confirmed structure, risk/reward, historical frequencies.',model_estimates:'Conditional entry/stop/target plan, not a forecast guarantee.',proxies:'Reversal, absorption, distribution, capitulation, OHLCV VWAP and price-action interpretation.',unavailable:'Missing data remains null; no calibrated direction probability.'}};
 }
