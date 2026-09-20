@@ -12,7 +12,7 @@ permissions:
   contents: read
 concurrency:
   group: stock-truth-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,7 +43,7 @@ jobs:
         run: python scripts/generate_calendar.py
       - name: Fetch completed bars and filed facts
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         env:
           MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
           POLYGON_KEY: ${{ secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON }}
