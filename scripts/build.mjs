@@ -2,7 +2,7 @@ import fs from 'node:fs';import path from 'node:path';import {execFileSync} from
 import {MODEL_VERSION} from '../src/setups.mjs';
 const commit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const root=process.cwd(),out=path.join(root,'dist');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
-for(const dir of ['web','src','config'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
+for(const dir of ['web','src','config','quant'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
 if(!fs.existsSync('data/calendar.json'))throw new Error('Generate exchange calendar before building');
 fs.mkdirSync(path.join(out,'data'),{recursive:true});fs.copyFileSync('data/calendar.json',path.join(out,'data/calendar.json'));
 for(const name of ['raw','analysis','quant','index.json','ledger.json','collection.json'])if(fs.existsSync('data/'+name))fs.cpSync('data/'+name,path.join(out,'data',name),{recursive:true});
@@ -22,7 +22,7 @@ function versionModules(dir){for(const item of fs.readdirSync(dir,{withFileTypes
     fs.writeFileSync(file,source);
   }
 }}
-for(const dir of ['web','src'])versionModules(path.join(out,dir));
-for(const rel of ['web/index.html','web/quant/index.html']){const htmlFile=path.join(out,rel);if(fs.existsSync(htmlFile))fs.writeFileSync(htmlFile,fs.readFileSync(htmlFile,'utf8').replace(/(src|href)="(\.\/(?:app\.mjs|style\.css))"/g,(_,attribute,url)=>attribute+'="'+url+'?release='+commit+'"'));}
+for(const dir of ['web','src','quant'])versionModules(path.join(out,dir));
+for(const rel of ['web/index.html','quant/index.html']){const htmlFile=path.join(out,rel);if(fs.existsSync(htmlFile))fs.writeFileSync(htmlFile,fs.readFileSync(htmlFile,'utf8').replace(/(src|href)="(\.\/(?:app\.mjs|style\.css))"/g,(_,attribute,url)=>attribute+'="'+url+'?release='+commit+'"'));}
 fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:MODEL_VERSION,commit,built_at:new Date().toISOString(),production_modules:JSON.parse(fs.readFileSync('config/model.json')).production}));
 console.log('Built GitHub Pages static artifact with model '+MODEL_VERSION);
