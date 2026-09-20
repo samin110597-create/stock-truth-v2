@@ -34,7 +34,9 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: pip install -r requirements.txt
       - name: Unit integrity gates
-        run: npm test
+        run: |
+          npm test
+          python -m py_compile scripts/collect_quant.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
