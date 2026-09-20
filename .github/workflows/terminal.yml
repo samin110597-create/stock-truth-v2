@@ -36,29 +36,30 @@ jobs:
       - name: Unit integrity gates
         run: |
           npm test
-          python -m py_compile scripts/collect_quant.py
+          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
         run: python scripts/generate_calendar.py
       - name: Fetch completed bars and filed facts
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
-          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY }}
-          POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
-          FMP_KEY: ${{ secrets.FMP_KEY }}
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
-          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
-          ALPHAVANTAGE_KEY: ${{ secrets.ALPHAVANTAGE_KEY }}
-          FRED_KEY: ${{ secrets.FRED_KEY }}
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
+          POLYGON_KEY: ${{ secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON }}
+          FMP_KEY: ${{ secrets.FMP_KEY || secrets.FMP_API_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY || secrets.FMP_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY || secrets.FINNHUB_API_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINNHUB_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
+          ALPHAVANTAGE_KEY: ${{ secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHA_VANTAGE_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHA_VANTAGE }}
+          FRED_KEY: ${{ secrets.FRED_KEY || secrets.FRED_API_KEY || secrets.FRED }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY || secrets.FRED_KEY || secrets.FRED }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           python -u scripts/collect.py
           python -u scripts/collect_quant.py
+          python -u scripts/collect_quant_context.py
       - name: Reconcile optional daily supplements from independent source
         if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: node scripts/refresh-daily.mjs
