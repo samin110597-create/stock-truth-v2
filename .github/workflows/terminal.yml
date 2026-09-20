@@ -36,7 +36,7 @@ jobs:
       - name: Unit integrity gates
         run: |
           npm test
-          python -m py_compile scripts/collect_quant.py
+          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
