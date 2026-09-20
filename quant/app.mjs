@@ -22,7 +22,7 @@ function futureTimes(q){
     while(out.length<n){d.setUTCDate(d.getUTCDate()+1);const wd=d.getUTCDay();if(wd!==0&&wd!==6)out.push(d.toISOString().slice(0,10));}
     return out;
   }
-  const step={15M:900,'15M':900,'1H':3600,'4H':14400}[q.timeframe]||86400,out=[];let t=last.ts;
+  const step={'15M':900,'1H':3600,'4H':14400}[q.timeframe]||86400,out=[];let t=last.ts;
   for(let i=0;i<n;i++){t+=step;out.push(t);}return out;
 }
 function drawProjection(q,candle){
