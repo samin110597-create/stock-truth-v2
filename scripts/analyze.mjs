@@ -5,6 +5,7 @@ const files=fs.readdirSync(path.join(dir,'raw')).filter(x=>x.endsWith('.json')),
 let ledger=[];try{ledger=JSON.parse(fs.readFileSync(path.join(dir,'ledger.json'))).records||[];}catch{}
 const symbols=[],reports=[];
 for(const [symbol,raw] of Object.entries(raws)){
+  try{const f=JSON.parse(fs.readFileSync(path.join(dir,'fundamentals',symbol+'.json')));if(f.symbol===symbol)raw.fundamentals=f;}catch{}
   const a=analyze(raw,{benchmarks:raws}),s=a.setups.Adaptive_SWING?.setup;
   const issues=[];
   function walk(x,p='root'){if(typeof x==='number'&&!Number.isFinite(x))issues.push(p+' is non-finite');else if(x&&typeof x==='object')for(const [k,v]of Object.entries(x))walk(v,p+'.'+k);}

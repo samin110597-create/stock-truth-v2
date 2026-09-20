@@ -63,6 +63,10 @@ jobs:
       - name: Reconcile optional daily supplements from independent source
         if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: node scripts/refresh-daily.mjs
+      - name: Refresh optional sourced financial statements and ratios
+        continue-on-error: true
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        run: node scripts/collect-fundamentals.mjs
       - name: Analyze available snapshots and append immutable setup ledger
         if: hashFiles('data/raw/*.json') != ''
         run: npm run analyze

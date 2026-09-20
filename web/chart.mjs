@@ -44,6 +44,12 @@ export function renderChart(state,tf,plan){
   }
   if($('#overlay-sweeps').checked)for(const e of f.events.filter(e=>e.type==='LIQUIDITY SWEEP').slice(-8))mark(e.i,e.dir,'SWEEP',`Sweep proxy: crossed ${money(e.level)} then closed back through it. This does not prove hidden orders.`,'#e8a33d',e.dir>0?'arrowUp':'arrowDown');
   if($('#overlay-reversal').checked)for(const e of(f.reversal_events||[]).slice(-6))mark(e.i,e.dir,e.stage==='REVERSAL CONFIRMED'?'REV CONFIRMED':e.stage==='REVERSAL DEVELOPING'?'REV DEVELOPING':'REV WATCH',`${e.dir>0?'Bullish':'Bearish'} ${e.stage.toLowerCase()}: ${e.evidence.map(x=>x.name).join(', ')}. Proxy; not an entry by itself.`,e.dir>0?'#66c595':'#ef8585',e.dir>0?'arrowUp':'arrowDown');
+  if($('#overlay-wyckoff').checked)for(const e of(f.wyckoff?.events||[]).slice(-6))mark(e.i,e.dir||1,e.type.includes('SPRING')?'SPR':e.type.includes('UPTHRUST')?'UT':e.type.includes('STRENGTH')?'SOS':e.type.includes('WEAKNESS')?'SOW':e.type.startsWith('LPS')?e.type.split(' ')[0]:'WY',e.type+': '+e.detail+' Known '+when(e.known_at)+'.','#e8a33d');
+  if($('#overlay-waves').checked&&f.elliott?.candidates?.length){
+    const c=f.elliott.candidates[0],series=chart.addSeries(LineSeries,{color:'#b79ad5',lineWidth:2,lastValueVisible:false,priceLineVisible:false,title:'Elliott candidate'});
+    series.setData(c.anchors.map(p=>({time:time(data[p.i]),value:p.price})));
+    for(const p of c.anchors)mark(p.i,p.type==='H'?-1:1,'('+p.wave+')','Elliott candidate wave '+p.wave+' at '+money(p.price)+'. Known '+when(p.confirmed_ts)+'. Subdivision unverified.','#b79ad5');
+  }
   marks.sort((x,z)=>x.time<z.time?-1:x.time>z.time?1:0);createSeriesMarkers(candles,marks);
   const byTime=new Map(data.map(b=>[String(time(b)),b]));
   const timeKey=tm=>tm&&typeof tm==='object'?`${tm.year}-${String(tm.month).padStart(2,'0')}-${String(tm.day).padStart(2,'0')}`:String(tm);

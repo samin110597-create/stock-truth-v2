@@ -10,7 +10,11 @@
     "src/validation.mjs",
     "src/analysis.mjs",
     "src/risk.mjs",
-    "src/research.mjs"
+    "src/research.mjs",
+    "src/wyckoff.mjs",
+    "src/elliott.mjs",
+    "src/forecast.mjs",
+    "src/fundamentals.mjs"
   ],
   "completedBarsOnly": true,
   "pivotConfirmationBars": 3,
@@ -18,5 +22,6 @@
   "positionHorizonSessions": 63,
   "entryExpirySessions": 5,
   "costBasisPointsPerSide": 10,
-  "probabilityPolicy": "No calibrated probability is currently published. Scores and historical frequencies are distinct."
+  "probabilityPolicy": "No calibrated probability is currently published. Scores and historical frequencies are distinct.",
+  "researchVersion": "5.2.0-expanded-research"
 }
