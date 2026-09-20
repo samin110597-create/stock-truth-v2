@@ -58,11 +58,13 @@ Scheduled collection: `:17` and `:47`, 13:00–21:59 UTC weekdays, plus 22:17 UT
 
 Optional repository secrets: `POLYGON_KEY` for a daily-bar fallback and `SEC_USER_AGENT` for an identified SEC client. The related legacy repository's Finnhub/Twelve/FMP/Polygon/Alpha Vantage secret names were identified, but secrets are repository-scoped and were not copied, exposed or assumed present here.
 
-## Quant Lab (experimental Q1.0)
+## Quant Lab (Q1.1)
 
-A separate Quant Lab page lives at `/web/quant/`. It keeps the production Stock Truth terminal unchanged while adding an experimental institutional-style state engine: price velocity/acceleration/jerk, curvature, entropy, Hurst persistence, dominant-cycle analysis, realized/Parkinson volatility, compression, volume/absorption proxies, existing causal structure/reversal evidence, deterministic Monte Carlo paths, and retrospective Wilson intervals.
+Quant Lab lives at `/web/quant/` and now uses a **GitHub-secret-only credential model**. API keys are not entered in the browser and are never committed or embedded in Pages. Scheduled/manual GitHub Actions use repository secrets to collect sanitized market snapshots. The page combines the existing causal structure/reversal engine with price velocity/acceleration/jerk, curvature, entropy, Hurst persistence, dominant-cycle analysis, realized/Parkinson volatility, compression, volume/absorption proxies, deterministic Monte Carlo paths, and retrospective Wilson intervals.
 
-Open **API Keys** inside Quant Lab to save provider keys in that browser only. Massive/Polygon is the preferred price feed and is required for futures/commodities; FMP and Alpha Vantage are fallback equity sources. Repository secrets remain available to scheduled GitHub Actions, but GitHub Pages cannot read them at runtime. See `documentation/QUANT_LAB.md` for supported commodity aliases and integrity rules.
+Q1.1 adds explicit trade-readiness output: model action, quality, preferred pullback entry zone, breakout/breakdown trigger, fixed stop/invalidation, TP1/TP2/TP3 when supported, reward/risk, and 5/10/20-bar primary/pullback/expansion/failure projections. Weak states are labelled WATCH or NO TRADE rather than being forced into a signal.
+
+Add credentials under **Repository Settings → Secrets and variables → Actions**. See `documentation/QUANT_LAB.md` for accepted secret names and the static-Pages limitation for never-before-seen private-key intraday requests.
 
 ## Documentation and rollback
 
