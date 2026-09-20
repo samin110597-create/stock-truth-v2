@@ -11,6 +11,6 @@ if(command==='restore'){
   }
   git(['config','user.name','stock-truth-data-bot'],store);git(['config','user.email','41898282+github-actions[bot]@users.noreply.github.com'],store);
   for(const name of ['raw','analysis','quant','index.json','ledger.json','collection.json','validation-report.json'])if(fs.existsSync(path.join('data',name)))fs.cpSync(path.join('data',name),path.join(store,name),{recursive:true});
-  git(['add','raw','analysis','quant','index.json','ledger.json','collection.json','validation-report.json'],store);
+  const publishable=['raw','analysis','quant','index.json','ledger.json','collection.json','validation-report.json'].filter(name=>fs.existsSync(path.join(store,name)));if(publishable.length)git(['add',...publishable],store);
   if(git(['status','--porcelain'],store).trim()){git(['commit','-m','data: publish source-labelled snapshots and append setup observations'],store);git(['push','origin','HEAD:refs/heads/'+branch],store);console.log('Saved snapshots to '+branch);}
 }else throw Error('Use restore or publish');
