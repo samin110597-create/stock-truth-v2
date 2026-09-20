@@ -58,6 +58,12 @@ Scheduled collection: `:17` and `:47`, 13:00–21:59 UTC weekdays, plus 22:17 UT
 
 Optional repository secrets: `POLYGON_KEY` for a daily-bar fallback and `SEC_USER_AGENT` for an identified SEC client. The related legacy repository's Finnhub/Twelve/FMP/Polygon/Alpha Vantage secret names were identified, but secrets are repository-scoped and were not copied, exposed or assumed present here.
 
+## Quant Lab (experimental Q1.0)
+
+A separate Quant Lab page lives at `/web/quant/`. It keeps the production Stock Truth terminal unchanged while adding an experimental institutional-style state engine: price velocity/acceleration/jerk, curvature, entropy, Hurst persistence, dominant-cycle analysis, realized/Parkinson volatility, compression, volume/absorption proxies, existing causal structure/reversal evidence, deterministic Monte Carlo paths, and retrospective Wilson intervals.
+
+Open **API Keys** inside Quant Lab to save provider keys in that browser only. Massive/Polygon is the preferred price feed and is required for futures/commodities; FMP and Alpha Vantage are fallback equity sources. Repository secrets remain available to scheduled GitHub Actions, but GitHub Pages cannot read them at runtime. See `documentation/QUANT_LAB.md` for supported commodity aliases and integrity rules.
+
 ## Documentation and rollback
 
 See `documentation/AUDIT.md`, `documentation/ACCEPTANCE.md`, `documentation/SOURCES.md` and generated `data-snapshots:validation-report.json`.

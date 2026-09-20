@@ -23,6 +23,6 @@ function versionModules(dir){for(const item of fs.readdirSync(dir,{withFileTypes
   }
 }}
 for(const dir of ['web','src'])versionModules(path.join(out,dir));
-const htmlFile=path.join(out,'web/index.html');fs.writeFileSync(htmlFile,fs.readFileSync(htmlFile,'utf8').replace(/(src|href)="(\.\/(?:app\.mjs|style\.css))"/g,(_,attribute,url)=>attribute+'="'+url+'?release='+commit+'"'));
+for(const rel of ['web/index.html','web/quant/index.html']){const htmlFile=path.join(out,rel);if(fs.existsSync(htmlFile))fs.writeFileSync(htmlFile,fs.readFileSync(htmlFile,'utf8').replace(/(src|href)="(\.\/(?:app\.mjs|style\.css))"/g,(_,attribute,url)=>attribute+'="'+url+'?release='+commit+'"'));}
 fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:MODEL_VERSION,commit,built_at:new Date().toISOString(),production_modules:JSON.parse(fs.readFileSync('config/model.json')).production}));
 console.log('Built GitHub Pages static artifact with model '+MODEL_VERSION);
