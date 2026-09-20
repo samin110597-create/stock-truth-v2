@@ -58,13 +58,13 @@ Scheduled collection: `:17` and `:47`, 13:00–21:59 UTC weekdays, plus 22:17 UT
 
 Optional repository secrets: `POLYGON_KEY` for a daily-bar fallback and `SEC_USER_AGENT` for an identified SEC client. The related legacy repository's Finnhub/Twelve/FMP/Polygon/Alpha Vantage secret names were identified, but secrets are repository-scoped and were not copied, exposed or assumed present here.
 
-## Quant Lab (Q1.1)
+## Standalone Q-State Quant Terminal
 
-Quant Lab lives at `/web/quant/` and now uses a **GitHub-secret-only credential model**. API keys are not entered in the browser and are never committed or embedded in Pages. Scheduled/manual GitHub Actions use repository secrets to collect sanitized market snapshots. The page combines the existing causal structure/reversal engine with price velocity/acceleration/jerk, curvature, entropy, Hurst persistence, dominant-cycle analysis, realized/Parkinson volatility, compression, volume/absorption proxies, deterministic Monte Carlo paths, and retrospective Wilson intervals.
+The quant terminal is a **separate application** at `/quant/`. It does not reuse the classic terminal HTML, CSS, provider router, technical engine, structure/reversal engine, or setup engine. It shares only sanitized market-data snapshots, the bundled chart library, and deployment infrastructure.
 
-Q1.1 adds explicit trade-readiness output: model action, quality, preferred pullback entry zone, breakout/breakdown trigger, fixed stop/invalidation, TP1/TP2/TP3 when supported, reward/risk, and 5/10/20-bar primary/pullback/expansion/failure projections. Weak states are labelled WATCH or NO TRADE rather than being forced into a signal.
+Its independent engine provides structure, BOS/CHoCH, sweeps, RSI divergence, calculus-style momentum derivatives, entropy, Hurst persistence, dominant-cycle analysis, volatility/compression, Monte Carlo projection paths, execution levels, and trade-readiness states. API credentials remain GitHub Actions secrets and are never entered into the browser.
 
-Add credentials under **Repository Settings → Secrets and variables → Actions**. See `documentation/QUANT_LAB.md` for accepted secret names and the static-Pages limitation for never-before-seen private-key intraday requests.
+See `documentation/QUANT_LAB.md` for the standalone architecture and integrity rules.
 
 ## Documentation and rollback
 
