@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Standalone quantitative market state and projection terminal.">
+<title>Q-State Quant Terminal</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main>
+<header class="top">
+  <div><div class="eyebrow">INDEPENDENT QUANT SYSTEM</div><h1>Q-STATE <span>// MARKET ENGINE</span></h1></div>
+  <div class="security">GITHUB SECRET DATA PIPELINE</div>
+</header>
+
+<section class="command">
+<form id="form">
+  <input id="symbol" value="NVDA" maxlength="20" autocomplete="off" spellcheck="false" placeholder="NVDA · SPY · GC · CL · HG">
+  <select id="asset"><option>AUTO</option><option>STOCK</option><option>FUTURE</option></select>
+  <select id="tf"><option>15M</option><option>1H</option><option>4H</option><option selected>1D</option></select>
+  <button>ANALYZE</button>
+</form>
+<div id="status">Standalone engine ready.</div>
+</section>
+
+<section id="decision" class="decision"></section>
+<section class="layout">
+  <div class="chart-shell">
+    <div class="panel-head"><span>PRICE / STRUCTURE / FORECAST</span><span id="source"></span></div>
+    <div id="chart"></div>
+    <div id="chart-note" class="micro"></div>
+  </div>
+  <aside id="trade" class="trade"></aside>
+</section>
+
+<section id="projections" class="projections"></section>
+<section id="state-grid" class="state-grid"></section>
+
+<section class="lower-grid">
+  <section class="block"><div class="panel-head"><span>FORECAST DISTRIBUTION</span><span>2,000 PATHS</span></div><div id="distribution"></div></section>
+  <section class="block"><div class="panel-head"><span>STRUCTURE EVIDENCE</span><span>NON-REPAINT PIVOTS</span></div><div id="evidence"></div></section>
+</section>
+
+<section class="block"><div class="panel-head"><span>MODEL INTEGRITY</span><span>STANDALONE 1.0</span></div><div id="integrity"></div></section>
+<footer>Standalone quant page · separate HTML / CSS / engine · shared only with sanitized data snapshots and chart library.</footer>
+<script type="module" src="./app.mjs"></script>
+</main>
+</body>
+</html>
