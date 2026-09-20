@@ -15,3 +15,5 @@ for(const file of files.filter(f=>f.endsWith('.mjs')&&(f.startsWith('web/')||f.s
   if(/(["'])(\.\.?\/[^"'\s?]+\.mjs)\1/.test(built))throw Error('Unversioned local module in '+file);
 }
 console.log('Release identity is pinned across HTML, CSS, Worker, and nested module imports.');
+
+const quantEntry=fs.readFileSync('dist/web/quant/index.html','utf8')+fs.readFileSync('dist/web/quant/app.mjs','utf8');if(/localStorage|k-massive|k-fmp|k-finnhub|k-alpha|k-fred|apiKey=/.test(quantEntry))throw Error('Quant Lab must not contain browser-stored API credentials or API-key query construction');console.log('Quant Lab browser bundle contains no API credential entry/storage path.');
