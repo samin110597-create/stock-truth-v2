@@ -1,0 +1,87 @@
+{
+  "equities": [
+    "NVDA",
+    "MU",
+    "VRT",
+    "CRWV",
+    "CIFR",
+    "SNDK",
+    "GOOG",
+    "META",
+    "AVGO",
+    "MRVL",
+    "AMBA",
+    "ALAB",
+    "IREN",
+    "AXTI",
+    "AAOI",
+    "USAR",
+    "BE",
+    "NBIS",
+    "AEHR",
+    "APP",
+    "ORCL",
+    "AMAT",
+    "VST",
+    "VPG",
+    "SPY",
+    "QQQ",
+    "SMH",
+    "XLK",
+    "XLI",
+    "XLE",
+    "XLU"
+  ],
+  "futures": [
+    {
+      "symbol": "GC",
+      "name": "Gold",
+      "product_code": "GC"
+    },
+    {
+      "symbol": "SI",
+      "name": "Silver",
+      "product_code": "SI"
+    },
+    {
+      "symbol": "CL",
+      "name": "WTI Crude Oil",
+      "product_code": "CL"
+    },
+    {
+      "symbol": "NG",
+      "name": "Natural Gas",
+      "product_code": "NG"
+    },
+    {
+      "symbol": "HG",
+      "name": "Copper",
+      "product_code": "HG"
+    },
+    {
+      "symbol": "PL",
+      "name": "Platinum",
+      "product_code": "PL"
+    },
+    {
+      "symbol": "PA",
+      "name": "Palladium",
+      "product_code": "PA"
+    },
+    {
+      "symbol": "ZC",
+      "name": "Corn",
+      "product_code": "ZC"
+    },
+    {
+      "symbol": "ZW",
+      "name": "Wheat",
+      "product_code": "ZW"
+    },
+    {
+      "symbol": "ZS",
+      "name": "Soybeans",
+      "product_code": "ZS"
+    }
+  ]
+}
