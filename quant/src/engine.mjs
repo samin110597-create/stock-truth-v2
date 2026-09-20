@@ -1,7 +1,7 @@
 import {finite,clamp,mean,std,quantile,ema,diff,rollingMean,zscore,trueRange,rsi,shannonEntropy,hurstExponent,dominantCycle,realizedVol,parkinsonVol,hashSeed,monteCarlo,wilson} from './math.mjs';
 
 const sign=x=>x>0?1:x<0?-1:0;
-const annualizer=tf=>({15M:6552,'15M':6552,'1H':1638,'4H':410,'1D':252}[tf]||252);
+const annualizer=tf=>({'15M':6552,'1H':1638,'4H':410,'1D':252}[tf]||252);
 
 function pivots(bars,k=3){
   const highs=[],lows=[];
