@@ -43,7 +43,7 @@ jobs:
         run: python scripts/generate_calendar.py
       - name: Fetch completed bars and filed facts
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         env:
           MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
           POLYGON_KEY: ${{ secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON }}
@@ -61,18 +61,18 @@ jobs:
           python -u scripts/collect_quant.py
           python -u scripts/collect_quant_context.py
       - name: Reconcile optional daily supplements from independent source
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/refresh-daily.mjs
       - name: Refresh optional sourced financial statements and ratios
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/collect-fundamentals.mjs
       - name: Analyze available snapshots and append immutable setup ledger
         if: hashFiles('data/raw/*.json') != ''
         run: npm run analyze
       - name: Save collected snapshots without changing production source
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/snapshot-store.mjs publish
       - run: npm run build
       - run: npm run check
