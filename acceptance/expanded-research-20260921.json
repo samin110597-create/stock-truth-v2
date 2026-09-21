@@ -1,0 +1,163 @@
+{
+  "release": "819110af254c241628e82843dceffa72be753b2e",
+  "test_count": 29,
+  "real_dataset_count": 31,
+  "representative": [
+    {
+      "symbol": "NVDA",
+      "last_bar": "2026-09-18",
+      "wyckoff": "B \u00b7 RANGE CANDIDATE",
+      "elliott": "NO VALID IMPULSE CANDIDATE",
+      "forecast": [
+        {
+          "sessions": 1,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 5,
+          "status": "HISTORICAL BASELINE IMPROVEMENT",
+          "test_windows": 40
+        },
+        {
+          "sessions": 21,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 63,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 36
+        }
+      ]
+    },
+    {
+      "symbol": "MU",
+      "last_bar": "2026-09-18",
+      "wyckoff": "B \u00b7 RANGE CANDIDATE",
+      "elliott": "CONDITIONAL COUNTS",
+      "forecast": [
+        {
+          "sessions": 1,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 5,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 21,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 63,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 36
+        }
+      ]
+    },
+    {
+      "symbol": "SNDK",
+      "last_bar": "2026-09-18",
+      "wyckoff": "C \u00b7 UPTHRUST CANDIDATE",
+      "elliott": "CONDITIONAL COUNTS",
+      "forecast": [
+        {
+          "sessions": 1,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 5,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 21,
+          "status": "UNVERIFIED \u00b7 LIMITED VALIDATION",
+          "test_windows": 12
+        },
+        {
+          "sessions": 63,
+          "status": "UNVERIFIED \u00b7 LIMITED VALIDATION",
+          "test_windows": 3
+        }
+      ]
+    },
+    {
+      "symbol": "ALAB",
+      "last_bar": "2026-09-18",
+      "wyckoff": "C \u00b7 UPTHRUST CANDIDATE",
+      "elliott": "NO VALID IMPULSE CANDIDATE",
+      "forecast": [
+        {
+          "sessions": 1,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 5,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 40
+        },
+        {
+          "sessions": 21,
+          "status": "NO DEMONSTRATED BASELINE ADVANTAGE",
+          "test_windows": 22
+        },
+        {
+          "sessions": 63,
+          "status": "UNVERIFIED \u00b7 LIMITED VALIDATION",
+          "test_windows": 7
+        }
+      ]
+    }
+  ],
+  "fundamentals": {
+    "available": 21,
+    "partial": 3,
+    "unsupported_components": [
+      "AEHR",
+      "USAR",
+      "VPG",
+      "XLE",
+      "XLI",
+      "XLK",
+      "XLU"
+    ],
+    "provider": "TGMCharts / SEC EDGAR",
+    "source_update_dates_visible": true
+  },
+  "new_ticker_precheck": {
+    "symbol": "DECK",
+    "matches_in_main_before_acceptance": 0
+  },
+  "verified_production_commit": "599007a14bffaf495746b258497a233a5f485fad",
+  "production_acceptance": {
+    "new_symbol": "DECK",
+    "direct_retrieval": true,
+    "manual_watchlist_edit": false,
+    "chart_bars": 128,
+    "chart_close": 78.43,
+    "last_completed": "2026-09-18",
+    "rsi": 33.2,
+    "ema20": 83.61,
+    "support": 77.37,
+    "resistance": 86.33,
+    "ticker_specific_thesis": true,
+    "fundamentals_available": true,
+    "forecast_calculated": true,
+    "prior_ticker_cleared_while_loading": true,
+    "invalid_ticker_cleared_chart_and_research": true,
+    "mu_elliott_targets": [
+      1207.12,
+      1395.31,
+      1699.83
+    ],
+    "native_overlays_rendered": true,
+    "nvda_filing_revenue": 215938000000
+  }
+}
