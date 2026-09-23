@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-09-23T00:42:06.927Z",
+  "generated_at": "2026-09-23T18:04:17.243Z",
   "method": "Retrospective causal replay; no verified OOS probability claims.",
   "tickers": [
     {
       "symbol": "AAOI",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 680,
         "4H": 0,
         "1D": 501,
@@ -62,11 +62,11 @@
       "symbol": "AEHR",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 4655,
+        "15M": 1551,
+        "30M": 775,
+        "1H": 3487,
+        "4H": 992,
         "1D": 501,
         "1W": 104,
         "1M": 23
@@ -118,11 +118,11 @@
       "symbol": "ALAB",
       "daily_bars": 629,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
+        "1H": 3487,
+        "4H": 992,
         "1D": 629,
         "1W": 130,
         "1M": 29
@@ -174,11 +174,11 @@
       "symbol": "AMAT",
       "daily_bars": 2512,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
+        "1H": 655,
+        "4H": 0,
         "1D": 2512,
         "1W": 521,
         "1M": 119
@@ -230,9 +230,9 @@
       "symbol": "AMBA",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4674,
-        "15M": 1554,
-        "30M": 774,
+        "5M": 3197,
+        "15M": 1065,
+        "30M": 532,
         "1H": 990,
         "4H": 0,
         "1D": 501,
@@ -286,9 +286,9 @@
       "symbol": "APP",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 632,
         "4H": 0,
         "1D": 501,
@@ -342,11 +342,11 @@
       "symbol": "AVGO",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 4654,
+        "15M": 1551,
+        "30M": 775,
+        "1H": 462,
+        "4H": 0,
         "1D": 501,
         "1W": 104,
         "1M": 23
@@ -398,11 +398,11 @@
       "symbol": "AXTI",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 4655,
+        "15M": 1551,
+        "30M": 775,
+        "1H": 3487,
+        "4H": 992,
         "1D": 501,
         "1W": 104,
         "1M": 23
@@ -454,11 +454,11 @@
       "symbol": "BE",
       "daily_bars": 2051,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
-        "1H": 3474,
-        "4H": 988,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
+        "1H": 3484,
+        "4H": 991,
         "1D": 2051,
         "1W": 425,
         "1M": 97
@@ -508,55 +508,55 @@
     },
     {
       "symbol": "CIFR",
-      "daily_bars": 501,
+      "daily_bars": 1487,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 558,
         "4H": 0,
-        "1D": 501,
-        "1W": 104,
-        "1M": 23
+        "1D": 1487,
+        "1W": 308,
+        "1M": 70
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 6,
+      "adaptive_n": 6,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 6,
+          "wins": 2,
+          "frequency": 0.3333333333333333,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.09676933255921683,
+            "high": 0.7000116786584712
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.18810999074200116,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 3,
+          "wins": 2,
+          "frequency": 0.6666666666666666,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.2076549551264879,
+            "high": 0.9385096847238394
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.083981263285175,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 2,
+          "wins": 1,
+          "frequency": 0.5,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.09452865480086614,
+            "high": 0.9054713451991339
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.3312421910826926,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -566,11 +566,11 @@
       "symbol": "CRWV",
       "daily_bars": 373,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
-        "1H": 2587,
-        "4H": 736,
+        "5M": 4654,
+        "15M": 1551,
+        "30M": 775,
+        "1H": 415,
+        "4H": 0,
         "1D": 373,
         "1W": 77,
         "1M": 17
@@ -622,11 +622,11 @@
       "symbol": "GOOG",
       "daily_bars": 2512,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 4654,
+        "15M": 1551,
+        "30M": 775,
+        "1H": 3487,
+        "4H": 992,
         "1D": 2512,
         "1W": 521,
         "1M": 119
@@ -678,9 +678,9 @@
       "symbol": "IREN",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 462,
         "4H": 0,
         "1D": 501,
@@ -734,9 +734,9 @@
       "symbol": "META",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 509,
         "4H": 0,
         "1D": 501,
@@ -788,22 +788,46 @@
     },
     {
       "symbol": "MRVL",
-      "daily_bars": 501,
+      "daily_bars": 2512,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 568,
         "4H": 0,
-        "1D": 501,
-        "1W": 104,
-        "1M": 23
+        "1D": 2512,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 1,
-      "adaptive_n": 1,
+      "strict_n": 5,
+      "adaptive_n": 8,
       "adaptive_metrics": [
         {
           "target": "TP1",
+          "n": 8,
+          "wins": 4,
+          "frequency": 0.5,
+          "ci95": {
+            "low": 0.21521252682444186,
+            "high": 0.7847874731755582
+          },
+          "mean_net_r": 0.7049035550676995,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 6,
+          "wins": 3,
+          "frequency": 0.5,
+          "ci95": {
+            "low": 0.18761280689940868,
+            "high": 0.8123871931005913
+          },
+          "mean_net_r": 1.459909410068733,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP3",
           "n": 1,
           "wins": 0,
           "frequency": 0,
@@ -811,32 +835,8 @@
             "low": 0,
             "high": 0.7934567085261071
           },
-          "mean_net_r": -1.0412937463984853,
+          "mean_net_r": -1.3933437400352016,
           "classification": "CALCULATION"
-        },
-        {
-          "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        },
-        {
-          "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -846,9 +846,9 @@
       "symbol": "MU",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 4654,
+        "15M": 1551,
+        "30M": 775,
         "1H": 431,
         "4H": 0,
         "1D": 501,
@@ -902,9 +902,9 @@
       "symbol": "NBIS",
       "daily_bars": 481,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 516,
         "4H": 0,
         "1D": 481,
@@ -958,9 +958,9 @@
       "symbol": "NVDA",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 312,
         "4H": 0,
         "1D": 501,
@@ -1014,9 +1014,9 @@
       "symbol": "ORCL",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
+        "5M": 4655,
+        "15M": 1551,
+        "30M": 775,
         "1H": 614,
         "4H": 0,
         "1D": 501,
@@ -1070,9 +1070,9 @@
       "symbol": "QQQ",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
+        "5M": 4656,
+        "15M": 1552,
+        "30M": 776,
         "1H": 357,
         "4H": 0,
         "1D": 501,
@@ -1126,11 +1126,11 @@
       "symbol": "SMH",
       "daily_bars": 2512,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
-        "1H": 3478,
-        "4H": 989,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
+        "1H": 618,
+        "4H": 0,
         "1D": 2512,
         "1W": 521,
         "1M": 119
@@ -1182,9 +1182,9 @@
       "symbol": "SNDK",
       "daily_bars": 397,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 772,
         "4H": 0,
         "1D": 397,
@@ -1238,9 +1238,9 @@
       "symbol": "SPY",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 381,
         "4H": 0,
         "1D": 501,
@@ -1294,9 +1294,9 @@
       "symbol": "USAR",
       "daily_bars": 383,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
+        "5M": 4655,
+        "15M": 1551,
+        "30M": 775,
         "1H": 663,
         "4H": 0,
         "1D": 383,
@@ -1348,54 +1348,54 @@
     },
     {
       "symbol": "VPG",
-      "daily_bars": 501,
+      "daily_bars": 2512,
       "timeframes": {
-        "5M": 4553,
-        "15M": 1447,
-        "30M": 685,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 501,
-        "1W": 104,
-        "1M": 23
+        "5M": 4524,
+        "15M": 1435,
+        "30M": 677,
+        "1H": 3487,
+        "4H": 992,
+        "1D": 2512,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 1,
-      "adaptive_n": 2,
+      "strict_n": 5,
+      "adaptive_n": 15,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 2,
+          "n": 15,
           "wins": 0,
           "frequency": 0,
           "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
+            "low": -1.3877787807814457e-17,
+            "high": 0.20388926630434784
           },
-          "mean_net_r": -1.0479051361892826,
+          "mean_net_r": -0.990746851656429,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 2,
+          "n": 11,
           "wins": 0,
           "frequency": 0,
           "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
+            "low": 2.7755575615628914e-17,
+            "high": 0.2588400172488141
           },
-          "mean_net_r": -1.0479051361892826,
+          "mean_net_r": -0.9504820236275259,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 2,
+          "n": 8,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.6576280471103807
+            "high": 0.3244156195108769
           },
-          "mean_net_r": -1.0479051361892826,
+          "mean_net_r": -0.8977158274951462,
           "classification": "CALCULATION"
         }
       ],
@@ -1406,9 +1406,9 @@
       "symbol": "VRT",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 591,
         "4H": 0,
         "1D": 501,
@@ -1462,9 +1462,9 @@
       "symbol": "VST",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 565,
         "4H": 0,
         "1D": 501,
@@ -1518,9 +1518,9 @@
       "symbol": "XLE",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 636,
         "4H": 0,
         "1D": 501,
@@ -1572,54 +1572,54 @@
     },
     {
       "symbol": "XLI",
-      "daily_bars": 501,
+      "daily_bars": 2512,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 501,
-        "1W": 104,
-        "1M": 23
+        "5M": 4656,
+        "15M": 1552,
+        "30M": 776,
+        "1H": 3487,
+        "4H": 992,
+        "1D": 2512,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 1,
+      "strict_n": 4,
+      "adaptive_n": 10,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 10,
+          "wins": 1,
+          "frequency": 0.1,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.01787574951572113,
+            "high": 0.4041563854975721
           },
-          "mean_net_r": -1.1169459093479601,
+          "mean_net_r": -0.6830491086227412,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 7,
+          "wins": 1,
+          "frequency": 0.14285714285714285,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.02567895594897479,
+            "high": 0.51313450331903
           },
-          "mean_net_r": -1.1169459093479601,
+          "mean_net_r": -0.6119792006335852,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 6,
+          "wins": 1,
+          "frequency": 0.16666666666666666,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.03005258587173032,
+            "high": 0.563509436563646
           },
-          "mean_net_r": -1.1169459093479601,
+          "mean_net_r": -0.42766284526226683,
           "classification": "CALCULATION"
         }
       ],
@@ -1630,9 +1630,9 @@
       "symbol": "XLK",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 3120,
-        "15M": 1040,
-        "30M": 520,
+        "5M": 3198,
+        "15M": 1066,
+        "30M": 533,
         "1H": 666,
         "4H": 0,
         "1D": 501,
@@ -1686,9 +1686,9 @@
       "symbol": "XLU",
       "daily_bars": 501,
       "timeframes": {
-        "5M": 4680,
-        "15M": 1560,
-        "30M": 780,
+        "5M": 4656,
+        "15M": 1552,
+        "30M": 776,
         "1H": 702,
         "4H": 0,
         "1D": 501,
