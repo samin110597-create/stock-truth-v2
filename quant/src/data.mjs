@@ -3,7 +3,7 @@ const METAL_PROXY={GC:'GLD',SI:'SLV'};
 const CONTRACT=/^[A-Z]{1,3}[FGHJKMNQUVXZ]\d{1,2}$/;
 const clean=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
 export function detectAsset(symbol,choice='AUTO'){if(choice&&choice!=='AUTO')return choice;const s=clean(symbol);return PRODUCTS[s]||CONTRACT.test(s)?'FUTURE':'STOCK';}
-async function json(url,signal){const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(12000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+async function json(url,signal,timeout=12000){const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(timeout)]):AbortSignal.timeout(timeout)});if(!r.ok){let detail='';try{detail=(await r.json())?.detail||'';}catch{}throw new Error('HTTP '+r.status+(detail?' · '+JSON.stringify(detail):''));}return r.json();}
 const usable=b=>Array.isArray(b?.bars)&&b.bars.length>=80&&!['STALE','UNAVAILABLE'].includes(String(b?.status||'').toUpperCase());
 const frameUsable=(b,min=60)=>Array.isArray(b?.bars)&&b.bars.length>=min&&!['STALE','UNAVAILABLE'].includes(String(b?.status||'').toUpperCase());
 const mtfFrom=timeframes=>Object.fromEntries(['15M','1H','4H','1D'].filter(tf=>frameUsable(timeframes?.[tf],60)).map(tf=>[tf,timeframes[tf].bars]));
@@ -51,23 +51,42 @@ async function runtimeConfig(signal){
   if(!runtimeConfigPromise)runtimeConfigPromise=json(new URL('../runtime-config.json',import.meta.url),signal).catch(()=>({apiBase:''}));
   return runtimeConfigPromise;
 }
-async function backendStock(symbol,tf,signal){
+async function gradioCall(base,endpoint,data,signal,timeout=60000){
+  const ctl=AbortSignal.timeout(timeout),merged=signal?AbortSignal.any([signal,ctl]):ctl;
+  const start=await fetch(base.replace(/\/$/,'')+'/gradio_api/call/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data}),signal:merged});
+  if(!start.ok)throw new Error('Gradio start HTTP '+start.status);
+  const meta=await start.json();if(!meta?.event_id)throw new Error('Gradio event id missing');
+  const stream=await fetch(base.replace(/\/$/,'')+'/gradio_api/call/'+endpoint+'/'+encodeURIComponent(meta.event_id),{signal:merged});
+  if(!stream.ok)throw new Error('Gradio result HTTP '+stream.status);
+  const txt=await stream.text();let payload=null;
+  for(const line of txt.split(/\r?\n/)){if(!line.startsWith('data:'))continue;const raw=line.slice(5).trim();if(!raw)continue;try{payload=JSON.parse(raw);}catch{}}
+  if(!payload)throw new Error('Gradio result missing');
+  const first=Array.isArray(payload)?payload[0]:payload;
+  if(typeof first==='string'){try{return JSON.parse(first);}catch{return first;}}
+  return first;
+}
+async function backendMarket(symbol,tf,signal){
   const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');if(!base)throw new Error('ON-DEMAND BACKEND OFF: arbitrary-ticker mode is not configured');
-  const u=new URL(base+'/v1/market');u.searchParams.set('symbol',symbol);u.searchParams.set('timeframe',tf);
-  const j=await json(u.toString(),signal),b=j?.timeframes?.[tf]||j?.primary;
+  const j=await gradioCall(base,'market',[symbol,tf],signal,60000);
+  if(j?.error)throw new Error(j.error+(j.message?' · '+j.message:''));
+  const b=j?.timeframes?.[tf]||j?.primary;
   if(!b||!Array.isArray(b.bars)||b.bars.length<80)throw new Error('on-demand API returned insufficient '+tf+' data');
   const mtf=Object.fromEntries(['15M','1H','4H','1D'].filter(x=>Array.isArray(j?.timeframes?.[x]?.bars)&&j.timeframes[x].bars.length>=60).map(x=>[x,j.timeframes[x].bars]));
-  return {symbol,sourceSymbol:symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'On-demand secure API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain on the secure API server.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
+  return {symbol,sourceSymbol:j.source_symbol||symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'Hugging Face on-demand API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain on the Hugging Face Space.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
 }
 async function apiContext(signal){try{return await json('../data/quant/context.json',signal);}catch{return null;}}
 async function trainedModel(signal){try{return await json('../data/quant/model.json',signal);}catch{return null;}}
 export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}){
   const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal);let core;
-  if(kind==='FUTURE')core=await future(s,timeframe,signal);
-  else{
-    let backendError=null,storedError=null;
-    try{core=await backendStock(s,timeframe,signal);}
-    catch(e){backendError=e;try{core=await storedStock(s,timeframe,signal);}catch(se){storedError=se;try{core=await publicStock(s,timeframe,signal);}catch(pub){throw new Error(s+' data unavailable. On-demand API: '+(backendError?.message||'failed')+' · stored snapshot: '+(storedError?.message||'failed')+' · public fallback: '+(pub?.message||'failed'));}}}
+  let backendError=null,storedError=null;
+  try{core=await backendMarket(s,timeframe,signal);}
+  catch(e){
+    backendError=e;
+    if(kind==='FUTURE'){
+      try{core=await future(s,timeframe,signal);}catch(fe){throw new Error(s+' data unavailable. Hugging Face API: '+(backendError?.message||'failed')+' · futures fallback: '+(fe?.message||'failed'));}
+    }else{
+      try{core=await storedStock(s,timeframe,signal);}catch(se){storedError=se;try{core=await publicStock(s,timeframe,signal);}catch(pub){throw new Error(s+' data unavailable. Hugging Face API: '+(backendError?.message||'failed')+' · stored snapshot: '+(storedError?.message||'failed')+' · public fallback: '+(pub?.message||'failed'));}}
+    }
   }
   const cfg=await runtimeConfig(signal);
   return {...core,apiContext:await contextPromise,trainedModel:await modelPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
