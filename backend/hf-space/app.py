@@ -1,23 +1,20 @@
-import os, math, time
+import os, math, time, json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
+import gradio as gr
 
 NY=ZoneInfo("America/New_York")
 NOW=lambda: datetime.now(timezone.utc)
 UA={"User-Agent":"QState/3.0","Accept":"application/json"}
-ALLOWED=[x.strip() for x in os.getenv("ALLOWED_ORIGIN","https://samin110597-create.github.io").split(",") if x.strip()]
 MASSIVE=os.getenv("MASSIVE_KEY") or os.getenv("POLYGON_KEY")
 FMP=os.getenv("FMP_API_KEY") or os.getenv("FMP_KEY")
 FINNHUB=os.getenv("FINNHUB_API_KEY") or os.getenv("FINNHUB_KEY")
 ALPHA=os.getenv("ALPHA_VANTAGE_KEY") or os.getenv("ALPHAVANTAGE_KEY")
 
-app=FastAPI(title="Q-State Market API",version="3.0")
-app.add_middleware(CORSMiddleware,allow_origins=ALLOWED,allow_credentials=False,allow_methods=["GET","OPTIONS"],allow_headers=["*"])
+app=gr.Server()
 
 FUTURES={
  "GOLD":"GC=F","GC":"GC=F","XAU":"GC=F","XAUUSD":"GC=F",
@@ -240,19 +237,28 @@ async def bundle(symbol):
     CACHE[key]=(time.time(),data)
     return data
 
-@app.get("/health")
-async def health():
-    return {"status":"OK","service":"Q-State Market API","version":"3.0",
-            "providers":{"massive":bool(MASSIVE),"fmp":bool(FMP),"finnhub":bool(FINNHUB),"alpha_vantage":bool(ALPHA)},
-            "host":"Hugging Face Space"}
+@app.api(name="health")
+def health() -> str:
+    return json.dumps({
+        "status":"OK","service":"Q-State Market API","version":"3.1",
+        "providers":{"massive":bool(MASSIVE),"fmp":bool(FMP),"finnhub":bool(FINNHUB),"alpha_vantage":bool(ALPHA)},
+        "host":"Hugging Face Gradio Space"
+    },separators=(",",":"))
 
-@app.get("/v1/market")
-async def market(symbol:str=Query(...,min_length=1,max_length=24),timeframe:str=Query("1D")):
-    s=clean_symbol(symbol); tf=timeframe.upper()
-    if tf not in {"15M","1H","4H","1D"}: raise HTTPException(400,"INVALID_TIMEFRAME")
-    if not s or any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-=^" for ch in s): raise HTTPException(400,"INVALID_SYMBOL")
-    try:data=await bundle(s)
-    except Exception as e: raise HTTPException(503,{"error":"DATA_UNAVAILABLE","symbol":s,"message":str(e)})
+@app.api(name="market")
+async def market(symbol: str, timeframe: str="1D") -> str:
+    s=clean_symbol(symbol); tf=str(timeframe or "1D").upper()
+    if tf not in {"15M","1H","4H","1D"}:
+        return json.dumps({"error":"INVALID_TIMEFRAME"},separators=(",",":"))
+    if not s or any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-=^" for ch in s):
+        return json.dumps({"error":"INVALID_SYMBOL"},separators=(",",":"))
+    try:
+        data=await bundle(s)
+    except Exception as e:
+        return json.dumps({"error":"DATA_UNAVAILABLE","symbol":s,"message":str(e)[:240]},separators=(",",":"))
     frame=(data.get("timeframes") or {}).get(tf)
-    if not frame or len(frame.get("bars") or [])<80: raise HTTPException(404,{"error":"TIMEFRAME_UNAVAILABLE","symbol":s,"timeframe":tf,"provider_trace":data.get("provider_trace")})
-    return {**data,"requested_timeframe":tf,"primary":frame}
+    if not frame or len(frame.get("bars") or [])<80:
+        return json.dumps({"error":"TIMEFRAME_UNAVAILABLE","symbol":s,"timeframe":tf,"provider_trace":data.get("provider_trace")},separators=(",",":"))
+    return json.dumps({**data,"requested_timeframe":tf,"primary":frame},separators=(",",":"))
+
+app.launch()
