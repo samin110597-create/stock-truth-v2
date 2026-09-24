@@ -100,9 +100,11 @@ A probability is promoted to the UI only when all of these are true:
 - at least 500 out-of-sample observations
 - Brier skill versus the historical base-rate forecast is at least 0.5%
 - log loss is no worse than the base-rate forecast
+- at least 60% of walk-forward folds have positive Brier skill without worse log loss
+- median fold Brier skill is positive
 
 If those gates fail, probability is shown as **WITHHELD**. The deterministic setup engine can still produce a rule-based WATCH/DEVELOPING/READY state, but it may not present an unvalidated percentage as predictive probability.
 
-When 5/10/20-bar models all pass promotion, projected price paths and distribution bands use the corresponding out-of-sample conditional return distributions. Otherwise the chart falls back to the deterministic regime/volatility simulation and labels that fallback explicitly.
+Execution uses a pre-specified primary horizon rather than choosing the best historical result after the fact: 15M→20 bars, 1H→10 bars, 4H→5 bars, 1D→10 bars. A probability is shown only if that pre-specified horizon passes promotion. Projected 5/10/20-bar paths use validated OOS conditional return bands for any horizon that passed; non-promoted horizons remain explicit regime/volatility simulation fallbacks.
 
 Multi-timeframe EMA20/50 bias is used as an execution gate, not silently mixed into calibrated probability. Macro/API context remains descriptive until synchronized historical factor data is available for separate validation.
