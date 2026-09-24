@@ -75,20 +75,22 @@ Rollback point: branch `rollback/pre-github-only-terminal-20260911`, commit `97c
 
 ## Arbitrary stock / ETF on-demand mode
 
-GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore includes a separate Cloudflare Worker under `backend/qstate-api/`.
+GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore uses a separate **Hugging Face Docker Space** under `backend/hf-space/`.
 
-When deployed, every stock/ETF search first calls that Worker. The Worker:
-- accepts any valid U.S. stock/ETF ticker rather than a configured watchlist
-- keeps Massive/FMP credentials on the server
+When deployed, every stock/ETF search first calls the Space API. The backend:
+- accepts valid stock/ETF symbols rather than a configured watchlist
+- keeps Massive/FMP/Finnhub/Alpha Vantage credentials as Hugging Face Space secrets
 - rejects stale data
-- cross-checks provider results
+- uses secured providers first and server-side Yahoo as an independent fallback
 - returns 15M/1H/4H/1D together
-- falls back to server-side public market data if a paid provider is unavailable
+- supports Gold/Silver aliases server-side (`GOLD/GC/XAU` and `SILVER/SI/XAG`) without exposing credentials
 
-The existing snapshot system remains only a fallback.
+The existing snapshot system remains fallback only.
 
-To activate automatic deployment from GitHub Actions, add two additional repository secrets:
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
+The production Space ID is `Smit1105/qstate-market-api`, served from:
+`https://smit1105-qstate-market-api.hf.space`.
 
-The API token should be scoped for Workers deployment. Existing market-data secrets remain unchanged. During the same production build, the Worker deployment URL is captured automatically and injected into `quant/runtime-config.json`; no API URL needs to be typed into the browser.
+To let GitHub Actions create/update that Space, add one repository secret:
+- `HF_TOKEN` — a Hugging Face User Access Token with **write** permission for the `Smit1105` account.
+
+Existing market-data secrets remain unchanged. The deploy script copies those provider secrets into the Space's private secret store; values are never written to the Space source code or returned to the browser. After deployment, CI checks `/health` and probes AAPL through a secured provider before injecting the Space URL into `quant/runtime-config.json`.
