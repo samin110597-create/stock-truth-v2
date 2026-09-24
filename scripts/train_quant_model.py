@@ -121,8 +121,8 @@ def block_features(bars):
             1.0 if finite(comp) and comp<.80 else 0.0,meanrev
         ]
         if all(finite(z) for z in x):
-            out.append((i,ts[i],np.asarray(x,dtype=float)))
-    return bars,c,logp,out
+            out.append((i,ts[i],np.asarray(x,dtype=float),atr_pct))
+    return bars,c,h,l,logp,out
 
 def load_blocks():
     blocks=[]
@@ -152,12 +152,24 @@ def datasets(blocks):
     for symbol,tf,bars,asset in blocks:
         bf=block_features(bars)
         if not bf:continue
-        _,c,logp,rows=bf; symbols.add(symbol);assets.add(asset)
-        for i,ts,x in rows:
+        _,c,highs,lows,logp,rows=bf; symbols.add(symbol);assets.add(asset)
+        for i,ts,x,atr_pct in rows:
+            if not finite(atr_pct) or atr_pct<=0:continue
+            up_barrier=c[i]*(1+atr_pct); down_barrier=c[i]*(1-atr_pct)
             for hor in HORIZONS:
                 if i+hor>=len(c):continue
+                outcome=None;ambiguous=False
+                for j in range(i+1,i+hor+1):
+                    hu=highs[j]>=up_barrier; hd=lows[j]<=down_barrier
+                    if hu and hd:
+                        ambiguous=True;break
+                    if hu:
+                        outcome=1;break
+                    if hd:
+                        outcome=0;break
+                if ambiguous or outcome is None:continue
                 fr=float(logp[i+hor]-logp[i])
-                by[tf][hor].append((int(ts),symbol,x,1 if fr>0 else 0,fr))
+                by[tf][hor].append((int(ts),symbol,x,outcome,fr))
     return by,sorted(symbols),sorted(assets)
 
 def chronological_folds(rows,nfold=5):
@@ -241,11 +253,13 @@ def main():
             except Exception as e:m={'status':'TRAINING_ERROR','samples':len(rows),'error':str(e)[:240]}
             models[tf][str(hor)]=m
             summary[tf][str(hor)]={'status':m.get('status'),'samples':m.get('samples',0),'oos_samples':m.get('oos_samples',0),'brier_skill':(m.get('metrics') or {}).get('brier_skill')}
-            print(f"Q2 train {tf} h{hor}: {m.get('status')} samples={m.get('samples',0)} oos={m.get('oos_samples',0)}",flush=True)
+            met=m.get('metrics') or {}
+            print(f"Q2 train {tf} h{hor}: {m.get('status')} samples={m.get('samples',0)} oos={m.get('oos_samples',0)} brier={met.get('brier')} base={met.get('base_brier')} skill={met.get('brier_skill')} logloss={met.get('log_loss')} baseLL={met.get('base_log_loss')}",flush=True)
     out={
       'schema_version':2,'model_version':'QSTATE-2.0-CALIBRATED','generated_at':now_iso(),
       'features':list(FEATURES),'timeframes':models,'summary':summary,
       'training':{'symbols':symbols,'asset_classes':assets,'blocks':len(blocks),'validation':'expanding chronological walk-forward with embargo; calibration and return bands use OOS predictions only'},
+      'label_definition':'Probability that price reaches +1 current ATR before -1 current ATR within the stated horizon; unresolved and same-bar ambiguous paths are excluded.',
       'promotion_rule':'Probability is displayable only when OOS Brier skill >= 0.5%, log loss is no worse than base rate, >=3 folds and >=500 OOS samples.',
       'credential_policy':'Model trained only from sanitized snapshots; no credential is read or written by this script.'
     }
