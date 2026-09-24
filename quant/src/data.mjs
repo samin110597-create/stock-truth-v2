@@ -51,13 +51,28 @@ async function runtimeConfig(signal){
   if(!runtimeConfigPromise)runtimeConfigPromise=json(new URL('../runtime-config.json',import.meta.url),signal).catch(()=>({apiBase:''}));
   return runtimeConfigPromise;
 }
+async function gradioCall(base,endpoint,data,signal,timeout=60000){
+  const ctl=AbortSignal.timeout(timeout),merged=signal?AbortSignal.any([signal,ctl]):ctl;
+  const start=await fetch(base.replace(/\/$/,'')+'/gradio_api/call/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data}),signal:merged});
+  if(!start.ok)throw new Error('Gradio start HTTP '+start.status);
+  const meta=await start.json();if(!meta?.event_id)throw new Error('Gradio event id missing');
+  const stream=await fetch(base.replace(/\/$/,'')+'/gradio_api/call/'+endpoint+'/'+encodeURIComponent(meta.event_id),{signal:merged});
+  if(!stream.ok)throw new Error('Gradio result HTTP '+stream.status);
+  const txt=await stream.text();let payload=null;
+  for(const line of txt.split(/\r?\n/)){if(!line.startsWith('data:'))continue;const raw=line.slice(5).trim();if(!raw)continue;try{payload=JSON.parse(raw);}catch{}}
+  if(!payload)throw new Error('Gradio result missing');
+  const first=Array.isArray(payload)?payload[0]:payload;
+  if(typeof first==='string'){try{return JSON.parse(first);}catch{return first;}}
+  return first;
+}
 async function backendMarket(symbol,tf,signal){
   const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');if(!base)throw new Error('ON-DEMAND BACKEND OFF: arbitrary-ticker mode is not configured');
-  const u=new URL(base+'/v1/market');u.searchParams.set('symbol',symbol);u.searchParams.set('timeframe',tf);
-  const j=await json(u.toString(),signal,60000),b=j?.timeframes?.[tf]||j?.primary;
+  const j=await gradioCall(base,'market',[symbol,tf],signal,60000);
+  if(j?.error)throw new Error(j.error+(j.message?' · '+j.message:''));
+  const b=j?.timeframes?.[tf]||j?.primary;
   if(!b||!Array.isArray(b.bars)||b.bars.length<80)throw new Error('on-demand API returned insufficient '+tf+' data');
   const mtf=Object.fromEntries(['15M','1H','4H','1D'].filter(x=>Array.isArray(j?.timeframes?.[x]?.bars)&&j.timeframes[x].bars.length>=60).map(x=>[x,j.timeframes[x].bars]));
-  return {symbol,sourceSymbol:j.source_symbol||symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'Hugging Face on-demand API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain on the secure API server.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
+  return {symbol,sourceSymbol:j.source_symbol||symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'Hugging Face on-demand API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain on the Hugging Face Space.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
 }
 async function apiContext(signal){try{return await json('../data/quant/context.json',signal);}catch{return null;}}
 async function trainedModel(signal){try{return await json('../data/quant/model.json',signal);}catch{return null;}}
