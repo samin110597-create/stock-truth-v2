@@ -25,3 +25,12 @@ const qModel=JSON.parse(fs.readFileSync('dist/data/quant/model.json','utf8'));
 if(qModel.schema_version!==2||qModel.model_version!=='QSTATE-2.0-CALIBRATED'||!Array.isArray(qModel.features)||!qModel.timeframes)throw Error('Invalid Q-State 2.0 trained model artifact');
 for(const tf of ['15M','1H','4H','1D'])for(const h of ['5','10','20']){const m=qModel.timeframes?.[tf]?.[h];if(!m)throw Error('Missing Q2 model block '+tf+' h'+h);if(m.validated&&(!(m.oos_samples>=500)||!(m.folds>=3)||!(m.metrics?.brier_skill>=0.005)||!(m.metrics?.positive_folds>=m.metrics?.required_positive_folds)||!(m.metrics?.median_fold_skill>0)))throw Error('Promoted Q2 model does not satisfy promotion metadata '+tf+' h'+h);}
 console.log('Q-State 2.0 trained artifact and promotion gates passed.');
+
+const qHtml=fs.readFileSync('dist/quant/index.html','utf8');
+const qApp=fs.readFileSync('dist/quant/app.mjs','utf8');
+const qData=fs.readFileSync('dist/quant/src/data.mjs','utf8');
+if(!/id="refresh-quote"/.test(qHtml)||!/LIVE QUOTE/.test(qHtml))throw Error('Quant live quote refresh UI missing');
+if(!/loadFreshQuote/.test(qApp)||!/setInterval\(\(\)=>\{if\(quoteState\)renderQuote\(\);\},1000\)/.test(qApp))throw Error('Quant quote freshness updater missing');
+if(!/preferFresh=true/.test(qData)||!/Fresh on-demand public market chart/.test(qData))throw Error('Quant is not fresh-first for arbitrary tickers');
+if(!/GC=F/.test(qData)||!/SI=F/.test(qData))throw Error('Quant Gold/Silver live futures aliases missing');
+console.log('Quant arbitrary-ticker live refresh controls passed.');
