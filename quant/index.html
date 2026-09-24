@@ -17,12 +17,21 @@
 
 <section class="command">
 <form id="form">
-  <input id="symbol" value="NVDA" maxlength="20" autocomplete="off" spellcheck="false" placeholder="NVDA · GLD · SLV · GOLD · SILVER · GC · SI">
+  <input id="symbol" value="NVDA" maxlength="20" autocomplete="off" spellcheck="false" placeholder="ANY TICKER · NVDA · GLD · SLV · GOLD · SILVER · GC · SI">
   <select id="asset"><option>AUTO</option><option>STOCK</option><option>FUTURE</option></select>
   <select id="tf"><option>15M</option><option>1H</option><option>4H</option><option selected>1D</option></select>
-  <button>ANALYZE</button>
+  <button>ANALYZE / REFRESH</button>
 </form>
 <div id="status">Q-State 2.0 calibrated engine ready.</div>
+</section>
+
+<section class="quote-strip">
+  <div class="quote-main"><div class="label">LIVE QUOTE</div><div id="quote-price" class="quote-price">—</div><div id="quote-symbol" class="micro">Enter a ticker and analyze.</div></div>
+  <div><div class="label">MARKET</div><div id="quote-market" class="quote-value">—</div></div>
+  <div><div class="label">QUOTE TIME</div><div id="quote-time" class="quote-value">—</div></div>
+  <div><div class="label">AGE</div><div id="quote-age" class="quote-value amber">—</div></div>
+  <div><div class="label">PROVIDER</div><div id="quote-provider" class="quote-value">—</div></div>
+  <button id="refresh-quote" type="button" class="quote-refresh">REFRESH QUOTE</button>
 </section>
 
 <section id="decision" class="decision"></section>
