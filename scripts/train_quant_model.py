@@ -221,20 +221,29 @@ def train_one(rows):
         y=np.asarray([r[3] for r in te]);rr=np.asarray([r[4] for r in te])
         bp=float(np.mean([r[3] for r in tr]))
         oos_pred.extend(p.tolist());oos_y.extend(y.tolist());oos_ret.extend(rr.tolist());base_pred.extend([bp]*len(te))
-        fold_meta.append({'train_n':len(tr),'test_n':len(te),'train_base_rate':bp,'test_start':min(r[0] for r in te),'test_end':max(r[0] for r in te)})
+        fb=float(brier_score_loss(y,p)); fbb=float(brier_score_loss(y,np.full(len(y),bp)))
+        fll=float(log_loss(y,np.clip(p,1e-6,1-1e-6))); fbll=float(log_loss(y,np.full(len(y),np.clip(bp,1e-6,1-1e-6))))
+        fskill=(fbb-fb)/fbb if fbb>0 else 0.0
+        fold_meta.append({'train_n':len(tr),'test_n':len(te),'train_base_rate':bp,'test_start':min(r[0] for r in te),'test_end':max(r[0] for r in te),
+                          'brier':fb,'base_brier':fbb,'brier_skill':fskill,'log_loss':fll,'base_log_loss':fbll,
+                          'positive':bool(fskill>0 and fll<=fbll)})
     if len(oos_y)<400:
         return {'status':'INSUFFICIENT_OOS','samples':len(rows),'oos_samples':len(oos_y),'folds':len(folds)}
     op=np.asarray(oos_pred);oy=np.asarray(oos_y);bp=np.asarray(base_pred)
     brier=float(brier_score_loss(oy,op));base_brier=float(brier_score_loss(oy,bp))
     ll=float(log_loss(oy,np.clip(op,1e-6,1-1e-6)));base_ll=float(log_loss(oy,np.clip(bp,1e-6,1-1e-6)))
     skill=(base_brier-brier)/base_brier if base_brier>0 else 0.0
-    validated=bool(len(folds)>=3 and len(oos_y)>=500 and skill>=.005 and ll<=base_ll)
+    fold_skills=[f['brier_skill'] for f in fold_meta]
+    positive_folds=sum(1 for f in fold_meta if f['positive'])
+    median_fold_skill=float(np.median(fold_skills)) if fold_skills else None
+    min_positive=max(3,math.ceil(len(folds)*.60))
+    validated=bool(len(folds)>=3 and len(oos_y)>=500 and skill>=.005 and ll<=base_ll and positive_folds>=min_positive and median_fold_skill>0)
     scaler,clf=fit_pipeline(rows)
     coef=clf.coef_[0]
     return {
       'status':'VALIDATED' if validated else 'NOT_VALIDATED',
       'validated':validated,'samples':len(rows),'oos_samples':len(oos_y),'folds':len(folds),
-      'metrics':{'brier':brier,'base_brier':base_brier,'brier_skill':skill,'log_loss':ll,'base_log_loss':base_ll,'oos_base_rate':float(np.mean(oy))},
+      'metrics':{'brier':brier,'base_brier':base_brier,'brier_skill':skill,'log_loss':ll,'base_log_loss':base_ll,'oos_base_rate':float(np.mean(oy)),'positive_folds':positive_folds,'required_positive_folds':min_positive,'median_fold_skill':median_fold_skill},
       'scaler':{'mean':scaler.mean_.tolist(),'scale':scaler.scale_.tolist()},
       'intercept':float(clf.intercept_[0]),'coef':coef.tolist(),
       'calibration':calibrate_points(op,oy),
@@ -254,13 +263,13 @@ def main():
             models[tf][str(hor)]=m
             summary[tf][str(hor)]={'status':m.get('status'),'samples':m.get('samples',0),'oos_samples':m.get('oos_samples',0),'brier_skill':(m.get('metrics') or {}).get('brier_skill')}
             met=m.get('metrics') or {}
-            print(f"Q2 train {tf} h{hor}: {m.get('status')} samples={m.get('samples',0)} oos={m.get('oos_samples',0)} brier={met.get('brier')} base={met.get('base_brier')} skill={met.get('brier_skill')} logloss={met.get('log_loss')} baseLL={met.get('base_log_loss')}",flush=True)
+            print(f"Q2 train {tf} h{hor}: {m.get('status')} samples={m.get('samples',0)} oos={m.get('oos_samples',0)} brier={met.get('brier')} base={met.get('base_brier')} skill={met.get('brier_skill')} positive_folds={met.get('positive_folds')}/{met.get('required_positive_folds')} median_fold_skill={met.get('median_fold_skill')} logloss={met.get('log_loss')} baseLL={met.get('base_log_loss')}",flush=True)
     out={
       'schema_version':2,'model_version':'QSTATE-2.0-CALIBRATED','generated_at':now_iso(),
       'features':list(FEATURES),'timeframes':models,'summary':summary,
       'training':{'symbols':symbols,'asset_classes':assets,'blocks':len(blocks),'validation':'expanding chronological walk-forward with embargo; calibration and return bands use OOS predictions only'},
       'label_definition':'Probability that price reaches +1 current ATR before -1 current ATR within the stated horizon; unresolved and same-bar ambiguous paths are excluded.',
-      'promotion_rule':'Probability is displayable only when OOS Brier skill >= 0.5%, log loss is no worse than base rate, >=3 folds and >=500 OOS samples.',
+      'promotion_rule':'Probability is displayable only when OOS Brier skill >= 0.5%, log loss is no worse than base rate, >=3 folds, >=500 OOS samples, at least 60% of folds show positive Brier skill without worse log loss, and median fold skill is positive.',
       'credential_policy':'Model trained only from sanitized snapshots; no credential is read or written by this script.'
     }
     OUT.parent.mkdir(parents=True,exist_ok=True);OUT.write_text(json.dumps(out,separators=(',',':'),allow_nan=False))
