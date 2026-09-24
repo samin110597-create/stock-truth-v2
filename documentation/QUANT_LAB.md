@@ -119,3 +119,18 @@ Supported precious-metals inputs:
 - `SILVER` or `SI` — silver commodity route. The secured collector prefers a dated COMEX SI contract from Massive and can fall back to FMP `SIUSD` continuous commodity history.
 
 `SVR` is not treated as an alias for silver because it can be a distinct security symbol. Use `SLV` for the silver ETF.
+
+
+## On-demand ticker and quote refresh
+
+Q-State now treats the ticker box as an on-demand request. For stocks and ETFs it first requests fresh public chart data for the requested timeframe and supporting MTF frames, then falls back to the sanitized GitHub snapshot only if that request fails. The UI displays the last completed bar, bar age, live quote timestamp, and live quote age.
+
+The **Refresh Quote** button independently refreshes a 1-minute quote without rerunning the full model.
+
+Gold/Silver aliases request public futures symbols first:
+- GOLD / XAU / XAUUSD / GC -> GC=F
+- SILVER / XAG / XAGUSD / SI -> SI=F
+
+If the public futures request and secure futures snapshot both fail, Gold/Silver can fall back to GLD/SLV and the provider field explicitly labels the result as an ETF proxy.
+
+Important security boundary: GitHub Pages is static. GitHub Actions secrets cannot be sent to a visitor's browser for arbitrary on-demand requests. The secured APIs continue to build/cache sanitized snapshots and context server-side; true button-click access to private API keys would require a hosted API/backend.
