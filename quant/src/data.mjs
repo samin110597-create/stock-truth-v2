@@ -4,11 +4,34 @@ const CONTRACT=/^[A-Z]{1,3}[FGHJKMNQUVXZ]\d{1,2}$/;
 const clean=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
 export function detectAsset(symbol,choice='AUTO'){if(choice&&choice!=='AUTO')return choice;const s=clean(symbol);return PRODUCTS[s]||CONTRACT.test(s)?'FUTURE':'STOCK';}
 async function json(url,signal){const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(12000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
-const usable=b=>Array.isArray(b?.bars)&&b.bars.length>=80;
-const mtfFrom=timeframes=>Object.fromEntries(['15M','1H','4H','1D'].filter(tf=>Array.isArray(timeframes?.[tf]?.bars)&&timeframes[tf].bars.length>=60).map(tf=>[tf,timeframes[tf].bars]));
+const usable=b=>Array.isArray(b?.bars)&&b.bars.length>=80&&!['STALE','UNAVAILABLE'].includes(String(b?.status||'').toUpperCase());
+const frameUsable=(b,min=60)=>Array.isArray(b?.bars)&&b.bars.length>=min&&!['STALE','UNAVAILABLE'].includes(String(b?.status||'').toUpperCase());
+const mtfFrom=timeframes=>Object.fromEntries(['15M','1H','4H','1D'].filter(tf=>frameUsable(timeframes?.[tf],60)).map(tf=>[tf,timeframes[tf].bars]));
+function resampleStored(bars,count,label){
+  const groups=new Map(),out=[];
+  for(const b of bars||[]){const k=b.session||b.date;(groups.get(k)||groups.set(k,[]).get(k)).push(b);}
+  for(const g of groups.values()){g.sort((a,b)=>a.ts-b.ts);for(let i=0;i+count-1<g.length;i+=count){const z=g.slice(i,i+count);if(z.length<count)continue;out.push({ts:z[0].ts,end_ts:z.at(-1).end_ts,date:z.at(-1).date,session:z.at(-1).session||z.at(-1).date,open:z[0].open,high:Math.max(...z.map(x=>x.high)),low:Math.min(...z.map(x=>x.low)),close:z.at(-1).close,volume:z.every(x=>Number.isFinite(x.volume))?z.reduce((s,x)=>s+x.volume,0):null,complete:true,resampled_from:label});}}
+  return out;
+}
+function recoveredFrame(raw,tf){
+  const t=raw?.timeframes||{},direct=t[tf];if(usable(direct))return direct;
+  if(tf==='1H'){
+    if(frameUsable(t['15M'])){const bars=resampleStored(t['15M'].bars,4,'15M');if(bars.length>=80)return {status:'COMPLETED BAR',provider:(t['15M'].provider||'snapshot')+' · reconstructed 1H',fetched_at:t['15M'].fetched_at,bars};}
+    if(frameUsable(t['5M'])){const bars=resampleStored(t['5M'].bars,12,'5M');if(bars.length>=80)return {status:'COMPLETED BAR',provider:(t['5M'].provider||'snapshot')+' · reconstructed 1H',fetched_at:t['5M'].fetched_at,bars};}
+  }
+  if(tf==='4H'){
+    const h1=recoveredFrame(raw,'1H');if(usable(h1)){const bars=resampleStored(h1.bars,4,'1H');if(bars.length>=80)return {status:'COMPLETED BAR',provider:(h1.provider||'snapshot')+' · reconstructed 4H',fetched_at:h1.fetched_at,bars};}
+  }
+  return direct;
+}
 function normalizeYahoo(result,tf){const q=result?.indicators?.quote?.[0]||{},ts=result?.timestamp||[],seconds=tf==='15M'?900:tf==='1H'?3600:tf==='4H'?3600:86400,now=Date.now()/1000,out=[];for(let i=0;i<ts.length;i++){const o=+q.open?.[i],h=+q.high?.[i],l=+q.low?.[i],c=+q.close?.[i],v=+q.volume?.[i];if(![o,h,l,c].every(Number.isFinite)||Math.min(o,h,l,c)<=0||h<Math.max(o,l,c)||l>Math.min(o,h,c))continue;if(tf!=='1D'&&ts[i]+seconds>now-60)continue;const date=new Date(ts[i]*1000).toISOString().slice(0,10);out.push({ts:ts[i],end_ts:ts[i]+seconds,date,session:date,open:o,high:h,low:l,close:c,volume:Number.isFinite(v)?v:null,complete:true});}return out;}
 function resample4h(bars){const groups=new Map();for(const b of bars){const key=b.session;const g=groups.get(key)||[];g.push(b);groups.set(key,g);}const out=[];for(const g of groups.values()){for(let i=0;i+3<g.length;i+=4){const z=g.slice(i,i+4);out.push({ts:z[0].ts,end_ts:z[3].end_ts,date:z[3].date,session:z[3].session,open:z[0].open,high:Math.max(...z.map(x=>x.high)),low:Math.min(...z.map(x=>x.low)),close:z[3].close,volume:z.every(x=>Number.isFinite(x.volume))?z.reduce((s,x)=>s+x.volume,0):null,complete:true});}}return out;}
-async function storedStock(symbol,tf,signal){const raw=await json('../data/raw/'+encodeURIComponent(symbol)+'.json',signal),b=raw?.timeframes?.[tf];if(!usable(b))throw new Error('stored snapshot missing');return {symbol,sourceSymbol:symbol,asset:raw.security_type||'STOCK',timeframe:tf,bars:b.bars,mtf:mtfFrom(raw.timeframes),provider:b.provider||'GitHub sanitized stock snapshot',fetchedAt:b.fetched_at||raw.fetched_at,credentialPolicy:'No browser credential. Snapshot was generated outside the quant UI.'};}
+async function storedStock(symbol,tf,signal){
+  const raw=await json('../data/raw/'+encodeURIComponent(symbol)+'.json',signal),b=recoveredFrame(raw,tf);
+  if(!usable(b))throw new Error('stored '+tf+' snapshot is missing, stale, or too shallow');
+  const mtf={...mtfFrom(raw.timeframes)};if(!mtf[tf])mtf[tf]=b.bars;
+  return {symbol,sourceSymbol:symbol,asset:raw.security_type||'STOCK',timeframe:tf,bars:b.bars,mtf,provider:b.provider||'GitHub sanitized stock snapshot',fetchedAt:b.fetched_at||raw.fetched_at,dataStatus:b.status||'UNKNOWN',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:'No browser credential. Snapshot was generated outside the quant UI.'};
+}
 async function publicStock(symbol,tf,signal){const map={'15M':['15m','60d'],'1H':['60m','2y'],'4H':['60m','2y'],'1D':['1d','10y']},[interval,range]=map[tf]||map['1D'];const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?'+new URLSearchParams({interval,range,includePrePost:'false',includeAdjustedClose:'false',events:'splits'});const j=await json(url,signal),r=j?.chart?.result?.[0];if(!r)throw new Error('Public fallback returned no data for '+symbol);let bars=normalizeYahoo(r,tf);if(tf==='4H')bars=resample4h(bars);if(bars.length<80)throw new Error('Not enough completed '+tf+' bars for '+symbol);return {symbol,sourceSymbol:symbol,asset:'STOCK',timeframe:tf,bars,mtf:{[tf]:bars},provider:'Independent public chart fallback',fetchedAt:new Date().toISOString(),credentialPolicy:'No API secret used in browser fallback.'};}
 async function future(symbol,tf,signal){
   const requested=clean(symbol),product=PRODUCTS[requested]||requested.replace(/[FGHJKMNQUVXZ]\d{1,2}$/,'');
