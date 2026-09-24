@@ -134,7 +134,18 @@ def canonical_yahoo(result, interval, source_url):
     # Never "repair" a real jump by guessing a split factor.
     large_gaps = [{'ts':b['ts'],'open_vs_prior_close':b['open']/completed[i-1]['close']-1} for i,b in enumerate(completed) if i and abs(math.log(b['open']/completed[i-1]['close']))>0.5]
     state = schedule_state()
-    stale = not completed or (interval=='1d' and completed[-1]['date'] < state['expected_completed_daily'])
+    if not completed:
+        stale = True
+    elif interval=='1d':
+        stale = completed[-1]['date'] < state['expected_completed_daily']
+    else:
+        today = NOW.astimezone(NY).date().isoformat()
+        last = completed[-1]
+        if state['state']=='OPEN':
+            max_age = 1800 if interval=='5m' else 7200
+            stale = last['date'] != today or (NOW_TS-last['end_ts']) > max_age
+        else:
+            stale = last['date'] < state['expected_completed_daily']
     review = bool(rejected or large_gaps or any(a['status']=='REVIEW' for a in audit))
     return {'classification':'SOURCE FACT','status':'STALE' if stale else 'REVIEW' if review else 'COMPLETED BAR',
             'provider':'Yahoo Finance chart (unofficial endpoint)', 'source_url':source_url,
@@ -310,6 +321,9 @@ def collect_symbol(symbol,out):
         if api_enabled:
             try:
                 frames[key]=polygon_bars(symbol,interval)
+                if frames[key].get('status')=='STALE':
+                    errors.append({'provider':frames[key].get('provider') or 'Massive/Polygon aggregates','interval':interval,'error':'Provider data was stale; using fresher fallback if available'})
+                    frames[key]=None
             except Exception as exc:
                 errors.append({'provider':'Massive/Polygon aggregates','interval':interval,'error':str(exc)[:180]})
         if frames[key] is None:
