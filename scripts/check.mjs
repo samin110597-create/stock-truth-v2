@@ -23,5 +23,5 @@ console.log('Standalone Quant isolation, release identity and secret handling ch
 
 const qModel=JSON.parse(fs.readFileSync('dist/data/quant/model.json','utf8'));
 if(qModel.schema_version!==2||qModel.model_version!=='QSTATE-2.0-CALIBRATED'||!Array.isArray(qModel.features)||!qModel.timeframes)throw Error('Invalid Q-State 2.0 trained model artifact');
-for(const tf of ['15M','1H','4H','1D'])for(const h of ['5','10','20']){const m=qModel.timeframes?.[tf]?.[h];if(!m)throw Error('Missing Q2 model block '+tf+' h'+h);if(m.validated&&(!(m.oos_samples>=500)||!(m.folds>=3)||!(m.metrics?.brier_skill>=0.005)))throw Error('Promoted Q2 model does not satisfy promotion metadata '+tf+' h'+h);}
+for(const tf of ['15M','1H','4H','1D'])for(const h of ['5','10','20']){const m=qModel.timeframes?.[tf]?.[h];if(!m)throw Error('Missing Q2 model block '+tf+' h'+h);if(m.validated&&(!(m.oos_samples>=500)||!(m.folds>=3)||!(m.metrics?.brier_skill>=0.005)||!(m.metrics?.positive_folds>=m.metrics?.required_positive_folds)||!(m.metrics?.median_fold_skill>0)))throw Error('Promoted Q2 model does not satisfy promotion metadata '+tf+' h'+h);}
 console.log('Q-State 2.0 trained artifact and promotion gates passed.');
