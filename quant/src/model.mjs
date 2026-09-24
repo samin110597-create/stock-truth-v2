@@ -53,7 +53,7 @@ function bandFor(raw,bands=[]){
 }
 export function applyTrainedModel(model,timeframe,bars){
   const features=modelFeatures(bars),tf=model?.timeframes?.[timeframe];if(!features||!tf)return null;
-  const out={features,horizons:{},modelVersion:model.model_version,generatedAt:model.generated_at,promotionRule:model.promotion_rule};
+  const out={features,horizons:{},modelVersion:model.model_version,generatedAt:model.generated_at,promotionRule:model.promotion_rule,labelDefinition:model.label_definition};
   for(const h of ['5','10','20']){
     const m=tf[h];if(!m||!Array.isArray(m.coef)||!m.scaler)continue;
     const names=model.features||[],x=names.map(n=>features[n]),means=m.scaler.mean||[],scales=m.scaler.scale||[];if(x.some(v=>!finite(v)))continue;
