@@ -35,9 +35,12 @@ def clean_num(x):
 
 def get_front(product):
     today=datetime.now(timezone.utc).date().isoformat()
-    q=urllib.parse.urlencode({'date':today,'product_code':product,'active':'true','limit':100,'sort':'last_trade_date.asc','apiKey':KEY})
+    # Massive documents product_code as sufficient for contract discovery.
+    # Avoid unsupported filters that previously produced HTTP 400.
+    q=urllib.parse.urlencode({'product_code':product,'limit':100,'sort':'product_code.desc','apiKey':KEY})
     j=req('https://api.massive.com/futures/v1/contracts?'+q)
-    rows=[x for x in j.get('results',[]) if x.get('ticker') and (not x.get('last_trade_date') or x['last_trade_date']>=today)]
+    rows=[x for x in j.get('results',[]) if x.get('ticker')]
+    rows=[x for x in rows if x.get('active') is not False and (not x.get('last_trade_date') or x['last_trade_date']>=today)]
     if not rows: raise RuntimeError('No active contract returned for '+product)
     rows.sort(key=lambda x:(x.get('days_to_maturity') if x.get('days_to_maturity') is not None else 99999))
     return next((x['ticker'] for x in rows if (x.get('days_to_maturity') or 30)>5),rows[0]['ticker'])
