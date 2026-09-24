@@ -71,3 +71,24 @@ See `documentation/QUANT_LAB.md` for the standalone architecture and integrity r
 See `documentation/AUDIT.md`, `documentation/ACCEPTANCE.md`, `documentation/SOURCES.md` and generated `data-snapshots:validation-report.json`.
 
 Rollback point: branch `rollback/pre-github-only-terminal-20260911`, commit `97cffb64256521e8283ec3763836461db4eeabde`. Prefer reverting the implementation PR through a new reviewed PR; reverting to the original commit also restores its known Vercel-dependent architecture, so it is an archival rollback, not a GitHub-only production solution.
+
+
+## Arbitrary stock / ETF on-demand mode
+
+GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore includes a separate Cloudflare Worker under `backend/qstate-api/`.
+
+When deployed, every stock/ETF search first calls that Worker. The Worker:
+- accepts any valid U.S. stock/ETF ticker rather than a configured watchlist
+- keeps Massive/FMP credentials on the server
+- rejects stale data
+- cross-checks provider results
+- returns 15M/1H/4H/1D together
+- falls back to server-side public market data if a paid provider is unavailable
+
+The existing snapshot system remains only a fallback.
+
+To activate automatic deployment from GitHub Actions, add two additional repository secrets:
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+The API token should be scoped for Workers deployment. Existing market-data secrets remain unchanged. During the same production build, the Worker deployment URL is captured automatically and injected into `quant/runtime-config.json`; no API URL needs to be typed into the browser.
