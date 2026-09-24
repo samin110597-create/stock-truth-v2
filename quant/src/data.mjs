@@ -46,6 +46,28 @@ async function future(symbol,tf,signal){
     return {...p,symbol:requested,sourceSymbol:proxy,asset:'METAL_PROXY',provider:proxy+' ETF proxy fallback · futures snapshot unavailable',credentialPolicy:'Fallback uses the sanitized '+proxy+' ETF snapshot. It is a proxy for '+product+', not the futures contract.'};
   }
 }
+let runtimeConfigPromise=null;
+async function runtimeConfig(signal){
+  if(!runtimeConfigPromise)runtimeConfigPromise=json(new URL('../runtime-config.json',import.meta.url),signal).catch(()=>({apiBase:''}));
+  return runtimeConfigPromise;
+}
+async function backendStock(symbol,tf,signal){
+  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');if(!base)throw new Error('on-demand API is not configured');
+  const u=new URL(base+'/v1/market');u.searchParams.set('symbol',symbol);u.searchParams.set('timeframe',tf);
+  const j=await json(u.toString(),signal),b=j?.timeframes?.[tf]||j?.primary;
+  if(!b||!Array.isArray(b.bars)||b.bars.length<80)throw new Error('on-demand API returned insufficient '+tf+' data');
+  const mtf=Object.fromEntries(['15M','1H','4H','1D'].filter(x=>Array.isArray(j?.timeframes?.[x]?.bars)&&j.timeframes[x].bars.length>=60).map(x=>[x,j.timeframes[x].bars]));
+  return {symbol,sourceSymbol:symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'On-demand secure API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain on the secure API server.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
+}
 async function apiContext(signal){try{return await json('../data/quant/context.json',signal);}catch{return null;}}
 async function trainedModel(signal){try{return await json('../data/quant/model.json',signal);}catch{return null;}}
-export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}){const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal);let core;if(kind==='FUTURE')core=await future(s,timeframe,signal);else{try{core=await storedStock(s,timeframe,signal);}catch(e){try{core=await publicStock(s,timeframe,signal);}catch(pub){throw new Error(s+' data unavailable from both the stored snapshot and public fallback. '+(e?.message||'')+' '+(pub?.message||''));}}}return {...core,apiContext:await contextPromise,trainedModel:await modelPromise};}
+export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}){
+  const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal);let core;
+  if(kind==='FUTURE')core=await future(s,timeframe,signal);
+  else{
+    let backendError=null,storedError=null;
+    try{core=await backendStock(s,timeframe,signal);}
+    catch(e){backendError=e;try{core=await storedStock(s,timeframe,signal);}catch(se){storedError=se;try{core=await publicStock(s,timeframe,signal);}catch(pub){throw new Error(s+' data unavailable. On-demand API: '+(backendError?.message||'failed')+' · stored snapshot: '+(storedError?.message||'failed')+' · public fallback: '+(pub?.message||'failed'));}}}
+  }
+  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise};
+}
