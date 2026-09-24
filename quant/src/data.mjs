@@ -52,7 +52,7 @@ async function runtimeConfig(signal){
   return runtimeConfigPromise;
 }
 async function backendStock(symbol,tf,signal){
-  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');if(!base)throw new Error('on-demand API is not configured');
+  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');if(!base)throw new Error('ON-DEMAND BACKEND OFF: arbitrary-ticker mode is not configured');
   const u=new URL(base+'/v1/market');u.searchParams.set('symbol',symbol);u.searchParams.set('timeframe',tf);
   const j=await json(u.toString(),signal),b=j?.timeframes?.[tf]||j?.primary;
   if(!b||!Array.isArray(b.bars)||b.bars.length<80)throw new Error('on-demand API returned insufficient '+tf+' data');
@@ -69,5 +69,6 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}
     try{core=await backendStock(s,timeframe,signal);}
     catch(e){backendError=e;try{core=await storedStock(s,timeframe,signal);}catch(se){storedError=se;try{core=await publicStock(s,timeframe,signal);}catch(pub){throw new Error(s+' data unavailable. On-demand API: '+(backendError?.message||'failed')+' · stored snapshot: '+(storedError?.message||'failed')+' · public fallback: '+(pub?.message||'failed'));}}}
   }
-  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise};
+  const cfg=await runtimeConfig(signal);
+  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
 }
