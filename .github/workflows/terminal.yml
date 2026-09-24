@@ -38,6 +38,41 @@ jobs:
           deno-version: v2.x
       - name: Validate Deno request-time API
         run: deno check main.ts
+      - name: Verify live Deno arbitrary-ticker backend
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          QSTATE_API_BASE: https://stock-truth-v2.samin110597.deno.net
+        run: |
+          python - <<'PY'
+          import json, os, time, urllib.parse, urllib.request
+          base=os.environ['QSTATE_API_BASE'].rstrip('/')
+          last_error=None
+          for attempt in range(24):
+              try:
+                  with urllib.request.urlopen(base+'/health',timeout=20) as r:
+                      health=json.load(r)
+                  if health.get('status')!='OK':
+                      raise RuntimeError('health not OK')
+                  providers=health.get('providers') or {}
+                  if not any(providers.values()):
+                      raise RuntimeError('no secured providers configured in Deno')
+                  q=urllib.parse.urlencode({'symbol':'AAPL','timeframe':'1D'})
+                  with urllib.request.urlopen(base+'/v1/market?'+q,timeout=30) as r:
+                      probe=json.load(r)
+                  bars=((probe.get('primary') or {}).get('bars') or [])
+                  if len(bars)<80:
+                      raise RuntimeError(f'insufficient AAPL bars: {len(bars)}')
+                  trace=probe.get('provider_trace') or []
+                  if not any(x.get('status')=='OK' for x in trace):
+                      raise RuntimeError('no successful provider in trace')
+                  print('Deno backend verified:',len(bars),'AAPL bars; providers=',providers)
+                  break
+              except Exception as e:
+                  last_error=e
+                  time.sleep(10)
+          else:
+              raise SystemExit('Deno backend verification failed: '+str(last_error))
+          PY
       - name: Unit integrity gates
         run: |
           npm test
@@ -83,7 +118,7 @@ jobs:
         run: node scripts/snapshot-store.mjs publish
       - name: Configure Quant runtime API URL
         env:
-          QSTATE_API_BASE: ${{ vars.QSTATE_API_BASE }}
+          QSTATE_API_BASE: ${{ vars.QSTATE_API_BASE || 'https://stock-truth-v2.samin110597.deno.net' }}
         run: echo "QSTATE_API_BASE=${QSTATE_API_BASE}" >> "$GITHUB_ENV"
       - run: npm run build
       - run: npm run check

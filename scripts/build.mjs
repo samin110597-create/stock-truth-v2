@@ -3,7 +3,7 @@ import {MODEL_VERSION} from '../src/setups.mjs';
 const commit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const root=process.cwd(),out=path.join(root,'dist');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
 for(const dir of ['web','src','config','quant'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
-const qApiBase=String(process.env.QSTATE_API_BASE||'').trim().replace(/\/$/,'');
+const qApiBase=String(process.env.QSTATE_API_BASE||'https://stock-truth-v2.samin110597.deno.net').trim().replace(/\/$/,'');
 fs.writeFileSync(path.join(out,'quant/runtime-config.json'),JSON.stringify({apiBase:qApiBase,mode:qApiBase?'on-demand-secure-api':'snapshot-fallback',generatedAt:new Date().toISOString()}));
 if(!fs.existsSync('data/calendar.json'))throw new Error('Generate exchange calendar before building');
 fs.mkdirSync(path.join(out,'data'),{recursive:true});fs.copyFileSync('data/calendar.json',path.join(out,'data/calendar.json'));
