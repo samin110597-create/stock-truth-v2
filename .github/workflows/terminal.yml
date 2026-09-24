@@ -44,7 +44,6 @@ jobs:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY || secrets.FMP_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINNHUB_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
           ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
-          ALLOWED_ORIGIN: https://samin110597-create.github.io
         run: |
           python -m pip install "huggingface_hub>=1.0,<2"
           python -u scripts/deploy_hf_space.py
@@ -55,16 +54,36 @@ jobs:
           QSTATE_DEPLOYMENT_URL: https://smit1105-qstate-market-api.hf.space
         run: |
           python - <<'PY'
-          import json, os, time, urllib.parse, urllib.request
+          import json, os, time, urllib.request
           base=os.environ['QSTATE_DEPLOYMENT_URL'].rstrip('/')
-          def get(path,timeout=45):
-              req=urllib.request.Request(base+path,headers={'User-Agent':'StockTruth-CI/1.0'})
+          def gradio_call(endpoint,data,timeout=60):
+              req=urllib.request.Request(
+                  base+'/gradio_api/call/'+endpoint,
+                  data=json.dumps({'data':data}).encode(),
+                  headers={'Content-Type':'application/json','User-Agent':'StockTruth-CI/1.0'},
+                  method='POST')
               with urllib.request.urlopen(req,timeout=timeout) as r:
-                  return json.load(r)
+                  meta=json.load(r)
+              event_id=meta.get('event_id')
+              if not event_id:
+                  raise RuntimeError('Gradio event id missing')
+              with urllib.request.urlopen(base+'/gradio_api/call/'+endpoint+'/'+event_id,timeout=timeout) as r:
+                  body=r.read().decode()
+              payload=None
+              for line in body.splitlines():
+                  if line.startswith('data:'):
+                      try:
+                          payload=json.loads(line[5:].strip())
+                      except Exception:
+                          pass
+              if payload is None:
+                  raise RuntimeError('Gradio result missing')
+              first=payload[0] if isinstance(payload,list) and payload else payload
+              return json.loads(first) if isinstance(first,str) else first
           health=None
           for _ in range(36):
               try:
-                  health=get('/health')
+                  health=gradio_call('health',[])
                   if health.get('status')=='OK':
                       break
               except Exception:
@@ -74,7 +93,7 @@ jobs:
           configured=health.get('providers') or {}
           if not any(configured.values()):
               raise SystemExit('Hugging Face backend has no secured market-data provider')
-          probe=get('/v1/market?'+urllib.parse.urlencode({'symbol':'AAPL','timeframe':'1D'}))
+          probe=gradio_call('market',['AAPL','1D'])
           bars=((probe.get('primary') or {}).get('bars') or [])
           if len(bars)<80:
               raise SystemExit('Arbitrary-ticker probe returned insufficient bars')
