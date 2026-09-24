@@ -47,8 +47,14 @@ jobs:
           command: deploy
           secrets: |
             MASSIVE_KEY
+            FMP_API_KEY
+            FINNHUB_API_KEY
+            ALPHA_VANTAGE_KEY
         env:
           MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY || secrets.FMP_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINNHUB_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
       - name: Activate deployed on-demand API in Quant build
         if: steps.qstate_api.outcome == 'success'
         env:
