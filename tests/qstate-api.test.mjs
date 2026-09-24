@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {resampleMinutes,freshness,choose} from '../backend/qstate-api/src/index.mjs';
+function bar(ts,c){return {ts,end_ts:ts+900,date:'2026-09-24',session:'2026-09-24',open:c,high:c+1,low:c-1,close:c,volume:100,complete:true};}
+test('Q-State API resamples regular-session 15M bars',()=>{const base=Math.floor(Date.parse('2026-09-24T13:30:00Z')/1000),bars=Array.from({length:26},(_,i)=>bar(base+i*900,100+i));const h=resampleMinutes(bars,60);assert.ok(h.length>=6);assert.equal(h[0].component_bars,4);assert.equal(h[0].open,100);assert.equal(h[0].close,103);});
+test('provider chooser prefers freshest current candidate',()=>{const now=Math.floor(Date.now()/1000),a={provider:'old',bars:Array.from({length:100},(_,i)=>bar(now-7200-(100-i)*900,100))},b={provider:'new',bars:Array.from({length:100},(_,i)=>bar(now-900-(100-i)*900,101))};const x=choose([a,b],'15M');assert.equal(x.provider,'new');});
+test('freshness rejects ancient intraday data',()=>{const old=Math.floor(Date.parse('2025-02-07T20:00:00Z')/1000);assert.equal(freshness('1H',[bar(old,100)]).status,'STALE');});
