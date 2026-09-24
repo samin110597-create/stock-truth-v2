@@ -75,22 +75,23 @@ Rollback point: branch `rollback/pre-github-only-terminal-20260911`, commit `97c
 
 ## Arbitrary stock / ETF on-demand mode
 
-GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore uses a separate **Hugging Face Gradio Space** under `backend/hf-space/`.
+GitHub Pages is static, so Q-State uses a separate **Deno Deploy dynamic API** for request-time ticker searches.
 
-When deployed, every stock/ETF search first calls the Space's Gradio API. The backend:
-- accepts valid stock/ETF symbols rather than a configured watchlist
-- keeps Massive/FMP/Finnhub/Alpha Vantage credentials as Hugging Face Space secrets
-- rejects stale data
-- uses secured providers first and server-side Yahoo as an independent fallback
-- returns 15M/1H/4H/1D together
-- supports Gold/Silver aliases server-side (`GOLD/GC/XAU` and `SILVER/SI/XAG`) without exposing credentials
+The Deno backend is defined directly in this repository:
+- `deno.json` declares a dynamic Deno Deploy runtime
+- `main.ts` is the request-time market API
+- Deno reads provider credentials from its secret environment variables
+- Q-State calls `/v1/market?symbol=...&timeframe=...`
+- arbitrary stocks and ETFs are fetched on demand instead of requiring a prebuilt snapshot
+- Gold/Silver aliases such as `GOLD/GC/XAU` and `SILVER/SI/XAG` are supported
+- the existing snapshot system remains fallback only
 
-The existing snapshot system remains fallback only.
+Deno Deploy is linked to this GitHub repository. In Deno, configure the app as the repository root and allow the source-controlled `deno.json` to define the dynamic runtime.
 
-The production Space ID is `Smit1105/qstate-market-api`, served from:
-`https://smit1105-qstate-market-api.hf.space`.
+Required Deno secrets:
+- `MASSIVE_KEY`
+- `FMP_API_KEY`
+- `FINNHUB_API_KEY`
+- `ALPHA_VANTAGE_KEY`
 
-To let GitHub Actions create/update that Space, add one repository secret:
-- `HF_TOKEN` — a Hugging Face User Access Token with **write** permission for the `Smit1105` account. The deploy script creates the Space as a Gradio Space using the account's default free CPU runtime; no GPU is required for the market-data API.
-
-Existing market-data secrets remain unchanged. The deploy script copies those provider secrets into the Space's private secret store; values are never written to the Space source code or returned to the browser. After deployment, CI checks `/health` and probes AAPL through a secured provider before injecting the Space URL into `quant/runtime-config.json`.
+GitHub Pages needs the public Deno app URL. Store that non-secret URL as a GitHub Actions repository variable named `QSTATE_API_BASE`. The Pages build injects it into `quant/runtime-config.json`. If that variable is empty, Q-State clearly reports backend-off/snapshot fallback mode.
