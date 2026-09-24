@@ -30,18 +30,22 @@
     "XLK",
     "XLI",
     "XLE",
-    "XLU"
+    "XLU",
+    "GLD",
+    "SLV"
   ],
   "futures": [
     {
       "symbol": "GC",
       "name": "Gold",
-      "product_code": "GC"
+      "product_code": "GC",
+      "fmp_symbol": "GCUSD"
     },
     {
       "symbol": "SI",
       "name": "Silver",
-      "product_code": "SI"
+      "product_code": "SI",
+      "fmp_symbol": "SIUSD"
     },
     {
       "symbol": "CL",
