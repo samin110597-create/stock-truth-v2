@@ -7,7 +7,7 @@ SPACE_ID=os.environ.get("HF_SPACE_ID","Smit1105/qstate-market-api")
 TOKEN=os.environ["HF_TOKEN"]
 api=HfApi(token=TOKEN)
 
-api.create_repo(repo_id=SPACE_ID,repo_type="space",space_sdk="docker",exist_ok=True)
+api.create_repo(repo_id=SPACE_ID,repo_type="space",space_sdk="gradio",space_hardware="zero-a10g",exist_ok=True)\ntry:\n    api.request_space_hardware(repo_id=SPACE_ID,hardware="zero-a10g")\nexcept Exception:\n    pass
 
 secret_map={
     "MASSIVE_KEY":os.environ.get("MASSIVE_KEY",""),
