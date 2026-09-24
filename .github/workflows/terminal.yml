@@ -16,6 +16,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     timeout-minutes: 40
     permissions:
       contents: write
@@ -33,6 +36,36 @@ jobs:
           cache: pip
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: pip install -r requirements.txt
+      - name: Deploy Q-State on-demand market API
+        id: qstate_api
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: backend/qstate-api
+          command: deploy
+          secrets: |
+            MASSIVE_KEY
+            FMP_API_KEY
+            FINNHUB_API_KEY
+            ALPHA_VANTAGE_KEY
+        env:
+          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY || secrets.FMP_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINNHUB_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
+      - name: Activate deployed on-demand API in Quant build
+        if: steps.qstate_api.outcome == 'success'
+        env:
+          QSTATE_DEPLOYMENT_URL: ${{ steps.qstate_api.outputs.deployment-url }}
+        run: |
+          test -n "$QSTATE_DEPLOYMENT_URL"
+          echo "QSTATE_API_BASE=${QSTATE_DEPLOYMENT_URL%/}" >> "$GITHUB_ENV"
+          echo "Q-State on-demand API: $QSTATE_DEPLOYMENT_URL"
+      - name: Explain snapshot fallback when API backend is not configured
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == '')
+        run: echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not configured; Pages will retain snapshot/browser fallback mode."
       - name: Unit integrity gates
         run: |
           npm test
