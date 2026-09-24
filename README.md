@@ -75,9 +75,9 @@ Rollback point: branch `rollback/pre-github-only-terminal-20260911`, commit `97c
 
 ## Arbitrary stock / ETF on-demand mode
 
-GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore uses a separate **Hugging Face Docker Space** under `backend/hf-space/`.
+GitHub Pages is static and cannot read GitHub Actions secrets during an interactive ticker search. Q-State therefore uses a separate **Hugging Face Gradio ZeroGPU Space** under `backend/hf-space/`.
 
-When deployed, every stock/ETF search first calls the Space API. The backend:
+When deployed, every stock/ETF search first calls the Space's Gradio API. The backend:
 - accepts valid stock/ETF symbols rather than a configured watchlist
 - keeps Massive/FMP/Finnhub/Alpha Vantage credentials as Hugging Face Space secrets
 - rejects stale data
@@ -91,6 +91,6 @@ The production Space ID is `Smit1105/qstate-market-api`, served from:
 `https://smit1105-qstate-market-api.hf.space`.
 
 To let GitHub Actions create/update that Space, add one repository secret:
-- `HF_TOKEN` — a Hugging Face User Access Token with **write** permission for the `Smit1105` account.
+- `HF_TOKEN` — a Hugging Face User Access Token with **write** permission for the `Smit1105` account. The deploy script creates the Space as a free-compatible Gradio `zero-a10g`/ZeroGPU Space rather than Docker/CPU Basic.
 
 Existing market-data secrets remain unchanged. The deploy script copies those provider secrets into the Space's private secret store; values are never written to the Space source code or returned to the browser. After deployment, CI checks `/health` and probes AAPL through a secured provider before injecting the Space URL into `quant/runtime-config.json`.
