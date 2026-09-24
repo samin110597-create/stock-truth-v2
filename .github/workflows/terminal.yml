@@ -16,9 +16,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      HF_TOKEN: ${{ secrets.HF_TOKEN || secrets.HUGGINGFACE_TOKEN || secrets.HUGGING_FACE_TOKEN }}
-      HF_SPACE_ID: Smit1105/qstate-market-api
     timeout-minutes: 40
     permissions:
       contents: write
@@ -36,80 +33,15 @@ jobs:
           cache: pip
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: pip install -r requirements.txt
-      - name: Deploy Q-State Hugging Face market API
-        id: qstate_api
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && env.HF_TOKEN != ''
-        env:
-          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY || secrets.FMP_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINNHUB_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
-          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
-        run: |
-          python -m pip install "huggingface_hub>=1.0,<2"
-          python -u scripts/deploy_hf_space.py
-          echo "QSTATE_API_BASE=https://smit1105-qstate-market-api.hf.space" >> "$GITHUB_ENV"
-      - name: Verify Hugging Face API and secured provider route
-        if: steps.qstate_api.outcome == 'success'
-        env:
-          QSTATE_DEPLOYMENT_URL: https://smit1105-qstate-market-api.hf.space
-        run: |
-          python - <<'PY'
-          import json, os, time, urllib.request
-          base=os.environ['QSTATE_DEPLOYMENT_URL'].rstrip('/')
-          def gradio_call(endpoint,data,timeout=60):
-              req=urllib.request.Request(
-                  base+'/gradio_api/call/'+endpoint,
-                  data=json.dumps({'data':data}).encode(),
-                  headers={'Content-Type':'application/json','User-Agent':'StockTruth-CI/1.0'},
-                  method='POST')
-              with urllib.request.urlopen(req,timeout=timeout) as r:
-                  meta=json.load(r)
-              event_id=meta.get('event_id')
-              if not event_id:
-                  raise RuntimeError('Gradio event id missing')
-              with urllib.request.urlopen(base+'/gradio_api/call/'+endpoint+'/'+event_id,timeout=timeout) as r:
-                  body=r.read().decode()
-              payload=None
-              for line in body.splitlines():
-                  if line.startswith('data:'):
-                      try:
-                          payload=json.loads(line[5:].strip())
-                      except Exception:
-                          pass
-              if payload is None:
-                  raise RuntimeError('Gradio result missing')
-              first=payload[0] if isinstance(payload,list) and payload else payload
-              return json.loads(first) if isinstance(first,str) else first
-          health=None
-          for _ in range(36):
-              try:
-                  health=gradio_call('health',[])
-                  if health.get('status')=='OK':
-                      break
-              except Exception:
-                  time.sleep(10)
-          if not health or health.get('status')!='OK':
-              raise SystemExit('Hugging Face Q-State backend did not become healthy')
-          configured=health.get('providers') or {}
-          if not any(configured.values()):
-              raise SystemExit('Hugging Face backend has no secured market-data provider')
-          probe=gradio_call('market',['AAPL','1D'])
-          bars=((probe.get('primary') or {}).get('bars') or [])
-          if len(bars)<80:
-              raise SystemExit('Arbitrary-ticker probe returned insufficient bars')
-          trace=probe.get('provider_trace') or []
-          secured=('Massive','FMP','Finnhub','Alpha Vantage')
-          if not any(x.get('status')=='OK' and any(s in str(x.get('source','')) for s in secured) for x in trace):
-              raise SystemExit('AAPL probe did not successfully use a secured provider')
-          print('Hugging Face Q-State API verified:',len(bars),'AAPL daily bars; providers=',configured)
-          PY
-      - name: Explain snapshot fallback when Hugging Face write token is not configured
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && env.HF_TOKEN == ''
-        run: echo "HF_TOKEN is not configured; arbitrary-ticker backend deployment is OFF and Pages will retain snapshot/browser fallback mode."
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate Deno request-time API
+        run: deno check main.ts
       - name: Unit integrity gates
         run: |
           npm test
-          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py scripts/train_quant_model.py scripts/deploy_hf_space.py backend/hf-space/app.py
+          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py scripts/train_quant_model.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
@@ -149,6 +81,10 @@ jobs:
         continue-on-error: true
         if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/snapshot-store.mjs publish
+      - name: Configure Quant runtime API URL
+        env:
+          QSTATE_API_BASE: ${{ vars.QSTATE_API_BASE }}
+        run: echo "QSTATE_API_BASE=${QSTATE_API_BASE}" >> "$GITHUB_ENV"
       - run: npm run build
       - run: npm run check
       - name: Save validation report and reviewable static build
