@@ -108,3 +108,14 @@ If those gates fail, probability is shown as **WITHHELD**. The deterministic set
 Execution uses a pre-specified primary horizon rather than choosing the best historical result after the fact: 15M→20 bars, 1H→10 bars, 4H→5 bars, 1D→10 bars. A probability is shown only if that pre-specified horizon passes promotion. Projected 5/10/20-bar paths use validated OOS conditional return bands for any horizon that passed; non-promoted horizons remain explicit regime/volatility simulation fallbacks.
 
 Multi-timeframe EMA20/50 bias is used as an execution gate, not silently mixed into calibrated probability. Macro/API context remains descriptive until synchronized historical factor data is available for separate validation.
+
+
+## Gold and silver inputs
+
+Supported precious-metals inputs:
+- `GLD` — SPDR Gold Shares ETF, collected as a U.S. equity/ETF snapshot.
+- `SLV` — iShares Silver Trust ETF, collected as a U.S. equity/ETF snapshot.
+- `GOLD` or `GC` — gold commodity route. The secured collector prefers a dated COMEX GC contract from Massive and can fall back to FMP `GCUSD` continuous commodity history.
+- `SILVER` or `SI` — silver commodity route. The secured collector prefers a dated COMEX SI contract from Massive and can fall back to FMP `SIUSD` continuous commodity history.
+
+`SVR` is not treated as an alias for silver because it can be a distinct security symbol. Use `SLV` for the silver ETF.

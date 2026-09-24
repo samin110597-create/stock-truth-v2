@@ -30,7 +30,9 @@
     "XLK",
     "XLI",
     "XLE",
-    "XLU"
+    "XLU",
+    "GLD",
+    "SLV"
   ],
   "representative": [
     "NVDA",
@@ -51,7 +53,9 @@
     "SMH",
     "XLK",
     "XLI",
-    "XLE"
+    "XLE",
+    "GLD",
+    "SLV"
   ],
   "sectorProxies": {
     "NVDA": "SMH",

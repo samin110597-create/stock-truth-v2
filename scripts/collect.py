@@ -198,7 +198,7 @@ TAGS = {
 
 def sec_facts(symbol, cached):
     global SEC_MAP
-    if symbol in ['SPY','QQQ','SMH','XLK','XLI','XLE','XLU']:
+    if symbol in ['SPY','QQQ','SMH','XLK','XLI','XLE','XLU','GLD','SLV']:
         return unavailable('ETF: issuer operating fundamentals do not apply.', 'SEC EDGAR')
     if cached and cached.get('fetched_at') and cached.get('classification') != 'UNAVAILABLE':
         try:
