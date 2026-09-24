@@ -76,3 +76,35 @@ The Q-State page also reads a sanitized `data/quant/context.json` manifest gener
 Those cross-source and macro observations are shown in the interface as context/health. They do not silently change the trading score until a factor model is separately validated.
 
 Production pushes, manual runs and scheduled runs now execute the secured collectors; pull requests never receive repository secrets.
+
+
+## Q-State 2.0 calibration layer
+
+GitHub Actions now trains a separate directional model for 15M, 1H, 4H and 1D at 5-, 10- and 20-bar horizons from sanitized stock/futures snapshots.
+
+Features are causal and include:
+- 1/5/20-bar log returns
+- EMA20/50/200 distance
+- RSI state
+- ATR percentage and compression
+- volume Z-score
+- 20-bar range position / breakout state
+- state-filtered latent velocity and acceleration
+- realized volatility
+- trend/regime interactions
+
+Validation is expanding chronological walk-forward with an embargo between train and test windows. Calibration curves and conditional return bands are built from out-of-sample predictions only.
+
+A probability is promoted to the UI only when all of these are true:
+- at least 3 walk-forward folds
+- at least 500 out-of-sample observations
+- Brier skill versus the historical base-rate forecast is at least 0.5%
+- log loss is no worse than the base-rate forecast
+- at least 60% of walk-forward folds have positive Brier skill without worse log loss
+- median fold Brier skill is positive
+
+If those gates fail, probability is shown as **WITHHELD**. The deterministic setup engine can still produce a rule-based WATCH/DEVELOPING/READY state, but it may not present an unvalidated percentage as predictive probability.
+
+Execution uses a pre-specified primary horizon rather than choosing the best historical result after the fact: 15M→20 bars, 1H→10 bars, 4H→5 bars, 1D→10 bars. A probability is shown only if that pre-specified horizon passes promotion. Projected 5/10/20-bar paths use validated OOS conditional return bands for any horizon that passed; non-promoted horizons remain explicit regime/volatility simulation fallbacks.
+
+Multi-timeframe EMA20/50 bias is used as an execution gate, not silently mixed into calibrated probability. Macro/API context remains descriptive until synchronized historical factor data is available for separate validation.

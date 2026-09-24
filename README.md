@@ -62,7 +62,7 @@ Optional repository secrets: `POLYGON_KEY` for a daily-bar fallback and `SEC_USE
 
 The quant terminal is a **separate application** at `/quant/`. It does not reuse the classic terminal HTML, CSS, provider router, technical engine, structure/reversal engine, or setup engine. It shares only sanitized market-data snapshots, the bundled chart library, and deployment infrastructure.
 
-Its independent engine provides structure, BOS/CHoCH, sweeps, RSI divergence, calculus-style momentum derivatives, entropy, Hurst persistence, dominant-cycle analysis, volatility/compression, Monte Carlo projection paths, execution levels, and trade-readiness states. API credentials remain GitHub Actions secrets and are never entered into the browser.
+Its independent engine now includes Q-State 2.0 walk-forward calibration: causal price/volume features are trained separately by timeframe and horizon, probabilities are promoted only when out-of-sample Brier/log-loss gates pass, and validated conditional return bands replace Monte Carlo targets when available. The runtime also uses confirmed multi-scale structure, state-filtered velocity/acceleration, multi-timeframe execution alignment, entropy/Hurst/cycle context, volatility/compression, execution levels and explicit WATCH/DEVELOPING/READY states. API credentials remain GitHub Actions secrets and are never entered into the browser.
 
 See `documentation/QUANT_LAB.md` for the standalone architecture and integrity rules.
 

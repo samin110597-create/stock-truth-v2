@@ -36,7 +36,7 @@ jobs:
       - name: Unit integrity gates
         run: |
           npm test
-          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py
+          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py scripts/train_quant_model.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
@@ -67,6 +67,8 @@ jobs:
         continue-on-error: true
         if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/collect-fundamentals.mjs
+      - name: Train Q-State 2.0 walk-forward calibrated model
+        run: python -u scripts/train_quant_model.py
       - name: Analyze available snapshots and append immutable setup ledger
         if: hashFiles('data/raw/*.json') != ''
         run: npm run analyze
