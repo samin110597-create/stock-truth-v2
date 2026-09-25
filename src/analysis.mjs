@@ -9,7 +9,7 @@ import {livePlanState} from './risk.mjs';
 import {researchRead,horizonResearch,chartContext} from './research.mjs';
 import {wyckoff} from './wyckoff.mjs';
 import {elliott} from './elliott.mjs';
-import {technicalForecast} from './forecast.mjs';
+import {technicalForecast,forecastTradeCall} from './forecast.mjs';
 export function analyzeFrame(block,timeframe){
   const clean=canonical(block),b=clean.bars;
   if(!b.length)return {timeframe,status:'UNAVAILABLE',reason:block?.reason||'No valid completed bars.',bars:[],provenance:block};
@@ -50,6 +50,7 @@ export function analyze(raw,{validate=true,benchmarks={}}={}){
   const adaptive=setups.Adaptive_SWING?.setup;
   const read=d.bars.length?researchRead(d.bars,d._technical,d._structure,d._reversal):{label:'UNAVAILABLE',families:[],bull:[],bear:[],neutral:[],coverage:0};
   const forecast=d.bars.length&&d.provenance?.quality!=='REVIEW'?technicalForecast(d.bars,d._technical):{horizons:[],method:'Forecast withheld: insufficient or reviewed daily data.'};
+  if(d.bars.length&&forecast.horizons?.length){forecast.calls={SWING:forecastTradeCall(d.bars,d._technical,d._structure,read,forecast,'SWING'),POSITION:forecastTradeCall(d.bars,d._technical,d._structure,read,forecast,'POSITION')};}
   const horizons=d.bars.length?horizonResearch(d.bars,d._technical):[];
   const thesis={classification:'PROXY',current:!finite(c)?'Price history is unavailable for this ticker.':`${raw.symbol} closed at ${money(c)}: ${d.technicals.intermediate_trend.toLowerCase()} daily trend, ${d.structure.pattern.toLowerCase()}. ${read.phase.toLowerCase()}. RSI ${finite(d.technicals.rsi)?d.technicals.rsi.toFixed(1):'unavailable'}; volume ${finite(d.technicals.rvol)?d.technicals.rvol.toFixed(2)+'× its prior 20-bar average':'unavailable'}.`,
     bull:finite(res)?`A completed close above ${money(res)}, followed by a successful retest, would strengthen continuation.`:'No overhead confirmed resistance is available; do not invent a target.',
