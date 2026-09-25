@@ -1,0 +1,41 @@
+name: Stock Truth — build Stock-Laya training dataset
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dataset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: pip install -r requirements.txt
+      - name: Restore existing sanitized Stock Truth snapshots
+        run: node scripts/snapshot-store.mjs restore
+      - name: Build chronological Laya stock dataset
+        run: python -u scripts/build_laya_stock_dataset.py --min-cases 500
+      - name: Upload ready-to-train dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-laya-dataset
+          path: |
+            data/laya/train.jsonl
+            data/laya/calibration.jsonl
+            data/laya/test.jsonl
+            data/laya/report.json
+          if-no-files-found: error
+          retention-days: 30
