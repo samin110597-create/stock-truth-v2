@@ -97,18 +97,24 @@ def main():
     device = torch.device("cuda", local_rank)
 
     cfg = json.loads((model_dir / "rl_agent_config.json").read_text())
-    cfg["gradient_checkpointing"] = True
+    fast_mode = os.environ.get("STOCK_LAYA_FAST", "1") == "1"
+    cfg["gradient_checkpointing"] = not fast_mode
     cfg["max_tokens_per_batch"] = 4096
-    cfg["max_len"] = 1024
-    cfg["head_max_len"] = 256
+    cfg["max_len"] = 768 if fast_mode else 1024
+    cfg["head_max_len"] = 192 if fast_mode else 256
 
     tok = AutoTokenizer.from_pretrained(model_dir / "tokenizer")
     model = build_model(cfg, encoder_dir=str(model_dir / "encoder"))
     model.load_state_dict(load_file(model_dir / "model.safetensors"), strict=True)
-    model.encoder.gradient_checkpointing_enable(
-        gradient_checkpointing_kwargs={"use_reentrant": False}
-    )
-    model.head_checkpointing = True
+    if not fast_mode:
+        model.encoder.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
+        )
+        model.head_checkpointing = True
+    else:
+        for p in model.encoder.parameters():
+            p.requires_grad = False
+        model.head_checkpointing = False
     model.to(device)
     model.train()
     runner = DDP(model, device_ids=[local_rank], find_unused_parameters=True) if distributed else model
@@ -128,25 +134,30 @@ def main():
         raise SystemExit(
             f"Insufficient Stock-Laya data: train={len(train_items)}, calibration={len(calib_items)}"
         )
+    if fast_mode:
+        rng = random.Random(20260925)
+        train_cap = int(os.environ.get("STOCK_LAYA_FAST_TRAIN_CAP", "24000"))
+        calib_cap = int(os.environ.get("STOCK_LAYA_FAST_CALIB_CAP", "6000"))
+        if len(train_items) > train_cap:
+            train_items = rng.sample(train_items, train_cap)
+        if len(calib_items) > calib_cap:
+            calib_items = rng.sample(calib_items, calib_cap)
     my_items = train_items[rank::world]
 
-    epochs = int(os.environ.get("STOCK_LAYA_EPOCHS", "4"))
-    micro = int(os.environ.get("STOCK_LAYA_MICRO_BATCH", "2"))
-    grad_accum = int(os.environ.get("STOCK_LAYA_GRAD_ACCUM", "16"))
+    epochs = int(os.environ.get("STOCK_LAYA_EPOCHS", "1" if fast_mode else "4"))
+    micro = int(os.environ.get("STOCK_LAYA_MICRO_BATCH", "8" if fast_mode else "2"))
+    grad_accum = int(os.environ.get("STOCK_LAYA_GRAD_ACCUM", "2" if fast_mode else "16"))
     group_size = 4
     lr_encoder = 2.5e-5
     lr_head = 1.0e-4
     sigma_start, sigma_end = 0.4, 0.1
 
-    encoder_params = [p for n, p in runner.named_parameters() if "encoder." in n]
-    head_params = [p for n, p in runner.named_parameters() if "encoder." not in n]
-    optimizer = torch.optim.AdamW(
-        [
-            {"params": encoder_params, "lr": lr_encoder},
-            {"params": head_params, "lr": lr_head},
-        ],
-        weight_decay=0.01,
-    )
+    encoder_params = [p for n, p in runner.named_parameters() if "encoder." in n and p.requires_grad]
+    head_params = [p for n, p in runner.named_parameters() if "encoder." not in n and p.requires_grad]
+    groups=[]
+    if encoder_params: groups.append({"params": encoder_params, "lr": lr_encoder})
+    if head_params: groups.append({"params": head_params, "lr": 2.0e-4 if fast_mode else lr_head})
+    optimizer = torch.optim.AdamW(groups, weight_decay=0.01)
     updates = max(1, (len(my_items) // max(1, micro * grad_accum)) * epochs)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=updates, eta_min=1e-6
@@ -157,7 +168,8 @@ def main():
         print(
             f"Stock-Laya: {len(train_items)} training decisions "
             f"(including {len(experience_items)} capped issued-setup experience decisions), "
-            f"{len(calib_items)} chronological calibration decisions, {world} GPUs."
+            f"{len(calib_items)} chronological calibration decisions, {world} GPUs, "
+            f"mode={'FAST_HEAD_ONLY' if fast_mode else 'FULL_FINE_TUNE'}."
         )
     started = time.time()
 
@@ -305,6 +317,8 @@ def main():
                     "experience_decisions_used": len(experience_items),
                     "experience_cap_fraction": 0.10,
                     "world_size": world,
+                    "training_mode": "FAST_HEAD_ONLY" if fast_mode else "FULL_FINE_TUNE",
+                    "encoder_frozen": bool(fast_mode),
                     "epochs": epochs,
                     "temperatures": temperatures,
                     "policy": "Calibration split was chronological and excluded from gradient training.",
