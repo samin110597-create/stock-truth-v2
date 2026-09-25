@@ -11,7 +11,7 @@ import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
 import {renderLayaCockpit,renderLearningPanel,buildLayaState} from './laya-panel.mjs';
 import {secureRetrieve,mergeSecure} from './secure-backend.mjs';
-let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
+let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,macroContext=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
 const panelIds=['laya-cockpit','learning','wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
 const selected=()=>({mode:$('#mode').value,horizon:$('#horizon').value,key:$('#mode').value+'_'+$('#horizon').value,tf:$('#timeframe').value});
@@ -80,7 +80,7 @@ function technicalPanels(){
   $('#levels').innerHTML=`<h2>Structural levels & imbalance proxies · ${tf}</h2><div class="grid-two"><div><h3>Support / demand reference</h3>${table(['Price','Quality','Reactions'],(f.structure?.support||[]).map(x=>row(money(x.price),x.quality+'/100',String(x.touches))))}</div><div><h3>Resistance / supply reference</h3>${table(['Price','Quality','Reactions'],(f.structure?.resistance||[]).map(x=>row(money(x.price),x.quality+'/100',String(x.touches))))}</div></div><h3>Unfilled three-candle gaps</h3>${f.context?.gaps?.length?table(['Direction','Zone','First observed','State'],f.context.gaps.map(g=>row(g.dir>0?'Bullish proxy':'Bearish proxy',money(g.low)+'–'+money(g.high),when(g.known_at),g.partially_tested?'Partially tested':'Untested'))):'<p class="note">No qualifying unfilled gap in the last 100 completed bars.</p>'}<p class="note">Gaps are visible OHLC geometry, not proof of an institutional order block. Swing quality weights ATR impulse, spacing, volume and displacement; pivot counts are not distinct institutional orders.</p>`;
 }
 function fundamentalPanels(){renderFundamentals(state);}
-function layaPanels(){renderLayaCockpit(state,selected(),layaConfig,qModel);renderLearningPanel(state,selected(),layaConfig);}
+function layaPanels(){renderLayaCockpit(state,selected(),layaConfig,qModel,macroContext);renderLearningPanel(state,selected(),layaConfig);}
 function modelPanels(){
   renderForecast(state);
   const v=state.validation[selected().key];
@@ -152,9 +152,9 @@ $('#brief').onclick=()=>{if(!state)return;const p=plan(),blob=new Blob([JSON.str
 async function boot(){
   selectView('verdict');
   try{
-    const results=await Promise.allSettled([fetch('../data/calendar.json').then(r=>{if(!r.ok)throw Error('Calendar missing');return r.json();}),fetch('../config/watchlist.json').then(r=>r.json()),fetch('../build.json',{cache:'no-cache'}).then(r=>r.json()),fetch('../config/laya.json').then(r=>r.json()),fetch('../data/quant/model.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)]);
+    const results=await Promise.allSettled([fetch('../data/calendar.json').then(r=>{if(!r.ok)throw Error('Calendar missing');return r.json();}),fetch('../config/watchlist.json').then(r=>r.json()),fetch('../build.json',{cache:'no-cache'}).then(r=>r.json()),fetch('../config/laya.json').then(r=>r.json()),fetch('../data/quant/model.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null),fetch('../data/quant/context.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)]);
     if(results[0].status!=='fulfilled')throw Error('Exchange calendar failed to load.');calendar=results[0].value;
-    if(results[1].status==='fulfilled')config=results[1].value;if(results[2].status==='fulfilled')build=results[2].value;if(results[3].status==='fulfilled')layaConfig=results[3].value;if(results[4].status==='fulfilled')qModel=results[4].value;
+    if(results[1].status==='fulfilled')config=results[1].value;if(results[2].status==='fulfilled')build=results[2].value;if(results[3].status==='fulfilled')layaConfig=results[3].value;if(results[4].status==='fulfilled')qModel=results[4].value;if(results[5].status==='fulfilled')macroContext=results[5].value;
     $('#build').textContent=build?(build.research_version||build.model_version)+' · '+build.commit.slice(0,8):'Build unavailable';
     $('#watchlist').innerHTML=config.symbols.slice(0,20).map(s=>`<button type="button">${esc(s)}</button>`).join('');for(const b of $('#watchlist').querySelectorAll('button'))b.onclick=()=>load(b.textContent);
     for(const symbol of ['SPY','QQQ',...new Set(Object.values(config.sectorProxies||{}))])fetch('../data/raw/'+symbol+'.json').then(r=>r.ok?r.json():null).then(r=>{if(r?.symbol===symbol)benchmarks[symbol]=r;}).catch(()=>{});
