@@ -106,6 +106,15 @@ def main():
 
     train_items = torch.load(pre_dir / "train_items.pt", weights_only=False)
     calib_items = torch.load(pre_dir / "calibration_items.pt", weights_only=False)
+    experience_items = []
+    exp_path = pre_dir / "experience_items.pt"
+    if exp_path.exists():
+        experience_items = torch.load(exp_path, weights_only=False)
+        cap = max(1, int(len(train_items) * 0.10))
+        if len(experience_items) > cap:
+            rng = random.Random(20260925)
+            experience_items = rng.sample(experience_items, cap)
+        train_items = train_items + experience_items
     if len(train_items) < 500 or len(calib_items) < 100:
         raise SystemExit(
             f"Insufficient Stock-Laya data: train={len(train_items)}, calibration={len(calib_items)}"
@@ -137,7 +146,8 @@ def main():
 
     if rank == 0:
         print(
-            f"Stock-Laya: {len(train_items)} training decisions, "
+            f"Stock-Laya: {len(train_items)} training decisions "
+            f"(including {len(experience_items)} capped issued-setup experience decisions), "
             f"{len(calib_items)} chronological calibration decisions, {world} GPUs."
         )
     started = time.time()
