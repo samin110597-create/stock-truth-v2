@@ -99,6 +99,15 @@ def main():
             raise SystemExit(f"No usable {split} items.")
         torch.save(items, out / f"{split}_items.pt")
         report[split] = {"cases": cases, "decision_items": len(items)}
+
+    exp_path = dataset / "experience_train.jsonl"
+    if exp_path.exists():
+        exp_items, exp_cases = convert(exp_path, tok, cfg)
+        if exp_items:
+            torch.save(exp_items, out / "experience_items.pt")
+            report["experience"] = {"cases": exp_cases, "decision_items": len(exp_items)}
+        else:
+            report["experience"] = {"cases": exp_cases, "decision_items": 0}
     (out / "preprocess-report.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
 
