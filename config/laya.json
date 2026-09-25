@@ -6,7 +6,11 @@
   "target_model": "Smit1105/stock-laya-qstate",
   "decision_contract": {
     "primary": "trade_action",
-    "options": ["BUY", "WAIT", "SELL"],
+    "options": [
+      "BUY",
+      "WAIT",
+      "SELL"
+    ],
     "secondary": "tradeable"
   },
   "data_source": "Existing sanitized Stock Truth / Q-State snapshots and immutable resolved outcomes",
@@ -24,6 +28,8 @@
   "runtime": {
     "provider": "Hugging Face Space / Laya",
     "gateway": "Deno Deploy",
-    "endpoint_status": "NOT_CONFIGURED"
+    "endpoint_status": "TRAINING_REQUIRED",
+    "gateway_url": "https://stock-truth-v2.samin110597.deno.net",
+    "decision_route": "/v1/decision"
   }
 }
