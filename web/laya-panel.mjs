@@ -20,10 +20,13 @@ function validationFor(state,selection){return state?.validation?.[selection?.ke
 function activePlan(state,selection){return state?.setups?.[selection?.key]?.setup||null;}
 function qStateResult(state,selection,qModel){
   if(!qModel)return null;
-  const bars=state?.frames?.['1D']?.bars||[];
-  const result=applyTrainedModel(qModel,'1D',bars),h=String(layaHorizonFor(selection)),x=result?.horizons?.[h];
-  if(!x)return null;
-  return {...x,horizon:h,modelVersion:result.modelVersion};
+  const planH=String(layaHorizonFor(selection));
+  const daily=applyTrainedModel(qModel,'1D',state?.frames?.['1D']?.bars||[]),d=daily?.horizons?.[planH];
+  if(d?.validated)return {...d,timeframe:'1D',horizon:planH,scope:'PLAN_HORIZON',modelVersion:daily.modelVersion};
+  const tactical=applyTrainedModel(qModel,'15M',state?.frames?.['15M']?.bars||[]),t=tactical?.horizons?.['20'];
+  if(t?.validated)return {...t,timeframe:'15M',horizon:'20',scope:'TACTICAL_CONFIRMATION',modelVersion:tactical.modelVersion,plan_horizon_status:d?.status||'WITHHELD'};
+  if(d)return {...d,timeframe:'1D',horizon:planH,scope:'PLAN_HORIZON_WITHHELD',modelVersion:daily.modelVersion};
+  return null;
 }
 
 export function buildLayaQuestions(selection){
@@ -134,7 +137,7 @@ export function renderLayaCockpit(state,selection,config={},qModel=null,macroCon
     '<div class="cockpit-status">'+pill(status)+'</div></div>'+
     '<div class="cockpit-grid">'+
       '<article class="cockpit-card primary"><span class="eyebrow">Current executable plan</span><strong>'+esc(plan?.direction||'WAIT')+'</strong><small>'+esc(plan?.grade||'No confirmed setup')+'</small></article>'+
-      '<article class="cockpit-card"><span class="eyebrow">Q-State '+esc(q?.horizon||String(layaHorizonFor(selection)))+'-bar P(up)</span><strong>'+esc(q?.validated&&finite(q?.probabilityUp)?pct(q.probabilityUp):'WITHHELD')+'</strong><small>'+esc(q?.validated?'Walk-forward calibrated · '+(q.oosSamples||0)+' OOS samples':q?.status||'No promoted model')+'</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Q-State '+esc(q?.timeframe||'1D')+' × '+esc(q?.horizon||String(layaHorizonFor(selection)))+' P(up)</span><strong>'+esc(q?.validated&&finite(q?.probabilityUp)?pct(q.probabilityUp):'WITHHELD')+'</strong><small>'+esc(q?.validated?((q.scope==='TACTICAL_CONFIRMATION'?'Tactical confirmation only · ':'Plan-horizon model · ')+'walk-forward calibrated · '+(q.oosSamples||0)+' OOS samples'):(q?.status||'No promoted model'))+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Stock-Laya decision</span><strong>'+esc(layaDecision)+'</strong><small>Confidence '+esc(layaConf)+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Engine agreement</span><strong>'+esc(a.label)+'</strong><small>'+a.count+' of '+a.total+' available engines align</small></article>'+
     '</div>'+
