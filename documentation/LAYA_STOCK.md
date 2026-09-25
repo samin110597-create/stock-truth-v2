@@ -33,7 +33,7 @@ The first Stock-Laya label is deliberately simple and auditable:
 - **SELL**: -1 ATR is touched first.
 - **WAIT**: neither barrier is touched, or both occur in the same OHLC bar and order is unknowable.
 
-Primary horizons stay aligned with Q-State: 15M→20 bars, 1H→10, 4H→5, 1D→10.
+The training set covers Q-State’s existing 5-, 10-, and 20-bar horizons on every supported stock timeframe (15M, 1H, 4H, 1D). The first live Stock-Laya integration uses daily 10-bar decisions for Swing and daily 20-bar decisions for Position.
 
 ## Build the training data
 
