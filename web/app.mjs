@@ -10,6 +10,7 @@ import {renderFundamentals} from './fundamentals-panel.mjs';
 import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
 import {renderLayaCockpit,renderLearningPanel,buildLayaState} from './laya-panel.mjs';
+import {secureOverlay} from './secure-backend.mjs';
 let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
 const panelIds=['laya-cockpit','learning','wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
@@ -107,7 +108,8 @@ async function load(symbol){
   try{
     if(!calendar)throw Error('Exchange calendar is unavailable.');
     const fundamentalTask=retrieveFundamentals(symbol,controller.signal).catch(e=>({symbol,status:'UNAVAILABLE',reason:e.message}));
-    const result=await retrieveTicker(symbol,calendar,controller.signal);if(id!==requestId)return;raw=result;
+    const result=await retrieveTicker(symbol,calendar,controller.signal);if(id!==requestId)return;
+    try{const secured=await secureOverlay(result,symbol,controller.signal);raw=secured.raw;}catch(e){raw={...result,secure_backend:{status:'FALLBACK',reason:e.message}};raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno secured backend',error:e.message}];}
     if(!raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'LOADING'};
     fundamentalTask.then(f=>{if(id!==requestId||!raw)return;
       if(f.status==='UNAVAILABLE'&&raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'STALE',latest_attempt_error:f.reason,errors:[f.reason]};
