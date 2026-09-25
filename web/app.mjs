@@ -9,7 +9,7 @@ import {retrieveFundamentals} from '../src/fundamentals.mjs';
 import {renderFundamentals} from './fundamentals-panel.mjs';
 import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
-import {renderLayaCockpit,renderLearningPanel,buildLayaState} from './laya-panel.mjs';
+import {renderLayaCockpit,renderLearningPanel,buildLayaState,requestLayaDecision} from './laya-panel.mjs';
 import {secureRetrieve,mergeSecure} from './secure-backend.mjs';
 let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,macroContext=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
@@ -81,6 +81,19 @@ function technicalPanels(){
 }
 function fundamentalPanels(){renderFundamentals(state);}
 function layaPanels(){renderLayaCockpit(state,selected(),layaConfig,qModel,macroContext);renderLearningPanel(state,selected(),layaConfig);}
+async function refreshLaya(){
+  if(!state||String(layaConfig.status||'').toUpperCase()!=='LIVE')return;
+  const id=requestId,symbol=state.symbol,packet=buildLayaState(state,selected());
+  if(!packet)return;
+  try{
+    const result=await requestLayaDecision(packet,selected(),layaConfig,controller?.signal);
+    if(id!==requestId||state?.symbol!==symbol)return;
+    state.laya=result;delete state.laya_error;layaPanels();
+  }catch(e){
+    if(id!==requestId||state?.symbol!==symbol||e.name==='AbortError')return;
+    state.laya=null;state.laya_error=e.message;layaPanels();
+  }
+}
 function modelPanels(){
   renderForecast(state);
   const v=state.validation[selected().key];
@@ -127,7 +140,7 @@ async function load(symbol){
     $('#load-status').textContent=symbol+' · calculating technicals, confirmed structures and trade plans…';
     worker=new Worker('./worker.mjs',{type:'module'});
     worker.onmessage=event=>{if(event.data.id!==requestId)return;if(event.data.error){clear(symbol,'Analysis unavailable');$('#load-status').textContent=event.data.error;return;}
-      state=event.data.analysis;state.fundamentals=raw.fundamentals;state.name=raw.name;remember();const errors=render();$('#load-status').textContent=errors.length?'Panel unavailable: '+errors.join('; '):`${symbol} · ${raw.retrieval} · calculated ${when(state.generated_at)} · completed-bar signals`;
+      state=event.data.analysis;state.fundamentals=raw.fundamentals;state.name=raw.name;remember();const errors=render();void refreshLaya();$('#load-status').textContent=errors.length?'Panel unavailable: '+errors.join('; '):`${symbol} · ${raw.retrieval} · calculated ${when(state.generated_at)} · completed-bar signals`;
       for(const b of $('#watchlist').querySelectorAll('button'))b.classList.toggle('active',b.textContent===symbol);
       const url=new URL(location.href);url.searchParams.set('ticker',symbol);history.replaceState(null,'',url);
     };
@@ -144,7 +157,7 @@ async function scan(){
   }catch{$('#ranking').innerHTML='<h2>Watchlist ranked</h2><p class="note">Scheduled scan unavailable. Analyze any ticker using the input above.</p>';}
 }
 $('#ticker-form').onsubmit=e=>{e.preventDefault();load($('#ticker').value);};$('#refresh').onclick=()=>load($('#ticker').value);
-for(const id of ['mode','horizon','timeframe'])$('#'+id).onchange=render;
+for(const id of ['mode','horizon','timeframe'])$('#'+id).onchange=()=>{render();if(id==='horizon')void refreshLaya();};
 for(const c of document.querySelectorAll('.overlays input'))c.onchange=()=>{if(state)renderChart(state,selected().tf,plan());};
 for(const b of $('#tabs').querySelectorAll('[data-view]')){b.onclick=()=>selectView(b.dataset.view);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...$('#tabs').querySelectorAll('[data-view]')],i=tabs.indexOf(b),next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();selectView(tabs[next].dataset.view);};}
 for(const id of ['risk-capital','risk-pct','risk-allocation'])$('#'+id).oninput=risk;
