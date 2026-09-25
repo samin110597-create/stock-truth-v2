@@ -92,7 +92,7 @@ function current(tf:string,rows:Bar[]){
 }
 async function getJson(url:string,params:Record<string,string>={}){
   const u=new URL(url);for(const [k,v] of Object.entries(params))if(v)u.searchParams.set(k,v);
-  const r=await fetch(u,{headers:{"user-agent":"QState-Deno/1.0","accept":"application/json"}});
+  const r=await fetch(u,{headers:{"user-agent":"QState-Deno/1.0","accept":"application/json"},signal:AbortSignal.timeout(8000)});
   if(!r.ok) throw new Error("HTTP "+r.status);
   return await r.json();
 }
@@ -193,6 +193,35 @@ async function equityBundle(symbol:string){
   return {schema_version:1,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),timeframes:frames,provider_trace:trace,
     credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
+async function equityDailyFast(symbol:string){
+  const trace:Trace[]=[];
+  // Yahoo is the fastest no-key server-side route. If it fails, query the keyed
+  // providers concurrently so one slow/rate-limited vendor cannot block the ticker.
+  const yd=await attempt("Yahoo daily fast",()=>yahoo(symbol,"1d","10y",86400,false,false),trace);
+  let daily=pick([yd],"1D");
+  if(!daily){
+    const [md,fd,nd,ad]=await Promise.all([
+      attempt("Massive daily",()=>massive(symbol,false),trace),
+      attempt("FMP daily",()=>fmp(symbol,false),trace),
+      attempt("Finnhub daily",()=>finnhub(symbol,false),trace),
+      attempt("Alpha Vantage daily",()=>alphaDaily(symbol),trace),
+    ]);
+    daily=pick([md,fd,nd,ad],"1D");
+  }
+  if(!daily)throw new Error("No current daily provider data");
+  return {schema_version:1,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),
+    timeframes:{"1D":{status:"COMPLETED BAR",provider:daily.provider,bars:daily.bars,fetched_at:nowIso()}},
+    provider_trace:trace,credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
+}
+async function futureDailyFast(requested:string,source:string){
+  const trace:Trace[]=[];
+  const d1=await attempt("Yahoo futures daily fast",()=>yahoo(source,"1d","10y",86400,false,false),trace);
+  if(!d1)throw new Error("No current futures daily data");
+  return {schema_version:1,symbol:requested,source_symbol:source,asset:"FUTURE",fetched_at:nowIso(),
+    timeframes:{"1D":{status:"COMPLETED BAR",provider:d1.provider,bars:d1.bars,fetched_at:nowIso()}},
+    provider_trace:trace,credential_policy:"Market-data credentials remain Deno Deploy secrets."};
+}
+
 async function futureBundle(requested:string,source:string){
   const trace:Trace[]=[];
   const m15=await attempt("Yahoo futures 15M",()=>yahoo(source,"15m","60d",900,true,false),trace);
@@ -210,10 +239,13 @@ async function futureBundle(requested:string,source:string){
     credential_policy:"Market-data credentials remain Deno Deploy secrets."};
 }
 const cache=new Map<string,{at:number,data:any}>();
-async function bundle(symbol:string){
-  const key=clean(symbol),cached=cache.get(key);if(cached&&Date.now()-cached.at<120000)return cached.data;
-  const data=FUTURES[key]?await futureBundle(key,FUTURES[key]):await equityBundle(key);
-  cache.set(key,{at:Date.now(),data});return data;
+async function bundle(symbol:string,tf:string){
+  const key=clean(symbol),cacheKey=key+":"+tf,cached=cache.get(cacheKey);
+  if(cached&&Date.now()-cached.at<120000)return cached.data;
+  const data=tf==="1D"
+    ? (FUTURES[key]?await futureDailyFast(key,FUTURES[key]):await equityDailyFast(key))
+    : (FUTURES[key]?await futureBundle(key,FUTURES[key]):await equityBundle(key));
+  cache.set(cacheKey,{at:Date.now(),data});return data;
 }
 
 Deno.serve(async (req)=>{
@@ -242,7 +274,7 @@ Deno.serve(async (req)=>{
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
     if(!["15M","1H","4H","1D"].includes(tf))return json({error:"INVALID_TIMEFRAME"},400,origin);
     try{
-      const data=await bundle(symbol),frame=data.timeframes?.[tf];
+      const data=await bundle(symbol,tf),frame=data.timeframes?.[tf];
       if(!frame||!Array.isArray(frame.bars)||frame.bars.length<80)return json({error:"TIMEFRAME_UNAVAILABLE",symbol,timeframe:tf,provider_trace:data.provider_trace},404,origin);
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
