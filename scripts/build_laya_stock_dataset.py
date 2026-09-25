@@ -17,7 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 from train_quant_model import FEATURES, block_features, load_blocks
