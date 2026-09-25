@@ -27,6 +27,7 @@ DEFAULT_OUT = ROOT / "data" / "laya"
 
 HORIZONS = (5, 10, 20)
 ACTION_OPTIONS = ("BUY", "WAIT", "SELL")
+NON_STOCK_CONTEXT = {"SPY", "QQQ", "SMH", "GLD", "SLV", "XLE", "XLI", "XLK", "XLU"}
 
 
 def finite(x):
@@ -130,7 +131,7 @@ def build_cases():
     cases = []
     feature_lookup = {}
     for symbol, timeframe, bars, asset in load_blocks():
-        if asset != "EQUITY":
+        if asset != "EQUITY" or symbol in NON_STOCK_CONTEXT:
             continue
         parsed = block_features(bars)
         if not parsed:
