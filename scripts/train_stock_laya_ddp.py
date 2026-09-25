@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Fine-tune Laya on Stock Truth decision cases with a separate chronological calibration set.
 
-Run with two GPUs:
+Run with one GPU:
+  python scripts/train_stock_laya_ddp.py MODEL_DIR OUTPUT_DIR
+
+Or with multiple GPUs:
   torchrun --nproc_per_node=2 scripts/train_stock_laya_ddp.py MODEL_DIR OUTPUT_DIR
 
 The input tensor files are produced by scripts/preprocess_stock_laya.py.
@@ -80,10 +83,16 @@ def main():
     output_dir = Path(sys.argv[2])
     pre_dir = Path(sys.argv[3]) if len(sys.argv) > 3 else Path("data/laya/preprocessed")
 
-    dist.init_process_group("nccl")
-    rank = dist.get_rank()
-    world = dist.get_world_size()
-    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    if not torch.cuda.is_available():
+        raise SystemExit("A CUDA GPU is required for Stock-Laya training.")
+    distributed = int(os.environ.get("WORLD_SIZE", "1")) > 1
+    if distributed:
+        dist.init_process_group("nccl")
+        rank = dist.get_rank()
+        world = dist.get_world_size()
+        local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    else:
+        rank, world, local_rank = 0, 1, 0
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
 
@@ -102,7 +111,7 @@ def main():
     model.head_checkpointing = True
     model.to(device)
     model.train()
-    ddp = DDP(model, device_ids=[local_rank], find_unused_parameters=True)
+    runner = DDP(model, device_ids=[local_rank], find_unused_parameters=True) if distributed else model
 
     train_items = torch.load(pre_dir / "train_items.pt", weights_only=False)
     calib_items = torch.load(pre_dir / "calibration_items.pt", weights_only=False)
@@ -122,15 +131,15 @@ def main():
     my_items = train_items[rank::world]
 
     epochs = int(os.environ.get("STOCK_LAYA_EPOCHS", "4"))
-    micro = int(os.environ.get("STOCK_LAYA_MICRO_BATCH", "8"))
-    grad_accum = int(os.environ.get("STOCK_LAYA_GRAD_ACCUM", "4"))
+    micro = int(os.environ.get("STOCK_LAYA_MICRO_BATCH", "2"))
+    grad_accum = int(os.environ.get("STOCK_LAYA_GRAD_ACCUM", "16"))
     group_size = 4
     lr_encoder = 2.5e-5
     lr_head = 1.0e-4
     sigma_start, sigma_end = 0.4, 0.1
 
-    encoder_params = [p for n, p in ddp.named_parameters() if "encoder." in n]
-    head_params = [p for n, p in ddp.named_parameters() if "encoder." not in n]
+    encoder_params = [p for n, p in runner.named_parameters() if "encoder." in n]
+    head_params = [p for n, p in runner.named_parameters() if "encoder." not in n]
     optimizer = torch.optim.AdamW(
         [
             {"params": encoder_params, "lr": lr_encoder},
@@ -167,7 +176,7 @@ def main():
                 continue
             batch = collate(chunk, tok.pad_token_id)
             with torch.autocast("cuda", dtype=torch.float16):
-                logits, act = ddp(
+                logits, act = runner(
                     batch["input_ids"].to(device),
                     batch["attention_mask"].to(device),
                     batch["marker_pos"].to(device),
@@ -211,14 +220,15 @@ def main():
             batches += 1
             if batches % grad_accum == 0 or start + micro >= len(my_items):
                 scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(ddp.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(runner.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
                 scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
             epoch_loss += float(loss.item() * grad_accum)
 
-        dist.barrier()
+        if distributed:
+            dist.barrier()
         if rank == 0:
             print(
                 f"Epoch {epoch+1}/{epochs}: loss={epoch_loss/max(1,batches):.4f} "
@@ -243,7 +253,8 @@ def main():
                 )
             )
 
-    dist.barrier()
+    if distributed:
+        dist.barrier()
 
     if rank == 0:
         model.eval()
@@ -291,6 +302,9 @@ def main():
                     "base_model": "convaiinnovations/laya",
                     "train_decisions": len(train_items),
                     "calibration_decisions": len(calib_items),
+                    "experience_decisions_used": len(experience_items),
+                    "experience_cap_fraction": 0.10,
+                    "world_size": world,
                     "epochs": epochs,
                     "temperatures": temperatures,
                     "policy": "Calibration split was chronological and excluded from gradient training.",
@@ -300,7 +314,8 @@ def main():
         )
         print("Saved Stock-Laya candidate:", output_dir)
 
-    dist.destroy_process_group()
+    if distributed:
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":
