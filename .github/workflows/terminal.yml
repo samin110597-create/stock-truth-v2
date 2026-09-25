@@ -56,16 +56,24 @@ jobs:
                   providers=health.get('providers') or {}
                   if not any(providers.values()):
                       raise RuntimeError('no secured providers configured in Deno')
-                  q=urllib.parse.urlencode({'symbol':'AAPL','timeframe':'1D'})
-                  with urllib.request.urlopen(base+'/v1/market?'+q,timeout=30) as r:
-                      probe=json.load(r)
-                  bars=((probe.get('primary') or {}).get('bars') or [])
-                  if len(bars)<80:
-                      raise RuntimeError(f'insufficient AAPL bars: {len(bars)}')
-                  trace=probe.get('provider_trace') or []
-                  if not any(x.get('status')=='OK' for x in trace):
-                      raise RuntimeError('no successful provider in trace')
-                  print('Deno backend verified:',len(bars),'AAPL bars; providers=',providers)
+                  checked=[]
+                  for symbol in ['AAPL','NVDA','MU']:
+                      q=urllib.parse.urlencode({'symbol':symbol,'timeframe':'1D'})
+                      with urllib.request.urlopen(base+'/v1/market?'+q,timeout=30) as r:
+                          probe=json.load(r)
+                      bars=((probe.get('primary') or {}).get('bars') or [])
+                      if len(bars)<80:
+                          raise RuntimeError(f'insufficient {symbol} bars: {len(bars)}')
+                      trace=probe.get('provider_trace') or []
+                      if not any(x.get('status')=='OK' for x in trace):
+                          raise RuntimeError(f'no successful provider in trace for {symbol}')
+                      qq=urllib.parse.urlencode({'symbol':symbol})
+                      with urllib.request.urlopen(base+'/v1/quote?'+qq,timeout=15) as r:
+                          quote=json.load(r)
+                      if not quote.get('price') or not quote.get('as_of'):
+                          raise RuntimeError(f'invalid quote for {symbol}')
+                      checked.append((symbol,len(bars),quote.get('provider')))
+                  print('Deno backend verified:',checked,'providers=',providers)
                   break
               except Exception as e:
                   last_error=e
