@@ -1,5 +1,5 @@
 import {finite} from '../src/numeric.mjs';
-import {modelFeatures} from '../quant/src/model.mjs';
+import {modelFeatures,applyTrainedModel} from '../quant/src/model.mjs';
 import {esc,fmt,pct,pill,metric} from './ui.mjs';
 
 function dirFromText(value){
@@ -18,6 +18,13 @@ function matchingForecast(state,selection){
 }
 function validationFor(state,selection){return state?.validation?.[selection?.key]||null;}
 function activePlan(state,selection){return state?.setups?.[selection?.key]?.setup||null;}
+function qStateResult(state,selection,qModel){
+  if(!qModel)return null;
+  const bars=state?.frames?.['1D']?.bars||[];
+  const result=applyTrainedModel(qModel,'1D',bars),h=String(layaHorizonFor(selection)),x=result?.horizons?.[h];
+  if(!x)return null;
+  return {...x,horizon:h,modelVersion:result.modelVersion};
+}
 
 export function buildLayaQuestions(selection){
   const horizon=layaHorizonFor(selection);
@@ -75,11 +82,12 @@ export async function requestLayaDecision(statePacket,selection,config={},signal
   return result;
 }
 
-function engineVotes(state,selection){
-  const plan=activePlan(state,selection),forecast=matchingForecast(state,selection);
+function engineVotes(state,selection,qModel){
+  const plan=activePlan(state,selection),forecast=matchingForecast(state,selection),q=qStateResult(state,selection,qModel);
   const votes=[
     {name:'Technical read',dir:dirFromText(state?.read?.label),detail:state?.read?.label||'Unavailable'},
     {name:'Confirmed setup',dir:dirFromText(plan?.direction),detail:plan?.direction||'WAIT'},
+    {name:'Q-State 2.0',dir:q?.validated&&finite(q.probabilityUp)?(q.probabilityUp>=.5?1:-1):0,detail:q?.validated&&finite(q.probabilityUp)?((q.probabilityUp*100).toFixed(1)+'% P(up)'):(q?.status||'WITHHELD')},
     {name:'Local forecast',dir:finite(forecast?.predicted_return)?Math.sign(forecast.predicted_return):0,detail:finite(forecast?.predicted_return)?((forecast.predicted_return>=0?'+':'')+fmt(forecast.predicted_return*100,1)+'%'):'Unavailable'},
   ];
   const mtf=Object.values(state?.alignment||{}).map(x=>dirFromText(x?.label));
@@ -103,9 +111,9 @@ function layaAnswer(state){
   return {choice,confidence};
 }
 
-export function renderLayaCockpit(state,selection,config={}){
+export function renderLayaCockpit(state,selection,config={},qModel=null){
   const el=document.getElementById('laya-cockpit');if(!el||!state)return;
-  const plan=activePlan(state,selection),votes=engineVotes(state,selection),a=agreement(votes),laya=layaAnswer(state);
+  const plan=activePlan(state,selection),q=qStateResult(state,selection,qModel),votes=engineVotes(state,selection,qModel),a=agreement(votes),laya=layaAnswer(state);
   const packet=buildLayaState(state,selection);
   const status=laya?'STOCK-LAYA LIVE':String(config.status||'TRAINING REQUIRED').replaceAll('_',' ');
   const current=plan?.current_action||'WAIT — NO CONFIRMED SETUP';
@@ -118,9 +126,9 @@ export function renderLayaCockpit(state,selection,config={}){
     '<div class="cockpit-status">'+pill(status)+'</div></div>'+
     '<div class="cockpit-grid">'+
       '<article class="cockpit-card primary"><span class="eyebrow">Current executable plan</span><strong>'+esc(plan?.direction||'WAIT')+'</strong><small>'+esc(plan?.grade||'No confirmed setup')+'</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Q-State '+esc(q?.horizon||String(layaHorizonFor(selection)))+'-bar P(up)</span><strong>'+esc(q?.validated&&finite(q?.probabilityUp)?pct(q.probabilityUp):'WITHHELD')+'</strong><small>'+esc(q?.validated?'Walk-forward calibrated · '+(q.oosSamples||0)+' OOS samples':q?.status||'No promoted model')+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Stock-Laya decision</span><strong>'+esc(layaDecision)+'</strong><small>Confidence '+esc(layaConf)+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Engine agreement</span><strong>'+esc(a.label)+'</strong><small>'+a.count+' of '+a.total+' available engines align</small></article>'+
-      '<article class="cockpit-card"><span class="eyebrow">Laya state readiness</span><strong>'+esc(packet?'READY':'INSUFFICIENT HISTORY')+'</strong><small>'+esc(packet?'Uses the same Q-State feature schema as training':'Needs 220+ usable daily bars')+'</small></article>'+
     '</div>'+
     '<details class="engine-detail"><summary>What the existing engines say</summary><div class="engine-votes">'+voteRows+'</div></details>';
 }
