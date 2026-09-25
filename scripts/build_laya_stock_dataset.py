@@ -25,7 +25,7 @@ from train_quant_model import FEATURES, block_features, load_blocks
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = ROOT / "data" / "laya"
 
-PRIMARY_HORIZON = {"15M": 20, "1H": 10, "4H": 5, "1D": 10}
+HORIZONS = (5, 10, 20)
 ACTION_OPTIONS = ("BUY", "WAIT", "SELL")
 
 
@@ -103,8 +103,7 @@ def make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action):
     }
     state = {
         "schema": "stock-truth-laya-state-v1",
-        "symbol": symbol,
-        "asset_class": asset,
+        "asset_class": "EQUITY",
         "timeframe": timeframe,
         "horizon_bars": horizon,
         "timestamp": int(timestamp),
@@ -130,6 +129,8 @@ def make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action):
 def build_cases():
     cases = []
     for symbol, timeframe, bars, asset in load_blocks():
+        if asset != "EQUITY":
+            continue
         parsed = block_features(bars)
         if not parsed:
             continue
