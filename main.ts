@@ -2,6 +2,8 @@ const MASSIVE = Deno.env.get("MASSIVE_KEY") || Deno.env.get("POLYGON_KEY") || ""
 const FMP = Deno.env.get("FMP_API_KEY") || Deno.env.get("FMP_KEY") || "";
 const FINNHUB = Deno.env.get("FINNHUB_API_KEY") || Deno.env.get("FINNHUB_KEY") || "";
 const ALPHA = Deno.env.get("ALPHA_VANTAGE_KEY") || Deno.env.get("ALPHAVANTAGE_KEY") || "";
+const LAYA_SERVICE_URL = Deno.env.get("LAYA_SERVICE_URL") || "";
+const LAYA_SERVICE_TOKEN = Deno.env.get("LAYA_SERVICE_TOKEN") || "";
 const ALLOWED = new Set([
   "https://samin110597-create.github.io",
   "http://localhost:4173",
@@ -34,7 +36,7 @@ function cors(origin:string|null){
   const allow = origin && ALLOWED.has(origin) ? origin : "https://samin110597-create.github.io";
   return {
     "access-control-allow-origin": allow,
-    "access-control-allow-methods":"GET,OPTIONS",
+    "access-control-allow-methods":"GET,POST,OPTIONS",
     "access-control-allow-headers":"content-type",
     "access-control-max-age":"86400",
     "vary":"Origin",
@@ -218,8 +220,23 @@ Deno.serve(async (req)=>{
   const origin=req.headers.get("origin");
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(origin)});
   const u=new URL(req.url);
-  if(u.pathname==="/health")return json({status:"OK",service:"Q-State Market API",version:"4.0",host:"Deno Deploy",
-    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA}},200,origin);
+  if(u.pathname==="/health")return json({status:"OK",service:"Q-State Market API",version:"5.0",host:"Deno Deploy",
+    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA},
+    decision_service:{stock_laya:!!LAYA_SERVICE_URL}},200,origin);
+  if(u.pathname==="/v1/decision"&&req.method==="POST"){
+    if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
+    try{
+      const body=await req.json();
+      if(!body||typeof body.state!=="object"||!body.questions||typeof body.questions!=="object")return json({error:"INVALID_DECISION_REQUEST"},400,origin);
+      const headers:Record<string,string>={"content-type":"application/json","accept":"application/json"};
+      if(LAYA_SERVICE_TOKEN)headers.authorization="Bearer "+LAYA_SERVICE_TOKEN;
+      const upstream=await fetch(LAYA_SERVICE_URL,{method:"POST",headers,body:JSON.stringify({state:body.state,questions:body.questions}),signal:AbortSignal.timeout(45000)});
+      const text=await upstream.text();
+      if(!upstream.ok)return json({error:"STOCK_LAYA_UPSTREAM",status:upstream.status,message:text.slice(0,500)},502,origin);
+      let parsed;try{parsed=JSON.parse(text);}catch{return json({error:"STOCK_LAYA_INVALID_RESPONSE"},502,origin);}
+      return json(parsed,200,origin);
+    }catch(e){return json({error:"STOCK_LAYA_UNAVAILABLE",message:String((e as Error)?.message||e)},503,origin);}
+  }
   if(u.pathname==="/v1/market"){
     const symbol=clean(u.searchParams.get("symbol")||""),tf=clean(u.searchParams.get("timeframe")||"1D");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -230,5 +247,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Market API",status:"OK",routes:["/health","/v1/market?symbol=AAPL&timeframe=1D"]},200,origin);
+  return json({service:"Q-State Market API",status:"OK",routes:["/health","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/decision"]},200,origin);
 });

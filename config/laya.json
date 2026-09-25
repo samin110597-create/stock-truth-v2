@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "integration_version": "STOCK-LAYA-0.1",
+  "status": "TRAINING_REQUIRED",
+  "base_model": "convaiinnovations/laya",
+  "target_model": "Smit1105/stock-laya-qstate",
+  "decision_contract": {
+    "primary": "trade_action",
+    "options": [
+      "BUY",
+      "WAIT",
+      "SELL"
+    ],
+    "secondary": "tradeable"
+  },
+  "data_source": "Existing sanitized Stock Truth / Q-State snapshots and immutable resolved outcomes",
+  "training_policy": "Chronological train/calibration/test split. Future bars are labels only and never enter state features.",
+  "learning_policy": "New resolved examples expand the next candidate training set. A wrong decision is retained; production weights are never changed from one trade alone.",
+  "promotion_policy": {
+    "minimum_test_cases": 500,
+    "minimum_balanced_accuracy": 0.53,
+    "minimum_brier_skill": 0.02,
+    "must_beat_current_qstate": true,
+    "positive_multiple_periods": true,
+    "no_single_ticker_dominance": true
+  },
+  "probability_policy": "Laya confidence is displayed only after stock-domain held-out calibration and promotion. Until then the UI must show WITHHELD.",
+  "runtime": {
+    "provider": "Hugging Face Space / Laya",
+    "gateway": "Deno Deploy",
+    "endpoint_status": "TRAINING_REQUIRED",
+    "gateway_url": "https://stock-truth-v2.samin110597.deno.net",
+    "decision_route": "/v1/decision"
+  }
+}

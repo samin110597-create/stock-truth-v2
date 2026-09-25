@@ -9,9 +9,11 @@ import {retrieveFundamentals} from '../src/fundamentals.mjs';
 import {renderFundamentals} from './fundamentals-panel.mjs';
 import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
-let state=null,raw=null,calendar=null,config={symbols:[]},build=null,worker=null,controller=null,requestId=0,view='verdict';
+import {renderLayaCockpit,renderLearningPanel,buildLayaState,requestLayaDecision} from './laya-panel.mjs';
+import {secureRetrieve,mergeSecure} from './secure-backend.mjs';
+let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,macroContext=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
-const panelIds=['wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
+const panelIds=['laya-cockpit','learning','wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
 const selected=()=>({mode:$('#mode').value,horizon:$('#horizon').value,key:$('#mode').value+'_'+$('#horizon').value,tf:$('#timeframe').value});
 const plan=()=>state?.setups?.[selected().key]?.setup;
 const table=(heads,rows)=>`<div class="table-wrap"><table><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
@@ -78,6 +80,20 @@ function technicalPanels(){
   $('#levels').innerHTML=`<h2>Structural levels & imbalance proxies · ${tf}</h2><div class="grid-two"><div><h3>Support / demand reference</h3>${table(['Price','Quality','Reactions'],(f.structure?.support||[]).map(x=>row(money(x.price),x.quality+'/100',String(x.touches))))}</div><div><h3>Resistance / supply reference</h3>${table(['Price','Quality','Reactions'],(f.structure?.resistance||[]).map(x=>row(money(x.price),x.quality+'/100',String(x.touches))))}</div></div><h3>Unfilled three-candle gaps</h3>${f.context?.gaps?.length?table(['Direction','Zone','First observed','State'],f.context.gaps.map(g=>row(g.dir>0?'Bullish proxy':'Bearish proxy',money(g.low)+'–'+money(g.high),when(g.known_at),g.partially_tested?'Partially tested':'Untested'))):'<p class="note">No qualifying unfilled gap in the last 100 completed bars.</p>'}<p class="note">Gaps are visible OHLC geometry, not proof of an institutional order block. Swing quality weights ATR impulse, spacing, volume and displacement; pivot counts are not distinct institutional orders.</p>`;
 }
 function fundamentalPanels(){renderFundamentals(state);}
+function layaPanels(){renderLayaCockpit(state,selected(),layaConfig,qModel,macroContext);renderLearningPanel(state,selected(),layaConfig);}
+async function refreshLaya(){
+  if(!state||String(layaConfig.status||'').toUpperCase()!=='LIVE')return;
+  const id=requestId,symbol=state.symbol,packet=buildLayaState(state,selected());
+  if(!packet)return;
+  try{
+    const result=await requestLayaDecision(packet,selected(),layaConfig,controller?.signal);
+    if(id!==requestId||state?.symbol!==symbol)return;
+    state.laya=result;delete state.laya_error;layaPanels();
+  }catch(e){
+    if(id!==requestId||state?.symbol!==symbol||e.name==='AbortError')return;
+    state.laya=null;state.laya_error=e.message;layaPanels();
+  }
+}
 function modelPanels(){
   renderForecast(state);
   const v=state.validation[selected().key];
@@ -87,12 +103,13 @@ function modelPanels(){
   $('#ledger').innerHTML=`<h2>Issued setup history · this browser</h2><p class="note">Entry, stop and targets are stored once under a versioned ID. Refreshes observe the same plan. Original model versions remain visible and are never silently rewritten.</p>${rows.length?table(['Signal','Model / mode','Direction','Entry','Stop','TP1 / TP2','Observed state'],rows.map(r=>{const p=r.setup,i=b.findIndex(x=>x.end_ts===p.signal_ts),result=i>=0?resolveSetup(b,p,i):{state:'HISTORY UNAVAILABLE'};return row(when(p.signal_ts),esc(p.model_version)+' / '+esc(p.mode),pill(p.direction),money(p.entry_zone.low)+'–'+money(p.entry_zone.high),money(p.stop),money(p.targets[0]?.price)+' / '+money(p.targets[1]?.price),esc(result.state));})):'<p class="note">No qualifying plan recorded for this ticker.</p>'}`;
 }
 function sources(){
-  const d=state.frames['1D'].provenance||{};
-  $('#health').innerHTML=`<h2>Sources & data integrity</h2>${pill(state.health.status)}<div class="health-line"><b>Retrieval:</b> ${esc(raw.retrieval)}<br><b>Model:</b> ${esc(state.model_version)}<br><b>Build:</b> ${esc(build?.commit||'Unavailable')}<br><b>Calculated:</b> ${when(state.generated_at)}<br><b>Daily history:</b> ${esc(d.provider||'Unavailable')}<br><b>Source fetched:</b> ${when(d.fetched_at)}<br><b>Last completed bar:</b> ${when(d.last_completed_bar)}<br><b>Adjustment:</b> ${esc(d.adjustment||'Unavailable')}</div>${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noreferrer">Open price-history source ↗</a>`:''}${raw.cross_check?`<h3>Longer-history reconciliation</h3><p class="note">${esc(raw.cross_check.status)} · ${raw.cross_check.overlap||0} overlapping dates · largest OHLC difference ${pct(raw.cross_check.max_ohlc_difference)} · ${raw.cross_check.appended||0} recent bars appended. No price is rescaled. Per-bar source labels are preserved.</p>`:''}${table(['Component','Status','Bars','Last completed','Provider'],Object.values(state.frames).map(f=>row(f.timeframe,pill(f.status),fmt(f.bars.length,0),when(f.provenance?.last_completed_bar),esc(f.provenance?.provider||'Unavailable'))))}<h3>Market & sector context</h3>${table(['Benchmark','Trend','63-session relative strength','Status','As of'],state.market_context.map(c=>row(esc(c.symbol),esc(c.trend||'Unavailable'),pct(c.relative_strength_63),pill(c.status),when(c.as_of))))}<p class="note">Sector ETFs are explicit comparison proxies. Stale benchmark data is labeled and not used to override the stock's setup.</p><h3>Component errors</h3><p class="note">${state.provider_errors.map(e=>esc(e.provider+': '+e.error)).join('<br>')||'No direct provider error reported.'}</p><p class="note">Stock Analysis and Yahoo endpoints are unofficial and best effort. No private provider key is exposed. Unsupported data stays unavailable; watchlist membership never gates analysis.</p>`;
+  const d=state.frames['1D'].provenance||{},secure=raw.secure_backend||{};
+  const trace=(secure.provider_trace||[]).map(x=>row(esc(x.source),pill(x.status),esc(x.bars??'—'),esc(x.last||x.reason||'—')));
+  $('#health').innerHTML=`<h2>Sources & data integrity</h2>${pill(state.health.status)}${pill(secure.status||'SECURE BACKEND UNKNOWN')}<div class="health-line"><b>Retrieval:</b> ${esc(raw.retrieval)}<br><b>Secured backend:</b> ${esc(secure.status||'Unavailable')} ${secure.reason?'· '+esc(secure.reason):''}<br><b>Credential policy:</b> ${esc(secure.credential_policy||'API keys are never exposed to browser code.')}<br><b>Model:</b> ${esc(state.model_version)}<br><b>Build:</b> ${esc(build?.commit||'Unavailable')}<br><b>Calculated:</b> ${when(state.generated_at)}<br><b>Daily history:</b> ${esc(d.provider||'Unavailable')}<br><b>Source fetched:</b> ${when(d.fetched_at)}<br><b>Last completed bar:</b> ${when(d.last_completed_bar)}<br><b>Adjustment:</b> ${esc(d.adjustment||'Unavailable')}</div>${trace.length?`<h3>Secured provider trace</h3>${table(['Provider','Status','Bars','Latest / reason'],trace)}`:''}${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noreferrer">Open price-history source ↗</a>`:''}${raw.cross_check?`<h3>Longer-history reconciliation</h3><p class="note">${esc(raw.cross_check.status)} · ${raw.cross_check.overlap||0} overlapping dates · largest OHLC difference ${pct(raw.cross_check.max_ohlc_difference)} · ${raw.cross_check.appended||0} recent bars appended. No price is rescaled. Per-bar source labels are preserved.</p>`:''}${table(['Component','Status','Bars','Last completed','Provider'],Object.values(state.frames).map(f=>row(f.timeframe,pill(f.status),fmt(f.bars.length,0),when(f.provenance?.last_completed_bar),esc(f.provenance?.provider||'Unavailable'))))}<h3>Market & sector context</h3>${table(['Benchmark','Trend','63-session relative strength','Status','As of'],state.market_context.map(c=>row(esc(c.symbol),esc(c.trend||'Unavailable'),pct(c.relative_strength_63),pill(c.status),when(c.as_of))))}<p class="note">Sector ETFs are explicit comparison proxies. Stale benchmark data is labeled and not used to override the stock's setup.</p><h3>Component errors</h3><p class="note">${state.provider_errors.map(e=>esc(e.provider+': '+e.error)).join('<br>')||'No direct provider error reported.'}</p><p class="note">Primary calculations prefer the secured Deno multi-provider route when available. Public Stock Analysis/Yahoo data remains a clearly labeled fallback only. Missing evidence stays unavailable; no market data is fabricated.</p>`;
 }
 function render(){
   if(!state)return;
-  const renderers=[identity,verdict,tradeMatrix,risk,mtf,technicalPanels,fundamentalPanels,modelPanels,sources];
+  const renderers=[identity,layaPanels,verdict,tradeMatrix,risk,mtf,technicalPanels,fundamentalPanels,modelPanels,sources];
   const errors=[];for(const fn of renderers)try{fn();}catch(e){errors.push(fn.name+': '+e.message);console.error(fn.name,e);}
   if(['verdict','technicals'].includes(view))renderChart(state,selected().tf,plan());
   selectVisibility();$('#brief').disabled=false;return errors;
@@ -105,7 +122,14 @@ async function load(symbol){
   try{
     if(!calendar)throw Error('Exchange calendar is unavailable.');
     const fundamentalTask=retrieveFundamentals(symbol,controller.signal).catch(e=>({symbol,status:'UNAVAILABLE',reason:e.message}));
-    const result=await retrieveTicker(symbol,calendar,controller.signal);if(id!==requestId)return;raw=result;
+    const [classicResult,secureResult]=await Promise.allSettled([
+      retrieveTicker(symbol,calendar,controller.signal),
+      secureRetrieve(symbol,controller.signal)
+    ]);if(id!==requestId)return;
+    const classic=classicResult.status==='fulfilled'?classicResult.value:null,secured=secureResult.status==='fulfilled'?secureResult.value:null;
+    if(!classic&&!secured)throw Error('All price/history routes failed. Deno: '+(secureResult.reason?.message||'unavailable')+' · classic: '+(classicResult.reason?.message||'unavailable'));
+    raw=mergeSecure(classic,secured);
+    if(!secured){raw={...raw,secure_backend:{status:'FALLBACK',reason:secureResult.reason?.message||'Deno unavailable'}};raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno secured backend',error:secureResult.reason?.message||'Unavailable'}];}
     if(!raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'LOADING'};
     fundamentalTask.then(f=>{if(id!==requestId||!raw)return;
       if(f.status==='UNAVAILABLE'&&raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'STALE',latest_attempt_error:f.reason,errors:[f.reason]};
@@ -116,7 +140,7 @@ async function load(symbol){
     $('#load-status').textContent=symbol+' · calculating technicals, confirmed structures and trade plans…';
     worker=new Worker('./worker.mjs',{type:'module'});
     worker.onmessage=event=>{if(event.data.id!==requestId)return;if(event.data.error){clear(symbol,'Analysis unavailable');$('#load-status').textContent=event.data.error;return;}
-      state=event.data.analysis;state.fundamentals=raw.fundamentals;state.name=raw.name;remember();const errors=render();$('#load-status').textContent=errors.length?'Panel unavailable: '+errors.join('; '):`${symbol} · ${raw.retrieval} · calculated ${when(state.generated_at)} · completed-bar signals`;
+      state=event.data.analysis;state.fundamentals=raw.fundamentals;state.name=raw.name;remember();const errors=render();void refreshLaya();$('#load-status').textContent=errors.length?'Panel unavailable: '+errors.join('; '):`${symbol} · ${raw.retrieval} · calculated ${when(state.generated_at)} · completed-bar signals`;
       for(const b of $('#watchlist').querySelectorAll('button'))b.classList.toggle('active',b.textContent===symbol);
       const url=new URL(location.href);url.searchParams.set('ticker',symbol);history.replaceState(null,'',url);
     };
@@ -133,17 +157,17 @@ async function scan(){
   }catch{$('#ranking').innerHTML='<h2>Watchlist ranked</h2><p class="note">Scheduled scan unavailable. Analyze any ticker using the input above.</p>';}
 }
 $('#ticker-form').onsubmit=e=>{e.preventDefault();load($('#ticker').value);};$('#refresh').onclick=()=>load($('#ticker').value);
-for(const id of ['mode','horizon','timeframe'])$('#'+id).onchange=render;
+for(const id of ['mode','horizon','timeframe'])$('#'+id).onchange=()=>{render();if(id==='horizon')void refreshLaya();};
 for(const c of document.querySelectorAll('.overlays input'))c.onchange=()=>{if(state)renderChart(state,selected().tf,plan());};
 for(const b of $('#tabs').querySelectorAll('[data-view]')){b.onclick=()=>selectView(b.dataset.view);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...$('#tabs').querySelectorAll('[data-view]')],i=tabs.indexOf(b),next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();selectView(tabs[next].dataset.view);};}
 for(const id of ['risk-capital','risk-pct','risk-allocation'])$('#'+id).oninput=risk;
-$('#brief').onclick=()=>{if(!state)return;const p=plan(),blob=new Blob([JSON.stringify({symbol:state.symbol,model:state.model_version,source_timestamp:state.source_data_timestamp,quote:state.quote,read:state.read,thesis:state.thesis,plan:p,validation:state.validation[selected().key],data_health:state.health,wyckoff:state.frames[selected().tf]?.wyckoff,elliott:state.frames[selected().tf]?.elliott,forecast:state.forecast,fundamentals:state.fundamentals},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=state.symbol+'-stock-truth-research.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('#brief').onclick=()=>{if(!state)return;const p=plan(),blob=new Blob([JSON.stringify({symbol:state.symbol,model:state.model_version,source_timestamp:state.source_data_timestamp,quote:state.quote,read:state.read,thesis:state.thesis,plan:p,validation:state.validation[selected().key],data_health:state.health,wyckoff:state.frames[selected().tf]?.wyckoff,elliott:state.frames[selected().tf]?.elliott,forecast:state.forecast,laya_state:buildLayaState(state,selected()),laya_config:layaConfig,fundamentals:state.fundamentals},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=state.symbol+'-stock-truth-research.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 async function boot(){
   selectView('verdict');
   try{
-    const results=await Promise.allSettled([fetch('../data/calendar.json').then(r=>{if(!r.ok)throw Error('Calendar missing');return r.json();}),fetch('../config/watchlist.json').then(r=>r.json()),fetch('../build.json',{cache:'no-cache'}).then(r=>r.json())]);
+    const results=await Promise.allSettled([fetch('../data/calendar.json').then(r=>{if(!r.ok)throw Error('Calendar missing');return r.json();}),fetch('../config/watchlist.json').then(r=>r.json()),fetch('../build.json',{cache:'no-cache'}).then(r=>r.json()),fetch('../config/laya.json').then(r=>r.json()),fetch('../data/quant/model.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null),fetch('../data/quant/context.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)]);
     if(results[0].status!=='fulfilled')throw Error('Exchange calendar failed to load.');calendar=results[0].value;
-    if(results[1].status==='fulfilled')config=results[1].value;if(results[2].status==='fulfilled')build=results[2].value;
+    if(results[1].status==='fulfilled')config=results[1].value;if(results[2].status==='fulfilled')build=results[2].value;if(results[3].status==='fulfilled')layaConfig=results[3].value;if(results[4].status==='fulfilled')qModel=results[4].value;if(results[5].status==='fulfilled')macroContext=results[5].value;
     $('#build').textContent=build?(build.research_version||build.model_version)+' · '+build.commit.slice(0,8):'Build unavailable';
     $('#watchlist').innerHTML=config.symbols.slice(0,20).map(s=>`<button type="button">${esc(s)}</button>`).join('');for(const b of $('#watchlist').querySelectorAll('button'))b.onclick=()=>load(b.textContent);
     for(const symbol of ['SPY','QQQ',...new Set(Object.values(config.sectorProxies||{}))])fetch('../data/raw/'+symbol+'.json').then(r=>r.ok?r.json():null).then(r=>{if(r?.symbol===symbol)benchmarks[symbol]=r;}).catch(()=>{});
