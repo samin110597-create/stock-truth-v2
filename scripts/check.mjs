@@ -2,7 +2,11 @@ import fs from 'node:fs';import path from 'node:path';import {execFileSync} from
 const files=[];function visit(d){for(const x of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,x.name);if(x.isDirectory())visit(p);else files.push(p);}}
 for(const d of ['src','scripts','web','quant'])visit(d);files.push('main.ts','deno.json');
 for(const file of files.filter(f=>f.endsWith('.mjs')))execFileSync(process.execPath,['--check',file]);
-for(const file of files){const s=fs.readFileSync(file,'utf8');if(/vercel\.app|raw\.githubusercontent\.com.*eval|\beval\s*\(|new Function\s*\(/.test(s))throw Error('Forbidden runtime code/host in '+file);}
+for(const file of files){
+  const s=fs.readFileSync(file,'utf8');
+  if(/vercel\.app|raw\.githubusercontent\.com.*eval/.test(s))throw Error('Forbidden runtime host/code in '+file);
+  if(/\.(?:m?js|ts|html)$/.test(file)&&/\beval\s*\(|new Function\s*\(/.test(s))throw Error('Forbidden dynamic JavaScript execution in '+file);
+}
 const html=fs.readFileSync('dist/web/index.html','utf8');if(!/analyze any ticker/i.test(html))throw Error('Classic arbitrary ticker UI missing');
 const required=['dist/web/app.mjs','dist/web/worker.mjs','dist/quant/index.html','dist/quant/app.mjs','dist/quant/style.css','dist/quant/src/math.mjs','dist/quant/src/data.mjs','dist/quant/src/engine.mjs','dist/quant/src/model.mjs','dist/quant/runtime-config.json','dist/data/quant/model.json','dist/vendor/lightweight-charts.mjs','dist/data/calendar.json','dist/licenses/LICENSE','dist/licenses/NOTICE','dist/build.json'];
 for(const file of required)if(!fs.existsSync(file))throw Error('Missing deploy file '+file);
