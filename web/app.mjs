@@ -10,7 +10,7 @@ import {renderFundamentals} from './fundamentals-panel.mjs';
 import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
 import {renderLayaCockpit,renderLearningPanel,buildLayaState} from './laya-panel.mjs';
-import {secureOverlay} from './secure-backend.mjs';
+import {secureRetrieve,mergeSecure} from './secure-backend.mjs';
 let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
 const panelIds=['laya-cockpit','learning','wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
@@ -109,8 +109,14 @@ async function load(symbol){
   try{
     if(!calendar)throw Error('Exchange calendar is unavailable.');
     const fundamentalTask=retrieveFundamentals(symbol,controller.signal).catch(e=>({symbol,status:'UNAVAILABLE',reason:e.message}));
-    const result=await retrieveTicker(symbol,calendar,controller.signal);if(id!==requestId)return;
-    try{const secured=await secureOverlay(result,symbol,controller.signal);raw=secured.raw;}catch(e){raw={...result,secure_backend:{status:'FALLBACK',reason:e.message}};raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno secured backend',error:e.message}];}
+    const [classicResult,secureResult]=await Promise.allSettled([
+      retrieveTicker(symbol,calendar,controller.signal),
+      secureRetrieve(symbol,controller.signal)
+    ]);if(id!==requestId)return;
+    const classic=classicResult.status==='fulfilled'?classicResult.value:null,secured=secureResult.status==='fulfilled'?secureResult.value:null;
+    if(!classic&&!secured)throw Error('All price/history routes failed. Deno: '+(secureResult.reason?.message||'unavailable')+' · classic: '+(classicResult.reason?.message||'unavailable'));
+    raw=mergeSecure(classic,secured);
+    if(!secured){raw={...raw,secure_backend:{status:'FALLBACK',reason:secureResult.reason?.message||'Deno unavailable'}};raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno secured backend',error:secureResult.reason?.message||'Unavailable'}];}
     if(!raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'LOADING'};
     fundamentalTask.then(f=>{if(id!==requestId||!raw)return;
       if(f.status==='UNAVAILABLE'&&raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'STALE',latest_attempt_error:f.reason,errors:[f.reason]};
