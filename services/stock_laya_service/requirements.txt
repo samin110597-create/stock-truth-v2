@@ -1,0 +1,7 @@
+fastapi>=0.116
+uvicorn[standard]>=0.35
+laya>=0.3.20
+torch
+transformers>=5.0.0
+huggingface_hub>=1.0.0
+safetensors
