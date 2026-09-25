@@ -15,11 +15,15 @@ from sklearn.metrics import balanced_accuracy_score, brier_score_loss, log_loss
 LABELS = ["BUY", "WAIT", "SELL"]
 
 
-def rows(path):
+def rows(path, max_cases=None):
     with Path(path).open(encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                yield json.loads(line)
+        all_rows = [json.loads(line) for line in f if line.strip()]
+    if max_cases and len(all_rows) > max_cases:
+        # Deterministic time-spread untouched sample: preserve the full chronological span
+        # instead of taking only the earliest/latest regime.
+        idx = np.linspace(0, len(all_rows) - 1, max_cases, dtype=int)
+        all_rows = [all_rows[int(i)] for i in idx]
+    yield from all_rows
 
 
 def normalize_action_probs(answer):
@@ -55,12 +59,12 @@ def period_skill(y_true, probs, periods=3):
     return out
 
 
-def evaluate(agent, path):
+def evaluate(agent, path, max_cases=None):
     y_true, y_pred, probs = [], [], []
     tradeable_true, tradeable_prob = [], []
     symbols, timestamps, horizons = [], [], []
 
-    for row in rows(path):
+    for row in rows(path, max_cases=max_cases):
         state = json.loads(row["state"])
         questions = json.loads(row["questions"])
         gold = json.loads(row["gold"])
@@ -197,16 +201,21 @@ def main():
     ap.add_argument("--config", default="config/laya.json")
     ap.add_argument("--out", default="data/laya/candidate-evaluation.json")
     ap.add_argument("--device", default=None)
+    ap.add_argument("--max-test-cases", type=int, default=int(__import__("os").environ.get("STOCK_LAYA_FAST_TEST_CAP", "1500")))
+    ap.add_argument("--full-test", action="store_true")
     args = ap.parse_args()
 
     agent = laya.load(args.model, device=args.device)
-    main_metrics = evaluate(agent, args.test)
+    cap = None if args.full_test else args.max_test_cases
+    main_metrics = evaluate(agent, args.test, max_cases=cap)
     config = json.loads(Path(args.config).read_text())
     promo = promotion(main_metrics, config)
 
     report = {
         "schema_version": 2,
         "candidate": str(args.model),
+        "evaluation_scope": "FULL_UNTOUCHED_TEST" if cap is None else f"DETERMINISTIC_TIME_SPREAD_UNTOUCHED_SAMPLE_{cap}",
+        "full_test_required_before_long_term_promotion": cap is not None,
         "test": main_metrics,
         "promotion": promo,
         "promotion_note": (
@@ -217,7 +226,7 @@ def main():
 
     exp_path = Path(args.experience_test)
     if exp_path.exists() and exp_path.stat().st_size:
-        report["experience_test"] = evaluate(agent, exp_path)
+        report["experience_test"] = evaluate(agent, exp_path, max_cases=None)
     else:
         report["experience_test"] = {"test_cases": 0, "status": "INSUFFICIENT RESOLVED ISSUED SETUPS"}
 
