@@ -86,6 +86,26 @@ function secureRaw(payload,symbol){
     }
   };
 }
+export async function secureQuote(symbol,signal){
+  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').trim().replace(/\/$/,'');
+  if(!/^https:\/\//.test(base))throw new Error('Deno backend is not configured.');
+  const q=await json(base+'/v1/quote?'+new URLSearchParams({symbol}),signal,10000);
+  if(q?.symbol!==symbol)throw new Error('Quote ticker identity mismatch');
+  return {
+    classification:'SOURCE FACT',
+    status:'SNAPSHOT',
+    price:q.price,
+    change:finiteNumber(q.price)&&finiteNumber(q.previous_close)&&q.previous_close>0?q.price-q.previous_close:null,
+    change_pct:finiteNumber(q.price)&&finiteNumber(q.previous_close)&&q.previous_close>0?(q.price/q.previous_close-1)*100:null,
+    session_date:q.as_of?new Date(q.as_of*1000).toISOString().slice(0,10):null,
+    open:q.open,high:q.high,low:q.low,volume:q.volume,currency:q.currency||'USD',
+    exchange:q.exchange||null,as_of:q.as_of||null,fetched_at:q.fetched_at||new Date().toISOString(),
+    provider:q.provider||'Deno quote provider',delay:q.latency||'Provider latency unspecified',
+    market_state:q.market_state||null
+  };
+}
+function finiteNumber(v){return Number.isFinite(Number(v));}
+
 export async function secureRetrieve(symbol,signal){
   const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').trim().replace(/\/$/,'');
   if(!/^https:\/\//.test(base))throw new Error('Deno backend is not configured.');
