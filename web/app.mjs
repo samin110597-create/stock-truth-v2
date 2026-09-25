@@ -10,7 +10,7 @@ import {renderFundamentals} from './fundamentals-panel.mjs';
 import {renderWavePanels,renderForecast} from './research-panels.mjs';
 import {renderTechnicals} from './technicals-panel.mjs';
 import {renderLayaCockpit,renderLearningPanel,buildLayaState,requestLayaDecision} from './laya-panel.mjs';
-import {secureRetrieve,mergeSecure} from './secure-backend.mjs';
+import {secureRetrieve,secureQuote,mergeSecure} from './secure-backend.mjs';
 let state=null,raw=null,calendar=null,config={symbols:[]},layaConfig={status:'TRAINING_REQUIRED'},qModel=null,macroContext=null,build=null,worker=null,controller=null,requestId=0,view='verdict';
 const benchmarks={};
 const panelIds=['laya-cockpit','learning','wyckoff','elliott','forecast','decision','evidence','trade-matrix','thesis','mtf','reversal','patterns','technicals','levels','fundamentals','valuation','catalysts','horizons','validation','ledger','health'];
@@ -42,9 +42,11 @@ function remember(){
   try{localStorage.setItem('stocktruth-ledger-v5',JSON.stringify(rows));}catch{}
 }
 function identity(){
-  const q=state.quote||{},d=state.frames['1D'],last=d.bars.at(-1),previous=d.bars.at(-2);
+  const q=state.quote||{},d=state.frames['1D'],last=d.bars.at(-1),previous=d.bars.at(-2),p=d.provenance||{};
   const price=finite(q.price)?q.price:last?.close,change=finite(q.change_pct)?q.change_pct:previous?(last.close/previous.close-1)*100:null;
-  $('#identity').innerHTML=`<div class="identity-top"><div class="identity-name"><div><h1>${esc(state.symbol)}</h1><div class="sub">${esc(state.name||state.symbol)} ${q.exchange?'· '+esc(q.exchange):''}</div></div><div><div class="price">${money(price)}</div><span class="${change>=0?'up':'down'}">${finite(change)?(change>=0?'+':'')+fmt(change)+'%':''}</span> <span class="mini">${finite(q.price)?'sourced quote':'last completed close'}</span></div></div><div class="source">${pill(state.market?.state||'UNAVAILABLE')}${pill(state.health.status)}<div class="mini">${esc(finite(q.price)?q.provider:d.provenance?.provider)}<br>${when(finite(q.price)?q.as_of:last?.end_ts)} · provider latency unspecified</div></div></div><div class="market-strip">${metric('Session volume',compact(q.volume),'Quote source; may be delayed')}${metric('Session high / low',money(q.high)+' / '+money(q.low),q.session_date||'Unavailable')}${metric('ATR 14',money(d.technicals?.atr),'Completed daily bars')}${metric('Daily RVOL',finite(d.technicals?.rvol)?fmt(d.technicals.rvol)+'×':'—','Versus prior 20 bars')}${metric('Market cap',compact(state.fundamentals?.summary?.price?.marketCap||q.market_cap),state.fundamentals?.summary?.price?.lastCloseDate||'Unavailable without sourced cap')}${metric('History',compact(d.bars.length)+' bars','Last completed '+(last?.date||'unavailable'))}</div>`;
+  const quoteTime=finite(q.as_of)?when(q.as_of):'Unavailable',quoteFetched=q.fetched_at?when(q.fetched_at):'Unavailable';
+  const modelThrough=last?.date?last.date+' completed daily candle':'Unavailable',historyFetched=p.fetched_at?when(p.fetched_at):when(state.source_data_timestamp);
+  $('#identity').innerHTML=`<div class="identity-top"><div class="identity-name"><div><h1>${esc(state.symbol)}</h1><div class="sub">${esc(state.name||state.symbol)} ${q.exchange?'· '+esc(q.exchange):''}</div></div><div><div class="price">${money(price)}</div><span class="${change>=0?'up':'down'}">${finite(change)?(change>=0?'+':'')+fmt(change)+'%':''}</span> <span class="mini">${finite(q.price)?'current sourced quote':'last completed close'}</span></div></div><div class="source">${pill(q.market_state||state.market?.state||'UNAVAILABLE')}${pill(state.health.status)}<div class="mini"><b>Quote:</b> ${esc(q.provider||'Unavailable')} · ${quoteTime}<br><b>Quote fetched:</b> ${quoteFetched}<br><b>Model history:</b> ${esc(p.provider||'Unavailable')} · through ${esc(last?.date||'Unavailable')}<br><b>History fetched:</b> ${historyFetched}<br><b>Analysis calculated:</b> ${when(state.generated_at)}</div></div></div><div class="market-strip">${metric('Quote as of',quoteTime,q.provider||'Current quote unavailable')}${metric('Model data through',modelThrough,'Signals use completed candles, not the live quote')}${metric('Session volume',compact(q.volume),'Quote source; may be delayed')}${metric('Session high / low',money(q.high)+' / '+money(q.low),q.session_date||'Unavailable')}${metric('ATR 14',money(d.technicals?.atr),'Completed daily bars')}${metric('Daily RVOL',finite(d.technicals?.rvol)?fmt(d.technicals.rvol)+'×':'—','Versus prior 20 bars')}${metric('Market cap',compact(state.fundamentals?.summary?.price?.marketCap||q.market_cap),state.fundamentals?.summary?.price?.lastCloseDate||'Unavailable without sourced cap')}${metric('History',compact(d.bars.length)+' bars','Last completed '+(last?.date||'unavailable'))}</div>`;
   $('#identity').setAttribute('aria-busy','false');
 }
 function verdict(){
@@ -105,7 +107,7 @@ function modelPanels(){
 function sources(){
   const d=state.frames['1D'].provenance||{},secure=raw.secure_backend||{};
   const trace=(secure.provider_trace||[]).map(x=>row(esc(x.source),pill(x.status),esc(x.bars??'—'),esc(x.last||x.reason||'—')));
-  $('#health').innerHTML=`<h2>Sources & data integrity</h2>${pill(state.health.status)}${pill(secure.status||'SECURE BACKEND UNKNOWN')}<div class="health-line"><b>Retrieval:</b> ${esc(raw.retrieval)}<br><b>Secured backend:</b> ${esc(secure.status||'Unavailable')} ${secure.reason?'· '+esc(secure.reason):''}<br><b>Credential policy:</b> ${esc(secure.credential_policy||'API keys are never exposed to browser code.')}<br><b>Model:</b> ${esc(state.model_version)}<br><b>Build:</b> ${esc(build?.commit||'Unavailable')}<br><b>Calculated:</b> ${when(state.generated_at)}<br><b>Daily history:</b> ${esc(d.provider||'Unavailable')}<br><b>Source fetched:</b> ${when(d.fetched_at)}<br><b>Last completed bar:</b> ${when(d.last_completed_bar)}<br><b>Adjustment:</b> ${esc(d.adjustment||'Unavailable')}</div>${trace.length?`<h3>Secured provider trace</h3>${table(['Provider','Status','Bars','Latest / reason'],trace)}`:''}${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noreferrer">Open price-history source ↗</a>`:''}${raw.cross_check?`<h3>Longer-history reconciliation</h3><p class="note">${esc(raw.cross_check.status)} · ${raw.cross_check.overlap||0} overlapping dates · largest OHLC difference ${pct(raw.cross_check.max_ohlc_difference)} · ${raw.cross_check.appended||0} recent bars appended. No price is rescaled. Per-bar source labels are preserved.</p>`:''}${table(['Component','Status','Bars','Last completed','Provider'],Object.values(state.frames).map(f=>row(f.timeframe,pill(f.status),fmt(f.bars.length,0),when(f.provenance?.last_completed_bar),esc(f.provenance?.provider||'Unavailable'))))}<h3>Market & sector context</h3>${table(['Benchmark','Trend','63-session relative strength','Status','As of'],state.market_context.map(c=>row(esc(c.symbol),esc(c.trend||'Unavailable'),pct(c.relative_strength_63),pill(c.status),when(c.as_of))))}<p class="note">Sector ETFs are explicit comparison proxies. Stale benchmark data is labeled and not used to override the stock's setup.</p><h3>Component errors</h3><p class="note">${state.provider_errors.map(e=>esc(e.provider+': '+e.error)).join('<br>')||'No direct provider error reported.'}</p><p class="note">Primary calculations prefer the secured Deno multi-provider route when available. Public Stock Analysis/Yahoo data remains a clearly labeled fallback only. Missing evidence stays unavailable; no market data is fabricated.</p>`;
+  $('#health').innerHTML=`<h2>Sources & data integrity</h2>${pill(state.health.status)}${pill(secure.status||'SECURE BACKEND UNKNOWN')}<div class="health-line"><b>Retrieval:</b> ${esc(raw.retrieval)}<br><b>Quote provider:</b> ${esc(state.quote?.provider||'Unavailable')}<br><b>Quote as of:</b> ${when(state.quote?.as_of)} · fetched ${when(state.quote?.fetched_at)}<br><b>Secured backend:</b> ${esc(secure.status||'Unavailable')} ${secure.reason?'· '+esc(secure.reason):''}<br><b>Credential policy:</b> ${esc(secure.credential_policy||'API keys are never exposed to browser code.')}<br><b>Model:</b> ${esc(state.model_version)}<br><b>Build:</b> ${esc(build?.commit||'Unavailable')}<br><b>Calculated:</b> ${when(state.generated_at)}<br><b>Daily history:</b> ${esc(d.provider||'Unavailable')}<br><b>Source fetched:</b> ${when(d.fetched_at)}<br><b>Last completed bar:</b> ${when(d.last_completed_bar)}<br><b>Adjustment:</b> ${esc(d.adjustment||'Unavailable')}</div>${trace.length?`<h3>Secured provider trace</h3>${table(['Provider','Status','Bars','Latest / reason'],trace)}`:''}${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noreferrer">Open price-history source ↗</a>`:''}${raw.cross_check?`<h3>Longer-history reconciliation</h3><p class="note">${esc(raw.cross_check.status)} · ${raw.cross_check.overlap||0} overlapping dates · largest OHLC difference ${pct(raw.cross_check.max_ohlc_difference)} · ${raw.cross_check.appended||0} recent bars appended. No price is rescaled. Per-bar source labels are preserved.</p>`:''}${table(['Component','Status','Bars','Last completed','Provider'],Object.values(state.frames).map(f=>row(f.timeframe,pill(f.status),fmt(f.bars.length,0),when(f.provenance?.last_completed_bar),esc(f.provenance?.provider||'Unavailable'))))}<h3>Market & sector context</h3>${table(['Benchmark','Trend','63-session relative strength','Status','As of'],state.market_context.map(c=>row(esc(c.symbol),esc(c.trend||'Unavailable'),pct(c.relative_strength_63),pill(c.status),when(c.as_of))))}<p class="note">Sector ETFs are explicit comparison proxies. Stale benchmark data is labeled and not used to override the stock's setup.</p><h3>Component errors</h3><p class="note">${state.provider_errors.map(e=>esc(e.provider+': '+e.error)).join('<br>')||'No direct provider error reported.'}</p><p class="note">Primary calculations prefer the secured Deno multi-provider route when available. Public Stock Analysis/Yahoo data remains a clearly labeled fallback only. Missing evidence stays unavailable; no market data is fabricated.</p>`;
 }
 function render(){
   if(!state)return;
@@ -122,13 +124,16 @@ async function load(symbol){
   try{
     if(!calendar)throw Error('Exchange calendar is unavailable.');
     const fundamentalTask=retrieveFundamentals(symbol,controller.signal).catch(e=>({symbol,status:'UNAVAILABLE',reason:e.message}));
-    const [classicResult,secureResult]=await Promise.allSettled([
+    const [classicResult,secureResult,quoteResult]=await Promise.allSettled([
       retrieveTicker(symbol,calendar,controller.signal),
-      secureRetrieve(symbol,controller.signal)
+      secureRetrieve(symbol,controller.signal),
+      secureQuote(symbol,controller.signal)
     ]);if(id!==requestId)return;
-    const classic=classicResult.status==='fulfilled'?classicResult.value:null,secured=secureResult.status==='fulfilled'?secureResult.value:null;
+    const classic=classicResult.status==='fulfilled'?classicResult.value:null,secured=secureResult.status==='fulfilled'?secureResult.value:null,liveQuote=quoteResult.status==='fulfilled'?quoteResult.value:null;
     if(!classic&&!secured)throw Error('All price/history routes failed. Deno: '+(secureResult.reason?.message||'unavailable')+' · classic: '+(classicResult.reason?.message||'unavailable'));
     raw=mergeSecure(classic,secured);
+    if(liveQuote)raw.quote=liveQuote;
+    else if(quoteResult.status==='rejected')raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno live quote',error:quoteResult.reason?.message||'Unavailable'}];
     if(!secured){raw={...raw,secure_backend:{status:'FALLBACK',reason:secureResult.reason?.message||'Deno unavailable'}};raw.provider_errors=[...(raw.provider_errors||[]),{provider:'Deno secured backend',error:secureResult.reason?.message||'Unavailable'}];}
     if(!raw.fundamentals?.metrics)raw.fundamentals={...raw.fundamentals,status:'LOADING'};
     fundamentalTask.then(f=>{if(id!==requestId||!raw)return;
@@ -150,13 +155,30 @@ async function load(symbol){
     worker.postMessage({id,raw,benchmarks:Object.fromEntries(needed.filter(s=>benchmarks[s]).map(s=>[s,benchmarks[s]]))});
   }catch(e){if(id!==requestId||e.name==='AbortError')return;clear(symbol,'DATA UNAVAILABLE');$('#identity').setAttribute('aria-busy','false');$('#load-status').textContent=e.message;}
 }
+async function refreshQuoteOnly(){
+  const symbol=String($('#ticker').value||state?.symbol||'').trim().toUpperCase();
+  if(!symbol||!state||!raw)return;
+  const button=$('#refresh-quote');button.disabled=true;
+  $('#load-status').textContent=symbol+' · refreshing current quote only…';
+  try{
+    const q=await secureQuote(symbol);
+    if(state?.symbol!==symbol)return;
+    raw.quote=q;state.quote=q;
+    if(q.market_state)state.market={...(state.market||{}),state:q.market_state};
+    identity();sources();
+    const last=state.frames?.['1D']?.bars?.at(-1);
+    $('#load-status').textContent=symbol+' · quote refreshed '+when(q.as_of)+' · model signals still use completed data through '+(last?.date||'unavailable');
+  }catch(e){
+    $('#load-status').textContent=symbol+' · quote refresh unavailable: '+e.message+' · existing model data unchanged';
+  }finally{button.disabled=false;}
+}
 async function scan(){
   try{const response=await fetch('../data/index.json',{cache:'no-cache'});if(!response.ok)throw Error('No scan');const j=await response.json();
     $('#ranking').innerHTML=`<h2>Watchlist ranked <span class="tag">${j.symbols.length} SCANNED</span></h2><p class="note">Scheduled snapshot ${when(j.generated_at)}. Open a ticker to recalculate from its latest available data. This list does not limit ticker search.</p>${table(['Ticker','Action','Direction','Grade','Score','Entry','Stop','TP1','Data'],j.symbols.sort((a,b)=>(b.score||0)-(a.score||0)).map(x=>row(`<button data-symbol="${esc(x.symbol)}" class="tf-button">${esc(x.symbol)}</button>`,esc(x.action),pill(x.direction||'UNAVAILABLE'),esc(x.grade||'—'),fmt(x.score,0),x.entry?money(x.entry.low)+'–'+money(x.entry.high):'—',money(x.stop),money(x.tp1),pill(x.health))))}`;
     for(const b of $('#ranking').querySelectorAll('[data-symbol]'))b.onclick=()=>{selectView('verdict');load(b.dataset.symbol);};
   }catch{$('#ranking').innerHTML='<h2>Watchlist ranked</h2><p class="note">Scheduled scan unavailable. Analyze any ticker using the input above.</p>';}
 }
-$('#ticker-form').onsubmit=e=>{e.preventDefault();load($('#ticker').value);};$('#refresh').onclick=()=>load($('#ticker').value);
+$('#ticker-form').onsubmit=e=>{e.preventDefault();load($('#ticker').value);};$('#refresh-quote').onclick=refreshQuoteOnly;$('#refresh').onclick=()=>load($('#ticker').value);
 for(const id of ['mode','horizon','timeframe'])$('#'+id).onchange=()=>{render();if(id==='horizon')void refreshLaya();};
 for(const c of document.querySelectorAll('.overlays input'))c.onchange=()=>{if(state)renderChart(state,selected().tf,plan());};
 for(const b of $('#tabs').querySelectorAll('[data-view]')){b.onclick=()=>selectView(b.dataset.view);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...$('#tabs').querySelectorAll('[data-view]')],i=tabs.indexOf(b),next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();selectView(tabs[next].dataset.view);};}
