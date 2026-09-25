@@ -25,7 +25,7 @@ from train_quant_model import FEATURES, block_features, load_blocks
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = ROOT / "data" / "laya"
 
-HORIZONS = (5, 10, 20)
+HORIZONS = (10, 20)
 ACTION_OPTIONS = ("BUY", "WAIT", "SELL")
 NON_STOCK_CONTEXT = {"SPY", "QQQ", "SMH", "GLD", "SLV", "XLE", "XLI", "XLK", "XLU"}
 
@@ -132,6 +132,8 @@ def build_cases():
     feature_lookup = {}
     for symbol, timeframe, bars, asset in load_blocks():
         if asset != "EQUITY" or symbol in NON_STOCK_CONTEXT:
+            continue
+        if timeframe != "1D":
             continue
         parsed = block_features(bars)
         if not parsed:
@@ -270,7 +272,7 @@ def summarize(splits, cuts, experience):
     total = sum(len(v) for v in splits.values())
     return {
         "schema_version": 1,
-        "dataset": "stock-truth-laya-v1",
+        "dataset": "stock-truth-laya-swing-v1",
         "cases": total,
         "splits": {k: len(v) for k, v in splits.items()},
         "cutoffs": cuts,
@@ -289,6 +291,7 @@ def summarize(splits, cuts, experience):
             "Bars t+1..t+horizon are used only to create the gold outcome."
         ),
         "ambiguity_policy": "If both ATR barriers occur in the same OHLC bar, label WAIT.",
+        "training_scope": "U.S.-listed stock/equity daily states only; 10-bar swing and 20-bar position horizons. ETFs, metals, sector proxies and intraday states are excluded from Stock-Laya v1.",
         "calibration_policy": "Calibration and final test are later chronological periods and are not used for gradient updates.",
     }
 
