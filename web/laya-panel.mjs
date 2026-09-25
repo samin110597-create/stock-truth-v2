@@ -111,7 +111,7 @@ function layaAnswer(state){
   return {choice,confidence};
 }
 
-export function renderLayaCockpit(state,selection,config={},qModel=null){
+export function renderLayaCockpit(state,selection,config={},qModel=null,macroContext=null){
   const el=document.getElementById('laya-cockpit');if(!el||!state)return;
   const plan=activePlan(state,selection),q=qStateResult(state,selection,qModel),votes=engineVotes(state,selection,qModel),a=agreement(votes),laya=layaAnswer(state);
   const packet=buildLayaState(state,selection);
@@ -120,6 +120,14 @@ export function renderLayaCockpit(state,selection,config={},qModel=null){
   const layaDecision=laya?.choice||'WITHHELD';
   const layaConf=finite(laya?.confidence)?pct(laya.confidence):'WITHHELD';
   const voteRows=votes.map(v=>'<div class="engine-vote"><span>'+esc(v.name)+'</span><b class="'+(v.dir>0?'up':v.dir<0?'down':'muted')+'">'+esc(v.detail)+'</b></div>').join('');
+  const fred=macroContext?.providers?.fred?.series||{};
+  const macroText=[
+    finite(fred.DGS10?.value)?'10Y '+fred.DGS10.value+'%':null,
+    finite(fred.DFII10?.value)?'Real 10Y '+fred.DFII10.value+'%':null,
+    finite(fred.T10YIE?.value)?'Breakeven '+fred.T10YIE.value+'%':null,
+    finite(fred.DTWEXBGS?.value)?'USD '+fred.DTWEXBGS.value:null,
+    macroContext?.spy_cross_source?.status?'SPY cross-source '+macroContext.spy_cross_source.status:null
+  ].filter(Boolean).join(' · ');
   el.innerHTML=
     '<div class="cockpit-head"><div><h2>Decision cockpit <span class="tag">Q-STATE + STOCK-LAYA</span></h2>'+
     '<div class="cockpit-action">'+esc(current)+'</div><p class="note">Existing Stock Truth engines remain authoritative until the stock-specialized Laya checkpoint passes held-out promotion gates.</p></div>'+
@@ -130,7 +138,7 @@ export function renderLayaCockpit(state,selection,config={},qModel=null){
       '<article class="cockpit-card"><span class="eyebrow">Stock-Laya decision</span><strong>'+esc(layaDecision)+'</strong><small>Confidence '+esc(layaConf)+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Engine agreement</span><strong>'+esc(a.label)+'</strong><small>'+a.count+' of '+a.total+' available engines align</small></article>'+
     '</div>'+
-    '<details class="engine-detail"><summary>What the existing engines say</summary><div class="engine-votes">'+voteRows+'</div></details>';
+    '<details class="engine-detail"><summary>What the existing engines say</summary><div class="engine-votes">'+voteRows+'</div>'+(macroText?'<p class="note"><b>Macro context:</b> '+esc(macroText)+' · informational only; it does not silently change the trade score.</p>':'')+'</details>';
 }
 
 export function renderLearningPanel(state,selection,config={}){
