@@ -43,6 +43,8 @@ jobs:
             data/laya/train.jsonl
             data/laya/calibration.jsonl
             data/laya/test.jsonl
+            data/laya/experience_train.jsonl
+            data/laya/experience_test.jsonl
             data/laya/report.json
           if-no-files-found: error
           retention-days: 30
