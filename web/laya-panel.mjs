@@ -1,6 +1,6 @@
 import {finite} from '../src/numeric.mjs';
 import {modelFeatures,applyTrainedModel} from '../quant/src/model.mjs';
-import {esc,fmt,pct,pill,metric} from './ui.mjs';
+import {esc,fmt,pct,pill,metric,money,when} from './ui.mjs';
 
 function dirFromText(value){
   const s=String(value||'').toUpperCase();
@@ -106,6 +106,44 @@ function agreement(votes){
   return {label:dir?directionLabel(dir):'MIXED',count,total:votes.length,dir};
 }
 
+function nextTrigger(state){
+  const d=state?.frames?.['1D'],s=d?.structure||{};
+  const support=s.support?.[0]?.price,resistance=s.resistance?.[0]?.price;
+  return {
+    bull:finite(resistance)?'Close above '+money(resistance)+' + successful retest':'Wait for a new confirmed resistance/BOS level',
+    bear:finite(support)?'Break below '+money(support)+' + failed reclaim':'Wait for a new confirmed support/CHoCH level',
+  };
+}
+function entryState(state,selection){
+  const item=state?.setups?.[selection?.key]||{},plan=item.setup,read=String(state?.read?.label||'UNAVAILABLE').toUpperCase(),phase=String(state?.read?.phase||'').toUpperCase();
+  const triggers=nextTrigger(state);
+  if(plan){
+    const dir=plan.dir>0?'LONG':'SHORT';
+    return {
+      outlook:dir==='LONG'?'BULLISH':'BEARISH',
+      headline:dir+' SETUP · '+String(plan.current_action||'WAIT FOR ENTRY'),
+      entry:String(plan.current_action||'WAIT FOR ENTRY'),
+      detail:(plan.kind||'Confirmed setup')+' · Entry '+money(plan.entry_zone?.low)+'–'+money(plan.entry_zone?.high)+' · Stop '+money(plan.stop),
+      triggers,
+    };
+  }
+  let dir=0;
+  if(read.includes('BUY'))dir=1; else if(read.includes('SELL'))dir=-1;
+  const outlook=dir>0?'BULLISH':dir<0?'BEARISH':read.includes('MIXED')?'MIXED':'NEUTRAL';
+  let headline='NO EDGE · WAIT FOR STRUCTURE';
+  if(dir>0)headline=phase.includes('PULLBACK')?'BULLISH PULLBACK · WAIT FOR RECLAIM':phase.includes('BREAKOUT')?'BULLISH BREAKOUT · WAIT FOR RETEST':'BULLISH BIAS · WAIT FOR ENTRY';
+  if(dir<0)headline=phase.includes('PULLBACK')?'BEARISH PULLBACK · WAIT FOR REJECTION':phase.includes('BREAKDOWN')?'BEARISH BREAKDOWN · WAIT FOR RETEST':'BEARISH BIAS · WAIT FOR ENTRY';
+  const last=item.last_setup;
+  const lastText=last?.setup
+    ? 'Last confirmed '+last.setup.direction+' '+(last.setup.kind||'setup')+' from '+when(last.setup.signal_ts)+' · '+(last.result?.state||'resolved')
+    : 'No recent confirmed setup remains active.';
+  return {
+    outlook,headline,entry:'WAIT FOR CONFIRMATION',
+    detail:lastText,
+    triggers,
+  };
+}
+
 function layaAnswer(state){
   const a=state?.laya?.answers?.trade_action;
   if(!a)return null;
@@ -117,9 +155,10 @@ function layaAnswer(state){
 export function renderLayaCockpit(state,selection,config={},qModel=null,macroContext=null){
   const el=document.getElementById('laya-cockpit');if(!el||!state)return;
   const plan=activePlan(state,selection),q=qStateResult(state,selection,qModel),votes=engineVotes(state,selection,qModel),a=agreement(votes),laya=layaAnswer(state);
+  const decision=entryState(state,selection);
   const packet=buildLayaState(state,selection);
   const status=laya?'STOCK-LAYA LIVE':String(config.status||'TRAINING REQUIRED').replaceAll('_',' ');
-  const current=plan?.current_action||'WAIT — NO CONFIRMED SETUP';
+  const current=decision.headline;
   const layaDecision=laya?.choice||'WITHHELD';
   const layaConf=finite(laya?.confidence)?pct(laya.confidence):'WITHHELD';
   const voteRows=votes.map(v=>'<div class="engine-vote"><span>'+esc(v.name)+'</span><b class="'+(v.dir>0?'up':v.dir<0?'down':'muted')+'">'+esc(v.detail)+'</b></div>').join('');
@@ -136,7 +175,10 @@ export function renderLayaCockpit(state,selection,config={},qModel=null,macroCon
     '<div class="cockpit-action">'+esc(current)+'</div><p class="note">Existing Stock Truth engines remain authoritative until the stock-specialized Laya checkpoint passes held-out promotion gates.</p></div>'+
     '<div class="cockpit-status">'+pill(status)+'</div></div>'+
     '<div class="cockpit-grid">'+
-      '<article class="cockpit-card primary"><span class="eyebrow">Current executable plan</span><strong>'+esc(plan?.direction||'WAIT')+'</strong><small>'+esc(plan?.grade||'No confirmed setup')+'</small></article>'+
+      '<article class="cockpit-card primary"><span class="eyebrow">Market outlook</span><strong class="'+(decision.outlook==='BULLISH'?'up':decision.outlook==='BEARISH'?'down':'amber')+'">'+esc(decision.outlook)+'</strong><small>'+esc(state?.read?.label||'Unavailable')+' · '+esc(state?.read?.phase||'No phase')+'</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Entry status</span><strong>'+esc(plan?.direction||decision.entry)+'</strong><small>'+esc(decision.detail)+'</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Next bullish trigger</span><strong>'+esc(decision.triggers.bull)+'</strong><small>Trigger only — not an automatic BUY.</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Next bearish trigger</span><strong>'+esc(decision.triggers.bear)+'</strong><small>Trigger only — not an automatic SELL.</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Q-State '+esc(q?.timeframe||'1D')+' × '+esc(q?.horizon||String(layaHorizonFor(selection)))+' P(up)</span><strong>'+esc(q?.validated&&finite(q?.probabilityUp)?pct(q.probabilityUp):'WITHHELD')+'</strong><small>'+esc(q?.validated?((q.scope==='TACTICAL_CONFIRMATION'?'Tactical confirmation only · ':'Plan-horizon model · ')+'walk-forward calibrated · '+(q.oosSamples||0)+' OOS samples'):(q?.status||'No promoted model'))+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Stock-Laya decision</span><strong>'+esc(layaDecision)+'</strong><small>Confidence '+esc(layaConf)+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Engine agreement</span><strong>'+esc(a.label)+'</strong><small>'+a.count+' of '+a.total+' available engines align</small></article>'+
