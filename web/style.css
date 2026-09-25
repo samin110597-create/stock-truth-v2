@@ -7,7 +7,7 @@
 .decision-cockpit{border-top:2px solid var(--amber);background:linear-gradient(180deg,#1b1e24 0%,var(--panel) 100%)}
 .cockpit-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}
 .cockpit-head h2{margin-bottom:8px}.cockpit-action{font:700 clamp(18px,2.2vw,30px) var(--mono);letter-spacing:-.03em;line-height:1.25}
-.cockpit-status{flex:0 0 auto}.cockpit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cockpit-status{flex:0 0 auto}.cockpit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
 .cockpit-card{border:1px solid var(--edge);background:#12151a;border-radius:6px;padding:14px;min-height:104px;display:flex;flex-direction:column;gap:8px}
 .cockpit-card.primary{border-color:#675032;background:#e8a33d08}.cockpit-card .eyebrow{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 .cockpit-card strong{font:650 18px var(--mono);line-height:1.25;overflow-wrap:anywhere}.cockpit-card small{font-size:11px;line-height:1.5;color:var(--faint)}
