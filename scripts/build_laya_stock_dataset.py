@@ -249,6 +249,12 @@ def write_jsonl(path, rows):
     with path.open("w", encoding="utf-8") as f:
         for row in rows:
             portable = {k: row[k] for k in ("state", "questions", "gold")}
+            portable["meta"] = {
+                "symbol": row.get("symbol"),
+                "timeframe": row.get("timeframe"),
+                "timestamp": row.get("timestamp"),
+                "source": row.get("source", "historical_state"),
+            }
             f.write(json.dumps(portable, separators=(",", ":"), allow_nan=False) + "\n")
 
 
