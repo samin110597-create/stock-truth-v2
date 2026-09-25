@@ -119,6 +119,24 @@ async function yahoo(symbol:string,interval:string,range:string,seconds:number,i
   if(out.length<80)throw new Error("Yahoo too shallow");
   return {provider:"Yahoo server fallback",bars:out};
 }
+async function yahooQuote(requested:string,source:string=requested){
+  const j:any=await getJson("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(source),{
+    interval:"1m",range:"1d",includePrePost:"false",events:"div,splits"
+  });
+  const r=j?.chart?.result?.[0],m=r?.meta||{};
+  if(!r)throw new Error("Yahoo quote unavailable");
+  const price=num(m.regularMarketPrice),asOf=num(m.regularMarketTime);
+  if(price===null||price<=0)throw new Error("Yahoo quote missing current price");
+  return {
+    schema_version:1,symbol:requested,source_symbol:source,classification:"SOURCE FACT",
+    price,as_of:asOf,previous_close:num(m.chartPreviousClose??m.previousClose),
+    open:num(m.regularMarketOpen),high:num(m.regularMarketDayHigh),low:num(m.regularMarketDayLow),
+    volume:num(m.regularMarketVolume),currency:m.currency||null,exchange:m.exchangeName||m.fullExchangeName||null,
+    market_state:m.marketState||null,provider:"Yahoo server quote",fetched_at:nowIso(),
+    latency:"Provider/exchange latency not guaranteed."
+  };
+}
+
 async function fmp(symbol:string,intraday:boolean){
   if(!FMP)throw new Error("key missing");
   const end=new Date(),start=new Date(end.getTime()-(intraday?180:3655)*86400000);
@@ -269,6 +287,15 @@ Deno.serve(async (req)=>{
       return json(parsed,200,origin);
     }catch(e){return json({error:"STOCK_LAYA_UNAVAILABLE",message:String((e as Error)?.message||e)},503,origin);}
   }
+  if(u.pathname==="/v1/quote"){
+    const symbol=clean(u.searchParams.get("symbol")||"");
+    if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
+    try{
+      const source=FUTURES[symbol]||symbol;
+      const quote=await yahooQuote(symbol,source);
+      return json(quote,200,origin);
+    }catch(e){return json({error:"QUOTE_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
+  }
   if(u.pathname==="/v1/market"){
     const symbol=clean(u.searchParams.get("symbol")||""),tf=clean(u.searchParams.get("timeframe")||"1D");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -279,5 +306,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Market API",status:"OK",routes:["/health","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/decision"]},200,origin);
+  return json({service:"Q-State Market API",status:"OK",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/decision"]},200,origin);
 });
