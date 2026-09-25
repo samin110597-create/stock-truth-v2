@@ -1,5 +1,6 @@
 import {finite} from '../src/numeric.mjs';
-import {esc,fmt,money,pct,pill,metric} from './ui.mjs';
+import {modelFeatures} from '../quant/src/model.mjs';
+import {esc,fmt,pct,pill,metric} from './ui.mjs';
 
 function dirFromText(value){
   const s=String(value||'').toUpperCase();
@@ -9,6 +10,7 @@ function dirFromText(value){
 }
 function directionLabel(v){return v>0?'BULLISH':v<0?'BEARISH':'NEUTRAL';}
 function horizonFor(selection){return selection?.horizon==='POSITION'?63:21;}
+function layaHorizonFor(selection){return selection?.horizon==='POSITION'?20:10;}
 function matchingForecast(state,selection){
   const target=horizonFor(selection);
   const rows=state?.forecast?.horizons||[];
@@ -17,60 +19,60 @@ function matchingForecast(state,selection){
 function validationFor(state,selection){return state?.validation?.[selection?.key]||null;}
 function activePlan(state,selection){return state?.setups?.[selection?.key]?.setup||null;}
 
+export function buildLayaQuestions(selection){
+  const horizon=layaHorizonFor(selection);
+  return {
+    trade_action:{
+      type:'choice',
+      instructions:'Choose the best directional action for the next '+horizon+' bars using only the supplied causal market state. BUY means the +1 ATR barrier should be favored before the -1 ATR barrier; SELL means the reverse; WAIT means no reliable first-touch directional edge or an ambiguous path.',
+      criteria:{
+        BUY:'Favor a long directional setup.',
+        WAIT:'Abstain because the directional edge is weak, unresolved, or ambiguous.',
+        SELL:'Favor a short directional setup.',
+      },
+    },
+    tradeable:{
+      type:'noul',
+      instructions:'Is there a directional edge strong enough to prefer BUY or SELL rather than WAIT over the next '+horizon+' bars?',
+      criteria:{
+        false:'No sufficiently resolved directional edge; abstain.',
+        true:'A directional first-touch edge resolves to BUY or SELL.',
+      },
+    },
+  };
+}
+
 export function buildLayaState(state,selection){
   if(!state)return null;
-  const frame=state.frames?.['1D']||{};
-  const t=frame.technicals||{},s=frame.structure||{},r=frame.reversal||{};
-  const forecast=matchingForecast(state,selection),plan=activePlan(state,selection);
+  const bars=state.frames?.['1D']?.bars||[];
+  const features=modelFeatures(bars);
+  const last=bars.at(-1);
+  if(!features||!last)return null;
   return {
-    schema:'stock-truth-live-state-v1',
-    symbol:state.symbol,
-    generated_at:state.generated_at,
-    mode:selection?.mode,
-    holding_horizon:selection?.horizon,
-    health:state.health?.status||'UNAVAILABLE',
-    technical_read:{
-      label:state.read?.label||null,
-      signed_score:finite(state.read?.signed_score)?state.read.signed_score:null,
-      evidence_coverage:finite(state.read?.coverage)?state.read.coverage:null,
-    },
-    market_structure:{
-      pattern:s.pattern||null,
-      support:s.support?.[0]?.price??null,
-      resistance:s.resistance?.[0]?.price??null,
-      reversal_stage:r.stage||null,
-      reversal_direction:r.dir??null,
-    },
-    technicals:{
-      trend:t.intermediate_trend||null,
-      rsi:t.rsi??null,
-      atr:t.atr??null,
-      relative_volume:t.rvol??null,
-      volatility_regime:t.volatility_regime||null,
-    },
-    existing_forecast:forecast?{
-      sessions:forecast.sessions,
-      status:forecast.status,
-      predicted_return:forecast.predicted_return,
-      base:forecast.base,
-      bear:forecast.bear,
-      bull:forecast.bull,
-      validation_n:forecast.validation?.n??null,
-      mae_skill:forecast.validation?.mae_skill??null,
-      directional_accuracy:forecast.validation?.directional_accuracy??null,
-    }:null,
-    current_plan:plan?{
-      direction:plan.direction,
-      grade:plan.grade,
-      score:plan.score,
-      entry_zone:plan.entry_zone,
-      stop:plan.stop,
-      targets:plan.targets,
-      action:plan.current_action,
-      signal_ts:plan.signal_ts,
-    }:null,
-    mtf:Object.fromEntries(Object.entries(state.alignment||{}).map(([k,v])=>[k,v?.label||null])),
+    schema:'stock-truth-laya-state-v1',
+    asset_class:'EQUITY',
+    timeframe:'1D',
+    horizon_bars:layaHorizonFor(selection),
+    timestamp:last.ts||last.end_ts||null,
+    label_definition:'First unambiguous touch of +1 ATR or -1 ATR after the state; otherwise WAIT.',
+    features:Object.fromEntries(Object.entries(features).map(([k,v])=>[k,finite(v)?Number(v.toFixed(8)):null])),
   };
+}
+
+export async function requestLayaDecision(statePacket,selection,config={},signal){
+  if(!statePacket||String(config.status||'').toUpperCase()!=='LIVE')return null;
+  const base=String(config.runtime?.gateway_url||'').replace(/\/$/,'');
+  const route=String(config.runtime?.decision_route||'/v1/decision');
+  if(!/^https:\/\//.test(base))return null;
+  const response=await fetch(base+route,{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({state:statePacket,questions:buildLayaQuestions(selection)}),
+    signal,
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.message||result.error||('Stock-Laya HTTP '+response.status));
+  return result;
 }
 
 function engineVotes(state,selection){
@@ -97,14 +99,14 @@ function layaAnswer(state){
   const a=state?.laya?.answers?.trade_action;
   if(!a)return null;
   const choice=a.choice||null;
-  const probabilities=a.probabilities||a.distribution||null;
   const confidence=finite(a.answer_confidence)?a.answer_confidence:finite(a.confidence)?a.confidence:null;
-  return {choice,probabilities,confidence};
+  return {choice,confidence};
 }
 
 export function renderLayaCockpit(state,selection,config={}){
   const el=document.getElementById('laya-cockpit');if(!el||!state)return;
   const plan=activePlan(state,selection),votes=engineVotes(state,selection),a=agreement(votes),laya=layaAnswer(state);
+  const packet=buildLayaState(state,selection);
   const status=laya?'STOCK-LAYA LIVE':String(config.status||'TRAINING REQUIRED').replaceAll('_',' ');
   const current=plan?.current_action||'WAIT — NO CONFIRMED SETUP';
   const layaDecision=laya?.choice||'WITHHELD';
@@ -118,7 +120,7 @@ export function renderLayaCockpit(state,selection,config={}){
       '<article class="cockpit-card primary"><span class="eyebrow">Current executable plan</span><strong>'+esc(plan?.direction||'WAIT')+'</strong><small>'+esc(plan?.grade||'No confirmed setup')+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Stock-Laya decision</span><strong>'+esc(layaDecision)+'</strong><small>Confidence '+esc(layaConf)+'</small></article>'+
       '<article class="cockpit-card"><span class="eyebrow">Engine agreement</span><strong>'+esc(a.label)+'</strong><small>'+a.count+' of '+a.total+' available engines align</small></article>'+
-      '<article class="cockpit-card"><span class="eyebrow">Stock probability</span><strong>'+esc(laya?'CALIBRATED MODEL':'WITHHELD')+'</strong><small>'+esc(laya?'Use held-out calibrated Laya output only':'No unvalidated percentage is shown')+'</small></article>'+
+      '<article class="cockpit-card"><span class="eyebrow">Laya state readiness</span><strong>'+esc(packet?'READY':'INSUFFICIENT HISTORY')+'</strong><small>'+esc(packet?'Uses the same Q-State feature schema as training':'Needs 220+ usable daily bars')+'</small></article>'+
     '</div>'+
     '<details class="engine-detail"><summary>What the existing engines say</summary><div class="engine-votes">'+voteRows+'</div></details>';
 }
