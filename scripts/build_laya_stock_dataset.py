@@ -130,18 +130,16 @@ def make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action):
 def build_cases():
     cases = []
     for symbol, timeframe, bars, asset in load_blocks():
-        if timeframe not in PRIMARY_HORIZON:
-            continue
         parsed = block_features(bars)
         if not parsed:
             continue
         _, close, highs, lows, _, rows = parsed
-        horizon = PRIMARY_HORIZON[timeframe]
         for i, timestamp, x, atr_pct in rows:
-            action = first_barrier_outcome(close, highs, lows, i, horizon, atr_pct)
-            if action is None:
-                continue
-            cases.append(make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action))
+            for horizon in HORIZONS:
+                action = first_barrier_outcome(close, highs, lows, i, horizon, atr_pct)
+                if action is None:
+                    continue
+                cases.append(make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action))
     cases.sort(key=lambda r: (r["timestamp"], r["symbol"], r["timeframe"]))
     return cases
 
@@ -192,7 +190,7 @@ def summarize(splits, cuts):
         "timeframe_counts": timeframe_counts,
         "symbol_counts": symbol_counts,
         "features": list(FEATURES),
-        "primary_horizons": PRIMARY_HORIZON,
+        "horizons": list(HORIZONS),
         "leakage_policy": (
             "State uses Q-State causal features available at timestamp t. "
             "Bars t+1..t+horizon are used only to create the gold outcome."
