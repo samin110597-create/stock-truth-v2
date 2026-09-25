@@ -21,3 +21,5 @@
 .learning-metrics{border-top:1px solid var(--edge);padding-top:15px}
 @media(max-width:1000px){.cockpit-grid,.learning-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.cockpit-head{display:block}.cockpit-status{margin-top:10px}.cockpit-grid,.learning-grid,.engine-votes{grid-template-columns:1fr}.cockpit-card{min-height:auto}}
+
+.wait-box{margin-top:12px;padding:11px 12px;border:1px solid var(--edge);border-radius:5px;background:#12151a;display:grid;gap:7px;font-size:11px;line-height:1.55}.wait-box b{color:var(--amber);font-family:var(--mono)}.wait-box span{color:var(--faint)}
