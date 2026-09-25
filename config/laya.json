@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "integration_version": "STOCK-LAYA-0.1",
+  "integration_version": "STOCK-LAYA-0.2-SWING",
   "status": "TRAINING_REQUIRED",
   "base_model": "convaiinnovations/laya",
   "target_model": "Smit1105/stock-laya-qstate",
@@ -13,22 +13,24 @@
     ],
     "secondary": "tradeable"
   },
-  "data_source": "Existing sanitized Stock Truth / Q-State snapshots and immutable resolved outcomes",
-  "training_policy": "Chronological train/calibration/test split. Future bars are labels only and never enter state features.",
+  "data_source": "Stock-only daily Q-State causal snapshots plus immutable resolved Stock Truth outcomes",
+  "training_policy": "Daily stock/equity states only. Train 10-bar swing and 20-bar position horizons with chronological train/calibration/test splits. Future bars are labels only and never enter state features.",
   "learning_policy": "New resolved examples expand the next candidate training set. A wrong decision is retained; production weights are never changed from one trade alone.",
   "promotion_policy": {
     "minimum_test_cases": 500,
     "minimum_balanced_accuracy": 0.53,
     "minimum_brier_skill": 0.02,
-    "must_beat_current_qstate": true,
+    "must_beat_current_qstate": false,
     "positive_multiple_periods": true,
-    "no_single_ticker_dominance": true
+    "no_single_ticker_dominance": true,
+    "qstate_comparison_policy": "exact_pair_if_validated_else_not_applicable",
+    "both_live_horizons_must_pass": true
   },
   "probability_policy": "Laya confidence is displayed only after stock-domain held-out calibration and promotion. Until then the UI must show WITHHELD.",
   "runtime": {
     "provider": "Hugging Face Space / Laya",
     "gateway": "Deno Deploy",
-    "endpoint_status": "TRAINING_REQUIRED",
+    "endpoint_status": "TRAINING_REQUIRED_GPU",
     "gateway_url": "https://stock-truth-v2.samin110597.deno.net",
     "decision_route": "/v1/decision"
   }
