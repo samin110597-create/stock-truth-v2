@@ -1,6 +1,6 @@
 {
   "version": "5.1.0-restored-terminal",
-  "name": "Stock Truth V3/V4 concept \u2014 confirmed setup engine",
+  "name": "Stock Truth V3/V4 concept — confirmed setup engine",
   "production": [
     "src/bars.mjs",
     "src/technicals.mjs",
@@ -23,5 +23,11 @@
   "entryExpirySessions": 5,
   "costBasisPointsPerSide": 10,
   "probabilityPolicy": "No calibrated probability is currently published. Scores and historical frequencies are distinct.",
-  "researchVersion": "5.2.0-expanded-research"
+  "researchVersion": "5.3.0-stock-laya-foundation",
+  "decisionLayer": {
+    "name": "Stock-Laya",
+    "status": "TRAINING_REQUIRED",
+    "config": "config/laya.json",
+    "policy": "Existing Stock Truth/Q-State remains authoritative until stock-domain held-out promotion passes."
+  }
 }
