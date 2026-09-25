@@ -76,7 +76,7 @@ jobs:
       - name: Unit integrity gates
         run: |
           npm test
-          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py scripts/train_quant_model.py scripts/build_laya_stock_dataset.py scripts/preprocess_stock_laya.py scripts/train_stock_laya_ddp.py scripts/evaluate_stock_laya.py
+          python -m py_compile scripts/collect_quant.py scripts/collect_quant_context.py scripts/train_quant_model.py scripts/build_laya_stock_dataset.py scripts/preprocess_stock_laya.py scripts/train_stock_laya_ddp.py scripts/evaluate_stock_laya.py services/stock_laya_service/app.py
       - name: Restore optional data supplements
         run: node scripts/snapshot-store.mjs restore
       - name: Generate the exchange calendar
