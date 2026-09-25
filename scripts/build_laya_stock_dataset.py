@@ -128,21 +128,101 @@ def make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action):
 
 def build_cases():
     cases = []
+    feature_lookup = {}
     for symbol, timeframe, bars, asset in load_blocks():
         if asset != "EQUITY":
             continue
         parsed = block_features(bars)
         if not parsed:
             continue
-        _, close, highs, lows, _, rows = parsed
+        clean_bars, close, highs, lows, _, rows = parsed
         for i, timestamp, x, atr_pct in rows:
+            if timeframe == "1D":
+                bar = clean_bars[i]
+                for key in (timestamp, bar.get("ts"), bar.get("end_ts")):
+                    if key:
+                        feature_lookup[(symbol, int(key))] = (x, atr_pct)
             for horizon in HORIZONS:
                 action = first_barrier_outcome(close, highs, lows, i, horizon, atr_pct)
                 if action is None:
                     continue
-                cases.append(make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action))
+                case = make_case(symbol, timeframe, asset, timestamp, x, atr_pct, horizon, action)
+                case["source"] = "historical_state"
+                cases.append(case)
     cases.sort(key=lambda r: (r["timestamp"], r["symbol"], r["timeframe"]))
-    return cases
+    return cases, feature_lookup
+
+
+
+def terminal_ledger_result(record):
+    terminal = {
+        "ENTRY EXPIRED",
+        "CANCELLED GAP THROUGH STOP",
+        "CANCELLED GAP BEYOND ENTRY ZONE",
+        "TARGET TESTED BEFORE ENTRY",
+        "CANCELLED INVALID FILL",
+    }
+    for event in reversed(record.get("events") or []):
+        result = event.get("result") or {}
+        if result.get("complete") or result.get("state") in terminal:
+            return result
+    return None
+
+
+def build_experience_cases(feature_lookup):
+    path = ROOT / "data" / "ledger.json"
+    if not path.exists():
+        return []
+    try:
+        records = (json.loads(path.read_text()) or {}).get("records") or []
+    except Exception:
+        return []
+    out = []
+    seen = set()
+    for record in records:
+        setup = record.get("setup") or {}
+        symbol = str(setup.get("symbol") or "").upper()
+        signal_ts = setup.get("signal_ts")
+        direction = str(setup.get("direction") or "").upper()
+        holding = str(setup.get("horizon") or "SWING").upper()
+        if not symbol or not signal_ts or direction not in ("LONG", "SHORT"):
+            continue
+        dedupe = (symbol, int(signal_ts), direction, holding)
+        if dedupe in seen:
+            continue
+        result = terminal_ledger_result(record)
+        if not result:
+            continue
+        label = "WAIT"
+        if result.get("entered") and result.get("complete"):
+            t1 = ((result.get("targets") or [{}])[0] or {}).get("result")
+            if t1 == "TARGET":
+                label = "BUY" if direction == "LONG" else "SELL"
+            elif t1 not in ("STOP", "TIME EXIT"):
+                continue
+        lookup = feature_lookup.get((symbol, int(signal_ts)))
+        if not lookup:
+            continue
+        x, atr_pct = lookup
+        horizon = 20 if holding == "POSITION" else 10
+        case = make_case(symbol, "1D", "EQUITY", int(signal_ts), x, atr_pct, horizon, label)
+        case["source"] = "issued_ledger"
+        case["issued_direction"] = direction
+        case["issued_result"] = result.get("state")
+        out.append(case)
+        seen.add(dedupe)
+    out.sort(key=lambda r: (r["timestamp"], r["symbol"]))
+    return out
+
+
+def split_experience(cases):
+    if not cases:
+        return {"train": [], "test": []}
+    if len(cases) < 10:
+        return {"train": cases, "test": []}
+    n_test = max(5, int(round(len(cases) * 0.20)))
+    n_test = min(n_test, len(cases) - 1)
+    return {"train": cases[:-n_test], "test": cases[-n_test:]}
 
 
 def split_cases(cases, train_frac=0.70, calib_frac=0.15):
@@ -172,7 +252,7 @@ def write_jsonl(path, rows):
             f.write(json.dumps(portable, separators=(",", ":"), allow_nan=False) + "\n")
 
 
-def summarize(splits, cuts):
+def summarize(splits, cuts, experience):
     action_counts = {}
     symbol_counts = {}
     timeframe_counts = {}
@@ -192,6 +272,11 @@ def summarize(splits, cuts):
         "symbol_counts": symbol_counts,
         "features": list(FEATURES),
         "horizons": list(HORIZONS),
+        "experience_replay": {
+            "train_cases": len(experience.get("train", [])),
+            "test_cases": len(experience.get("test", [])),
+            "policy": "Append-only issued setups. Successful TP1 outcomes reinforce the issued direction; stopped, timed-out, cancelled, or expired setups teach WAIT. Experience is kept separate from the chronological base split and capped during training."
+        },
         "leakage_policy": (
             "State uses Q-State causal features available at timestamp t. "
             "Bars t+1..t+horizon are used only to create the gold outcome."
@@ -207,13 +292,16 @@ def main():
     parser.add_argument("--min-cases", type=int, default=500)
     args = parser.parse_args()
     out = Path(args.out)
-    cases = build_cases()
+    cases, feature_lookup = build_cases()
     if len(cases) < args.min_cases:
         raise SystemExit(f"Only {len(cases)} Laya cases available; need at least {args.min_cases}.")
     splits, cuts = split_cases(cases)
+    experience = split_experience(build_experience_cases(feature_lookup))
     for name, rows in splits.items():
         write_jsonl(out / f"{name}.jsonl", rows)
-    report = summarize(splits, cuts)
+    write_jsonl(out / "experience_train.jsonl", experience["train"])
+    write_jsonl(out / "experience_test.jsonl", experience["test"])
+    report = summarize(splits, cuts, experience)
     (out / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
 
