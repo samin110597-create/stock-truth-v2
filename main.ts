@@ -359,21 +359,7 @@ Deno.serve(async (req)=>{
   const u=new URL(req.url);
   if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
     providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED,tgm_fundamentals:true},
-    challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
-  if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
-    if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
-    try{
-      const body=await req.json();
-      if(!body||typeof body.state!=="object"||!body.questions||typeof body.questions!=="object")return json({error:"INVALID_DECISION_REQUEST"},400,origin);
-      const headers:Record<string,string>={"content-type":"application/json","accept":"application/json"};
-      if(LAYA_SERVICE_TOKEN)headers.authorization="Bearer "+LAYA_SERVICE_TOKEN;
-      const upstream=await fetch(LAYA_SERVICE_URL,{method:"POST",headers,body:JSON.stringify({state:body.state,questions:body.questions}),signal:AbortSignal.timeout(45000)});
-      const text=await upstream.text();
-      if(!upstream.ok)return json({error:"STOCK_LAYA_UPSTREAM",status:upstream.status,message:text.slice(0,500)},502,origin);
-      let parsed;try{parsed=JSON.parse(text);}catch{return json({error:"STOCK_LAYA_INVALID_RESPONSE"},502,origin);}
-      return json({classification:"CHALLENGER_ONLY",production_weight:0,policy:"This service cannot make the production decision. A winning method must be incorporated into and revalidated as part of Q-State Unified.",result:parsed},200,origin);
-    }catch(e){return json({error:"STOCK_LAYA_UNAVAILABLE",message:String((e as Error)?.message||e)},503,origin);}
-  }
+    model_policy:{single_production_model:true,canonical:"Q-State Unified",external_decision_models:false}},200,origin);
   if(u.pathname==="/v1/quote"){
     const symbol=clean(u.searchParams.get("symbol")||"");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -399,5 +385,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/challenger/stock-laya"]},200,origin);
+  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL"]},200,origin);
 });
