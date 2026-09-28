@@ -93,6 +93,7 @@ Required Deno secrets:
 - `FMP_API_KEY`
 - `FINNHUB_API_KEY`
 - `ALPHA_VANTAGE_KEY`
+- `FRED_API_KEY` (recommended for request-time macro research context)
 
 GitHub Pages needs the public Deno app URL. Store that non-secret URL as a GitHub Actions repository variable named `QSTATE_API_BASE`. The Pages build injects it into `quant/runtime-config.json`. If that variable is empty, Q-State clearly reports backend-off/snapshot fallback mode.
 
@@ -102,3 +103,5 @@ GitHub Pages needs the public Deno app URL. Store that non-secret URL as a GitHu
 The production end state is **one model**: Q-State Unified. It owns stock/ETF forecasting, research context and technical analysis. Deno is the canonical request-time data/research backend. `Phase1` is no longer a competing production forecast; it is an offline challenger/validation lab. Stock-Laya and any Chronos/IBM-style candidates are likewise challengers with zero production weight until they pass frozen OOS promotion criteria. A promoted challenger is folded into the Q-State Unified artifact rather than deployed beside it.
 
 A Q-State model artifact can contain multiple timeframe/horizon heads, but those heads are components of one versioned model package and share one promotion policy, one UI, one source-of-truth data layer and one validation contract.
+
+Stock-Laya is exposed only under the Deno challenger route with explicit `production_weight: 0`. It is not a second decision engine.
