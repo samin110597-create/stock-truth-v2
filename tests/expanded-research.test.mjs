@@ -28,10 +28,10 @@ test('Elliott projection targets are anchored and a later invalidation retires t
   updated.push({...bars[44],open:122,close:121,high:123,low:119});assert.ok(!elliott(updated,{series:{atr:updated.map(()=>2)}},{pivots:p}).candidates.some(c=>c.id===count.id));
 });
 test('Forecast fits are causal, embargo all labels and cannot use a changed future',()=>{
-  const t=technicals(bars),f=forecastFeatures(bars,t),fit=fitAt(bars,f,220,21);assert.ok(fit);assert.ok(fit.label_end<220);
-  const changed=bars.map((b,i)=>i>=220?{...b,close:b.close*2,high:b.high*2,low:b.low*2,open:b.open*2}:b);
-  const unchangedOrigin=changed.map((b,i)=>i===220?bars[i]:b),nf=forecastFeatures(unchangedOrigin,technicals(unchangedOrigin));
-  assert.deepEqual(fitAt(unchangedOrigin,nf,220,21),fit);
+  const origin=300,t=technicals(bars),f=forecastFeatures(bars,t),fit=fitAt(bars,f,origin,21);assert.ok(fit);assert.ok(fit.label_end<origin);
+  const changed=bars.map((b,i)=>i>=origin?{...b,close:b.close*2,high:b.high*2,low:b.low*2,open:b.open*2}:b);
+  const unchangedOrigin=changed.map((b,i)=>i===origin?bars[i]:b),nf=forecastFeatures(unchangedOrigin,technicals(unchangedOrigin));
+  assert.deepEqual(fitAt(unchangedOrigin,nf,origin,21),fit);
   assert.equal(fitAt(bars,f,100,63),null);
   const out=technicalForecast(bars,t);
   for(const h of out.horizons.filter(h=>h.validation)){assert.ok(h.base>0);for(let i=0;i<h.validation.folds.length;i++){const z=h.validation.folds[i];assert.ok(z.train_through<z.origin);if(i)assert.ok(h.validation.folds[i-1].through<z.origin);}}
