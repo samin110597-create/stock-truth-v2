@@ -201,7 +201,10 @@ async function equityQuote(requested:string,source:string=requested){
     attemptQuote("FMP quote",()=>fmpQuote(requested,source),trace),
     attemptQuote("Yahoo quote",()=>yahooQuote(requested,source),trace),
   ]);
-  const candidates=[fq,mq,yq].filter((x):x is any=>!!x&&finite(x.price)&&x.price>0&&finite(x.as_of)&&x.as_of>0);
+  const candidates:any[]=[];
+  for(const x of [fq,mq,yq]){
+    if(x&&finite(x.price)&&Number(x.price)>0&&finite(x.as_of)&&Number(x.as_of)>0)candidates.push(x);
+  }
   if(!candidates.length)throw new Error("No live quote provider available: "+trace.map(x=>x.source+" "+x.status+(x.reason?" ("+x.reason+")":"")).join("; "));
   const latest=Math.max(...candidates.map(x=>Number(x.as_of)));
   const recent=candidates.filter(x=>Math.abs(latest-Number(x.as_of))<=24*60*60);
@@ -211,6 +214,7 @@ async function equityQuote(requested:string,source:string=requested){
   const rank=(name:string)=>String(name).includes("Finnhub")?0:String(name).includes("FMP")?1:2;
   pool.sort((a,b)=>Number(b.as_of)-Number(a.as_of)||rank(a.provider)-rank(b.provider));
   const chosen=pool[0];
+  if(!chosen)throw new Error("No consensus quote candidate available");
   const dispersion=finite(med)&&pool0.length>=2?(Math.max(...pool0.map(x=>x.price))-Math.min(...pool0.map(x=>x.price)))/Number(med)*100:null;
   const dispersionNumber=dispersion===null?Infinity:Number(dispersion);
   return {...chosen,source_trace:trace,cross_validation:{
