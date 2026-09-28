@@ -105,3 +105,8 @@ The production end state is **one model**: Q-State Unified. It owns stock/ETF fo
 A Q-State model artifact can contain multiple timeframe/horizon heads, but those heads are components of one versioned model package and share one promotion policy, one UI, one source-of-truth data layer and one validation contract.
 
 Stock-Laya is exposed only under the Deno challenger route with explicit `production_weight: 0`. It is not a second decision engine.
+
+
+### Production surface consolidation
+
+The legacy `/web/` terminal is no longer a second deployed analysis/forecast engine. It is a compatibility redirect to `/quant/`, and its JavaScript/source modules are excluded from the GitHub Pages artifact. The legacy source remains in the repository only for historical research, regression tests, and migration reference. The repository root opens Q-State Unified directly.
