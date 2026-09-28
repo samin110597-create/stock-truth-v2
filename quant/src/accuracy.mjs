@@ -179,7 +179,7 @@ function openDb(){
 }
 async function storeAdd(name,value){
   const db=await openDb();if(!db)return false;
-  return await new Promise((resolve,reject)=>{const tx=db.transaction(name,'readwrite'),s=tx.objectStore(name),r=s.add(value);r.onsuccess=()=>resolve(true);r.onerror=()=>{if(r.error?.name==='ConstraintError'){r.preventDefault?.();resolve(false);}else reject(r.error);};});
+  return await new Promise((resolve,reject)=>{const tx=db.transaction(name,'readwrite'),s=tx.objectStore(name),r=s.add(value);r.onsuccess=()=>resolve(true);r.onerror=e=>{if(r.error?.name==='ConstraintError'){e.preventDefault();e.stopPropagation();resolve(false);}else reject(r.error);};});
 }
 async function storePut(name,value){
   const db=await openDb();if(!db)return false;
