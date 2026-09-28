@@ -1,4 +1,8 @@
-# Q-State Standalone Quant Terminal
+# Q-State Unified — Canonical Forecast, Research and Analysis Model
+
+**Production rule:** there is exactly one deployed intelligence/model path: Q-State Unified in this repository. It may contain multiple causal timeframe/horizon heads inside one versioned artifact, but there is no second production forecasting model and no equal-vote ensemble of independent products.
+
+Phase1, Stock-Laya, Chronos/IBM-style candidates, or future experiments are **challengers only**. They have zero production influence until they beat the canonical model on predeclared chronological/OOS gates and ablation. Promotion means incorporating the winning method into the single Q-State artifact—not running two models side by side.
 
 The quant terminal is a **separate application** deployed at `/quant/`.
 
@@ -119,3 +123,10 @@ Supported precious-metals inputs:
 - `SILVER` or `SI` — silver commodity route. The secured collector prefers a dated COMEX SI contract from Massive and can fall back to FMP `SIUSD` continuous commodity history.
 
 `SVR` is not treated as an alias for silver because it can be a distinct security symbol. Use `SLV` for the silver ETF.
+
+
+## Canonical Deno research/data contract
+
+Q-State uses the Deno service in `main.ts` as the canonical request-time source. Daily and intraday providers are queried independently and cross-checked when multiple current sources are available. The response exposes validation status and dispersion instead of silently accepting the first source.
+
+The Deno `/v1/research` route adds sourced fundamentals and FRED macro context for the requested ticker. These fields are visible for research, but their forecast weight remains **zero** until synchronized historical data passes leakage-controlled OOS ablation. This prevents current fundamentals or macro observations from leaking into historical forecasts or artificially improving backtests.
