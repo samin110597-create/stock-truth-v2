@@ -1,4 +1,4 @@
-# Stock Truth — GitHub-only research terminal
+# Stock Truth / Q-State Unified — single canonical market intelligence system
 
 **Type any supported stock/ETF ticker and analyze it immediately.** Ticker entry is not gated by the scan watchlist or a GitHub Actions run. The browser requests public price/history data and computes the active model locally in a Web Worker. Components that cannot be sourced remain unavailable.
 
@@ -95,3 +95,10 @@ Required Deno secrets:
 - `ALPHA_VANTAGE_KEY`
 
 GitHub Pages needs the public Deno app URL. Store that non-secret URL as a GitHub Actions repository variable named `QSTATE_API_BASE`. The Pages build injects it into `quant/runtime-config.json`. If that variable is empty, Q-State clearly reports backend-off/snapshot fallback mode.
+
+
+## One-model consolidation (September 28, 2026)
+
+The production end state is **one model**: Q-State Unified. It owns stock/ETF forecasting, research context and technical analysis. Deno is the canonical request-time data/research backend. `Phase1` is no longer a competing production forecast; it is an offline challenger/validation lab. Stock-Laya and any Chronos/IBM-style candidates are likewise challengers with zero production weight until they pass frozen OOS promotion criteria. A promoted challenger is folded into the Q-State Unified artifact rather than deployed beside it.
+
+A Q-State model artifact can contain multiple timeframe/horizon heads, but those heads are components of one versioned model package and share one promotion policy, one UI, one source-of-truth data layer and one validation contract.
