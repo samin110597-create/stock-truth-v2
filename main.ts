@@ -356,8 +356,8 @@ Deno.serve(async (req)=>{
   const u=new URL(req.url);
   if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
     providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED,tgm_fundamentals:true},
-    decision_service:{stock_laya:!!LAYA_SERVICE_URL}},200,origin);
-  if(u.pathname==="/v1/decision"&&req.method==="POST"){
+    challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
+  if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
     if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
     try{
       const body=await req.json();
@@ -368,7 +368,7 @@ Deno.serve(async (req)=>{
       const text=await upstream.text();
       if(!upstream.ok)return json({error:"STOCK_LAYA_UPSTREAM",status:upstream.status,message:text.slice(0,500)},502,origin);
       let parsed;try{parsed=JSON.parse(text);}catch{return json({error:"STOCK_LAYA_INVALID_RESPONSE"},502,origin);}
-      return json(parsed,200,origin);
+      return json({classification:"CHALLENGER_ONLY",production_weight:0,policy:"This service cannot make the production decision. A winning method must be incorporated into and revalidated as part of Q-State Unified.",result:parsed},200,origin);
     }catch(e){return json({error:"STOCK_LAYA_UNAVAILABLE",message:String((e as Error)?.message||e)},503,origin);}
   }
   if(u.pathname==="/v1/quote"){
@@ -396,5 +396,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/decision"]},200,origin);
+  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/challenger/stock-laya"]},200,origin);
 });
