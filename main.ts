@@ -292,19 +292,24 @@ async function tgmFundamentals(symbol:string){
   return {schema_version:1,symbol,status:ok?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",provider:"TGMCharts / SEC EDGAR-derived public fundamentals",fetched_at:nowIso(),data,errors,
     policy:"Fundamentals are research context until synchronized historical fundamental features pass Q-State out-of-sample validation; present-day facts never leak into historical forecasts."};
 }
+let macroCache:{at:number,data:any}|null=null;
 async function fredMacro(){
+  if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
   if(!FRED)return {status:"UNAVAILABLE",provider:"FRED",reason:"FRED key missing",fetched_at:nowIso()};
   const series:Record<string,string>={DGS10:"10Y nominal Treasury",DFII10:"10Y real Treasury",T10YIE:"10Y breakeven inflation",DTWEXBGS:"Trade-weighted USD"};
+  const entries=Object.entries(series);
+  const settled=await Promise.allSettled(entries.map(([sid])=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id:sid,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
   const values:Record<string,any>={};
-  for(const [sid,label] of Object.entries(series)){
-    try{
-      const j:any=await getJson("https://api.stlouisfed.org/fred/series/observations",{series_id:sid,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"});
-      const obs=(j.observations||[]).find((x:any)=>finite(x.value));
+  settled.forEach((r,i)=>{
+    const [sid,label]=entries[i];
+    if(r.status==="fulfilled"){
+      const j:any=r.value,obs=(j.observations||[]).find((x:any)=>finite(x.value));
       values[sid]={label,value:obs?num(obs.value):null,date:obs?.date||null};
-    }catch(e){values[sid]={label,value:null,error:String((e as Error)?.message||e).slice(0,120)};}
-  }
-  return {status:Object.values(values).some((x:any)=>finite(x.value))?"AVAILABLE":"UNAVAILABLE",provider:"FRED",fetched_at:nowIso(),series:values,
+    }else values[sid]={label,value:null,error:String((r.reason as Error)?.message||r.reason).slice(0,120)};
+  });
+  const data={status:Object.values(values).some((x:any)=>finite(x.value))?"AVAILABLE":"UNAVAILABLE",provider:"FRED",fetched_at:nowIso(),series:values,
     policy:"Macro is displayed as research/regime context and receives no forecast weight until historical alignment and OOS ablation prove incremental value."};
+  macroCache={at:Date.now(),data};return data;
 }
 const researchCache=new Map<string,{at:number,data:any}>();
 async function researchBundle(symbol:string){
