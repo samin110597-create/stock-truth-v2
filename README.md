@@ -1,97 +1,144 @@
-# Stock Truth — GitHub-only research terminal
+# Stock Truth / Q-State Unified
 
-**Type any supported stock/ETF ticker and analyze it immediately.** Ticker entry is not gated by the scan watchlist or a GitHub Actions run. The browser requests public price/history data and computes the active model locally in a Web Worker. Components that cannot be sourced remain unavailable.
+Q-State Unified is the **single production model and user-facing system** for stock/ETF forecasting, research and analysis in this repository.
 
-Production: GitHub Pages, `main`, generated `dist/` artifact. Entry: `/stock-truth-v2/web/`. The dashboard displays the exact source commit and model version. Current model: **5.1.0-restored-terminal**, the consolidated successor to the audited V3/V4 layers.
+Production UI: https://samin110597-create.github.io/stock-truth-v2/quant/
 
-## One production path
+Legacy compatibility URLs such as `/web/` redirect to Q-State Unified. The legacy Stock Truth source remains only for regression tests, historical research and migration reference; its executable modules are not shipped in the GitHub Pages production artifact.
 
-`web/app.mjs → src/providers.mjs → src/bars.mjs → technicals → structure → reversal → setups → validation → analysis → dashboard`
+## One production architecture
 
-All executable modules and Lightweight Charts are shipped in the same Pages artifact. There is no runtime JavaScript download/eval, remote V3/V4 patch chain, serverless endpoint, Vercel configuration, or private key in the application. Original versions are preserved in `archive/` and the rollback branch, excluded from the deployed artifact.
+```text
+Market providers + fundamentals + macro
+                ↓
+       Deno canonical data layer
+   freshness · identity · cross-checks
+                ↓
+     Q-State Unified canonical artifact
+   multi-timeframe / multi-horizon heads
+                ↓
+ forecast · research · analysis · execution map
+                ↓
+        one Q-State web interface
+```
 
-## Direct ticker analysis and optional supplements
+There is no second production forecast model and no equal-vote ensemble of separate products.
 
-- A browser-compatible Stock Analysis public quote/history endpoint is attempted for every entered symbol. It requires no embedded key or proxy. Ticker identity is verified; current public coverage is U.S. stocks/ETFs, and an unknown/unsupported symbol returns an honest component error. This is an **unofficial endpoint, not a supported API contract**. It may stop working, restrict depth, or reject requests. We do not bypass authentication, paywalls, rate limits or browser protections.
-- Daily OHLCV drives local technical, structure, reversal, setup and thesis calculations. Weekly/monthly candles are resampled only when all scheduled sessions are complete. A closing-price-only chart cannot be converted into fictitious OHLCV.
-- GitHub Actions optionally adds longer Yahoo daily history, 5-minute/hourly bars, SEC companyfacts, market benchmarks, scans and an append-only setup ledger. A deeper daily source can be reconciled with up to five newer sourced daily candles only after at least ten overlapping dates agree in open, high, low and close within 0.5%. Original prices and per-row sources are retained. A rejected trailing row may be resolved only by an actual replacement; interior omissions, price-basis differences and unresolved split anomalies reject reconciliation. No quote becomes a historical candle.
-- Browser-only intraday and SEC fundamentals are unavailable when a source cannot support the request. That does not block available daily analysis. Public endpoints do not guarantee exchange real-time data: the header reports timestamps and unspecified provider latency.
-- `config/watchlist.json` controls scans and quick access only. It does **not** restrict the search input.
+- **Q-State Unified** owns production forecasting, technical/state analysis and research presentation.
+- **Phase1** is an offline challenger/validation lab only.
+- **Stock-Laya** is challenger-only through `/v1/challenger/stock-laya` with `production_weight: 0`.
+- Chronos, IBM-style models, or future methods may be tested as challengers, but they have zero production influence unless they pass the promotion contract and are incorporated into the one Q-State artifact.
 
-## Accuracy rules
+## Any-ticker data path
 
-- Confirmed calculations use completed exchange-session bars, including early closes and daylight-saving time. Daily collection has a 15-minute close grace; intraday uses 60 seconds. No quote is spliced into a historical candle.
-- Null remains null. Warmup values, missing volume, missing fundamentals and unsupported timeframes are never replaced by invented prices or zero-valued facts.
-- Confirmed pivots have a three-bar delay. ATR impulse, time separation, participation and post-pivot displacement determine swing degree. BOS/CHoCH only uses levels known at that time.
-- Reversals have watch/developing/confirmed states. Absorption, distribution, capitulation, sweeps, divergence and OHLCV VWAP are explicitly **proxies**, not proof of institutional orders.
-- Every setup requires a completed rejection/reclaim or structural-break candle; proximity or oversold alone does not qualify. Setup stops follow structural invalidation. Targets use actual known pivot levels or a measured structural range. The nearest obstacle is not skipped to exaggerate R:R. Strict and Adaptive thresholds are fixed; missing evidence reduces the score.
-- A score of 80/100 is not an 80% probability. Historical target frequencies, Wilson intervals and sample counts are separately labeled. No calibrated directional probability or verified predictive edge is currently claimed.
-- Historical setup replay is causal, non-overlapping and uses a one-bar embargo. Stops win unresolved same-bar target/stop collisions; entry-bar targets are not credited; adverse gaps and fixed 10 bps per-side costs are included. This is **retrospective replay, not untouched out-of-sample evidence**.
-- Issued setup records never rewrite entry/stop/targets. A plan is replayed from its original confirmation until it expires or resolves. An old sweep/break cannot keep reissuing a moving plan. New confirmations receive new IDs. Post-signal session stop/target tests suppress fresh entries; a quote is never evidence of a user fill. Browser history is local to that browser; scheduled history is stored in the `data-snapshots` branch with append-only observations.
+GitHub Pages is static, so request-time market/research retrieval is handled by the Deno service defined by `deno.json` and `main.ts`.
 
-## Develop and verify
+Primary routes:
+
+- `GET /health`
+- `GET /v1/quote?symbol=AAPL`
+- `GET /v1/market?symbol=AAPL&timeframe=1D`
+- `GET /v1/research?symbol=AAPL`
+- `POST /v1/challenger/stock-laya` — challenger evidence only, never the production decision
+
+Stocks/ETFs are not gated by a watchlist or a precomputed GitHub Actions run. Gold/silver and supported futures aliases remain available through the Q-State data route.
+
+## Canonical data policy
+
+For request-time equity data, Q-State queries available providers independently and cross-checks current prices/bars when multiple current sources are available. It does not silently trust the first successful provider.
+
+Supported sources include Massive/Polygon-compatible aggregates, FMP, Finnhub, Alpha Vantage and Yahoo fallback. The returned frame records the selected provider, freshness and cross-source validation/dispersion when available.
+
+Missing or stale evidence stays missing/stale. Q-State does not fabricate OHLCV, fundamentals, probabilities, targets or institutional order flow.
+
+## Research context
+
+The Deno `/v1/research` route provides:
+
+- sourced public fundamentals / SEC-derived statement context
+- FRED macro context including nominal/real 10Y yields, breakeven inflation and trade-weighted USD
+
+**Current fundamentals and macro have 0% production forecast weight until synchronized historical versions pass leakage-controlled out-of-sample ablation.** They are visible for research without being allowed to make a backtest look better through present-day information leakage.
+
+Recommended Deno secrets:
+
+- `MASSIVE_KEY` (or configured Polygon-compatible key)
+- `FMP_API_KEY`
+- `FINNHUB_API_KEY`
+- `ALPHA_VANTAGE_KEY`
+- `FRED_API_KEY`
+
+Credentials remain server-side and are never returned to the browser.
+
+## Q-State Unified model
+
+The canonical artifact is generated at `data/quant/model.json` and is versioned as **QSTATE-UNIFIED-3.0**.
+
+One artifact can contain multiple timeframe/horizon heads (15M, 1H, 4H, 1D × 5/10/20 bars). These are components of one model package with one data contract and one promotion policy—not independent production models voting against one another.
+
+Causal features include price/volume returns, EMA state, RSI, ATR/volatility/compression, range position, breakout state, volume anomaly, latent velocity/acceleration and trend/regime interactions.
+
+The runtime also evaluates confirmed multi-scale structure, BOS/CHoCH, liquidity sweeps, RSI pivot divergence, volatility, entropy/Hurst/cycle context, multi-timeframe alignment and explicit WATCH / DEVELOPING / READY execution states.
+
+## Promotion and accuracy rules
+
+A model head may expose a predictive probability only when it passes the predeclared evidence gates. Current rules include:
+
+- chronological expanding walk-forward validation with embargo
+- at least 3 qualifying folds
+- at least 500 walk-forward OOS observations
+- Brier skill versus base rate of at least 0.5%
+- log loss no worse than the base-rate forecast
+- at least 60% of folds with positive Brier skill and non-worse log loss
+- positive median fold Brier skill
+- a final **untouched 6% time holdout** with non-negative Brier skill and non-worse log loss
+
+If a head fails, probability is **WITHHELD**. Rule-based market-state analysis may still say WATCH/DEVELOPING, but an unvalidated percentage is not presented as predictive probability.
+
+Targets use validated OOS conditional return bands when promoted; otherwise they remain explicitly labeled scenario/simulation outputs. Stops/invalidation are structural and a published plan is not retroactively rewritten.
+
+## Challenger promotion contract
+
+Phase1, Stock-Laya or another experimental method can affect production only if:
+
+1. every input was available at the decision timestamp;
+2. leakage and label timing audits pass;
+3. testing is chronological with appropriate purging/embargo;
+4. the challenger beats the current Q-State baseline on untouched/OOS evidence;
+5. calibration is not worse;
+6. improvement is stable across regimes and not dominated by one ticker/sector;
+7. ablation proves incremental value;
+8. the winning method is incorporated into Q-State Unified and the **whole canonical artifact is revalidated**.
+
+A challenger is never deployed alongside Q-State as a second production decision engine.
+
+## Build and integrity
 
 ```sh
 npm ci --ignore-scripts
 python -m pip install -r requirements.txt
 python scripts/generate_calendar.py
 npm test
-# Optional real sourced data; not required for a never-seen ticker to work:
-python scripts/collect.py --symbols NVDA MU VRT CRWV CIFR SNDK GOOG META AVGO MRVL SPY
-npm run analyze
+python scripts/train_quant_model.py
 npm run build
 npm run check
-npm run serve
 ```
 
-The deterministic test fixtures are isolated from production and never presented as real market data. Validation results are generated from the actual fetched datasets, without an optimization step.
+The production integrity gate requires:
 
-## GitHub deployment
+- Q-State Unified schema/version identity
+- the untouched-holdout metadata for every promoted head
+- no browser API secrets
+- versioned local modules
+- the legacy Stock Truth execution engine absent from `dist/`
+- root and `/web/` compatibility entries routed to Q-State Unified
 
-The original charcoal/amber terminal concept is restored: Verdict, Technicals, Fundamentals, Rank, Model lab and Sources; bullish/bearish evidence; conditional scenarios; Strict/Adaptive swing/position trade matrix; local risk sizing; candles, volume, EMA20/50/200, RSI/MACD panes and native candle markers. The technical BUY/SELL stance is separate from entry permission. Multi-horizon history is descriptive, never invented forecast odds.
+The GitHub workflow `.github/workflows/terminal.yml` runs validation before deployment and deploys the exact tested `dist/` artifact to GitHub Pages.
 
-One workflow, `.github/workflows/terminal.yml`, validates branches/PRs. Code pushes restore optional snapshots, run analysis and integrity gates, and deploy the tested artifact without waiting for provider collection. Scheduled/manual runs additionally collect, reconcile and save source data. Every release versions the complete local module graph and CSS by commit, including Worker imports, to prevent mixed old-engine/new-layout browser caches.
+## Phase1
 
-GitHub Pages is enabled and deployments were observed succeeding on September 13, 2026. The production URL is https://samin110597-create.github.io/stock-truth-v2/web/. Data-provider or snapshot-publication failures do not block a tested application build. Source syntax, calculation tests, artifact checks and Pages deployment remain required gates.
+Phase1 remains a separate repository only because research experiments, large training artifacts and historical validation are easier to isolate there. It is **not** a separate product or production model. Its public page redirects to Q-State Unified and its automated live-forecast workflow has been removed.
 
-Scheduled collection: `:17` and `:47`, 13:00–21:59 UTC weekdays, plus 22:17 UTC. Scheduling is best effort and can be delayed. U.S. calendar checks exclude holidays and incomplete candles. SEC facts are cached for 24 hours. Direct quote/history retrieval occurs when a ticker is entered or refreshed.
+## Documentation
 
-Optional repository secrets: `POLYGON_KEY` for a daily-bar fallback and `SEC_USER_AGENT` for an identified SEC client. The related legacy repository's Finnhub/Twelve/FMP/Polygon/Alpha Vantage secret names were identified, but secrets are repository-scoped and were not copied, exposed or assumed present here.
-
-## Standalone Q-State Quant Terminal
-
-The quant terminal is a **separate application** at `/quant/`. It does not reuse the classic terminal HTML, CSS, provider router, technical engine, structure/reversal engine, or setup engine. It shares only sanitized market-data snapshots, the bundled chart library, and deployment infrastructure.
-
-Its independent engine now includes Q-State 2.0 walk-forward calibration: causal price/volume features are trained separately by timeframe and horizon, probabilities are promoted only when out-of-sample Brier/log-loss gates pass, and validated conditional return bands replace Monte Carlo targets when available. The runtime also uses confirmed multi-scale structure, state-filtered velocity/acceleration, multi-timeframe execution alignment, entropy/Hurst/cycle context, volatility/compression, execution levels and explicit WATCH/DEVELOPING/READY states. API credentials remain GitHub Actions secrets and are never entered into the browser.
-
-See `documentation/QUANT_LAB.md` for the standalone architecture and integrity rules.
-
-## Documentation and rollback
-
-See `documentation/AUDIT.md`, `documentation/ACCEPTANCE.md`, `documentation/SOURCES.md` and generated `data-snapshots:validation-report.json`.
-
-Rollback point: branch `rollback/pre-github-only-terminal-20260911`, commit `97cffb64256521e8283ec3763836461db4eeabde`. Prefer reverting the implementation PR through a new reviewed PR; reverting to the original commit also restores its known Vercel-dependent architecture, so it is an archival rollback, not a GitHub-only production solution.
-
-
-## Arbitrary stock / ETF on-demand mode
-
-GitHub Pages is static, so Q-State uses a separate **Deno Deploy dynamic API** for request-time ticker searches.
-
-The Deno backend is defined directly in this repository:
-- `deno.json` declares a dynamic Deno Deploy runtime
-- `main.ts` is the request-time market API
-- Deno reads provider credentials from its secret environment variables
-- Q-State calls `/v1/market?symbol=...&timeframe=...`
-- arbitrary stocks and ETFs are fetched on demand instead of requiring a prebuilt snapshot
-- Gold/Silver aliases such as `GOLD/GC/XAU` and `SILVER/SI/XAG` are supported
-- the existing snapshot system remains fallback only
-
-Deno Deploy is linked to this GitHub repository. In Deno, configure the app as the repository root and allow the source-controlled `deno.json` to define the dynamic runtime.
-
-Required Deno secrets:
-- `MASSIVE_KEY`
-- `FMP_API_KEY`
-- `FINNHUB_API_KEY`
-- `ALPHA_VANTAGE_KEY`
-
-GitHub Pages needs the public Deno app URL. Store that non-secret URL as a GitHub Actions repository variable named `QSTATE_API_BASE`. The Pages build injects it into `quant/runtime-config.json`. If that variable is empty, Q-State clearly reports backend-off/snapshot fallback mode.
+See `documentation/QUANT_LAB.md` for the detailed one-model architecture, calibration rules and data-integrity policy.

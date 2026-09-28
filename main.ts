@@ -2,6 +2,7 @@ const MASSIVE = Deno.env.get("MASSIVE_KEY") || Deno.env.get("POLYGON_KEY") || ""
 const FMP = Deno.env.get("FMP_API_KEY") || Deno.env.get("FMP_KEY") || "";
 const FINNHUB = Deno.env.get("FINNHUB_API_KEY") || Deno.env.get("FINNHUB_KEY") || "";
 const ALPHA = Deno.env.get("ALPHA_VANTAGE_KEY") || Deno.env.get("ALPHAVANTAGE_KEY") || "";
+const FRED = Deno.env.get("FRED_API_KEY") || Deno.env.get("FRED_KEY") || "";
 const LAYA_SERVICE_URL = Deno.env.get("LAYA_SERVICE_URL") || "";
 const LAYA_SERVICE_TOKEN = Deno.env.get("LAYA_SERVICE_TOKEN") || "";
 const ALLOWED = new Set([
@@ -180,57 +181,145 @@ async function attempt<T extends {provider:string;bars:Bar[]}>(name:string,fn:()
   try{const x=await fn();trace.push({source:name,status:"OK",bars:x.bars.length,last:x.bars.at(-1)?.date});return x;}
   catch(e){trace.push({source:name,status:"FAILED",reason:String((e as Error)?.message||e).slice(0,160)});return null;}
 }
+type Candidate = {provider:string;bars:Bar[]};
+
 function pick(candidates:any[],tf:string){
   for(const x of candidates)if(x&&x.bars?.length>=80&&current(tf,x.bars))return x;
   return null;
 }
+function median(xs:number[]){
+  const a=[...xs].sort((x,y)=>x-y);if(!a.length)return null;
+  const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function providerRank(name:string){
+  const n=String(name||"").toLowerCase();
+  if(n.includes("massive"))return 0;
+  if(n.includes("fmp"))return 1;
+  if(n.includes("finnhub"))return 2;
+  if(n.includes("alpha"))return 3;
+  if(n.includes("yahoo"))return 4;
+  return 9;
+}
+function validateCandidates(candidates:(Candidate|null)[],mode:"daily"|"intraday"){
+  const usable=candidates.filter((x):x is Candidate=>!!x&&x.bars?.length>=80);
+  if(!usable.length)return {status:"UNAVAILABLE",providerCount:0,dispersionPct:null,observations:[]};
+  const latest=Math.max(...usable.map(x=>x.bars.at(-1)!.end_ts));
+  const window=mode==="daily"?3*86400:45*60;
+  const obs=usable.filter(x=>Math.abs(latest-x.bars.at(-1)!.end_ts)<=window).map(x=>({
+    provider:x.provider,close:x.bars.at(-1)!.close,end_ts:x.bars.at(-1)!.end_ts,date:x.bars.at(-1)!.date
+  }));
+  const med=median(obs.map(x=>x.close));
+  const dispersion=med&&obs.length>=2?(Math.max(...obs.map(x=>x.close))-Math.min(...obs.map(x=>x.close)))/med*100:null;
+  const d=dispersion===null?Infinity:Number(dispersion);
+  const status=obs.length<2?"SINGLE_SOURCE":d<=0.75?"PASS":d<=2?"WARN":"DISAGREE";
+  return {status,providerCount:obs.length,medianClose:med,dispersionPct:dispersion===null?null:Number(dispersion.toFixed(4)),observations:obs};
+}
+function selectValidated(candidates:(Candidate|null)[],tf:string,mode:"daily"|"intraday"){
+  const usable=candidates.filter((x):x is Candidate=>!!x&&x.bars?.length>=80&&current(tf,x.bars));
+  const validation=validateCandidates(usable,mode);
+  if(!usable.length)return {selected:null,validation};
+  const med=(validation as any).medianClose;
+  const inConsensus=finite(med)&&usable.length>=2
+    ? usable.filter(x=>Math.abs(x.bars.at(-1)!.close/Number(med)-1)<=0.015)
+    : usable;
+  const pool=inConsensus.length?inConsensus:usable;
+  pool.sort((a,b)=>providerRank(a.provider)-providerRank(b.provider)||b.bars.length-a.bars.length);
+  return {selected:pool[0],validation};
+}
+function frameFrom(candidate:Candidate,status:string,validation:any):Frame&{validation:any}{
+  return {status,provider:candidate.provider,bars:candidate.bars,fetched_at:nowIso(),validation};
+}
 async function equityBundle(symbol:string){
   const trace:Trace[]=[];
-  const mi=await attempt("Massive intraday",()=>massive(symbol,true),trace);
-  const fi=mi?null:await attempt("FMP intraday",()=>fmp(symbol,true),trace);
-  const ni=(mi||fi)?null:await attempt("Finnhub intraday",()=>finnhub(symbol,true),trace);
-  const yi=await attempt("Yahoo intraday",()=>yahoo(symbol,"15m","60d",900,true,true),trace);
-  const md=await attempt("Massive daily",()=>massive(symbol,false),trace);
-  const fd=md?null:await attempt("FMP daily",()=>fmp(symbol,false),trace);
-  const nd=(md||fd)?null:await attempt("Finnhub daily",()=>finnhub(symbol,false),trace);
-  const ad=(md||fd||nd)?null:await attempt("Alpha Vantage daily",()=>alphaDaily(symbol),trace);
-  const yd=await attempt("Yahoo daily",()=>yahoo(symbol,"1d","10y",86400,false,false),trace);
-  const yh=await attempt("Yahoo hourly",()=>yahoo(symbol,"60m","2y",3600,true,true),trace);
-  const intr=pick([mi,fi,ni,yi],"15M"),daily=pick([md,fd,nd,ad,yd],"1D");
+  const [mi,fi,ni,yi,md,fd,nd,ad,yd,yh]=await Promise.all([
+    attempt("Massive intraday",()=>massive(symbol,true),trace),
+    attempt("FMP intraday",()=>fmp(symbol,true),trace),
+    attempt("Finnhub intraday",()=>finnhub(symbol,true),trace),
+    attempt("Yahoo intraday",()=>yahoo(symbol,"15m","60d",900,true,true),trace),
+    attempt("Massive daily",()=>massive(symbol,false),trace),
+    attempt("FMP daily",()=>fmp(symbol,false),trace),
+    attempt("Finnhub daily",()=>finnhub(symbol,false),trace),
+    attempt("Alpha Vantage daily",()=>alphaDaily(symbol),trace),
+    attempt("Yahoo daily",()=>yahoo(symbol,"1d","10y",86400,false,false),trace),
+    attempt("Yahoo hourly",()=>yahoo(symbol,"60m","2y",3600,true,true),trace),
+  ]);
+  const intrPick=selectValidated([mi,fi,ni,yi],"15M","intraday"),dailyPick=selectValidated([md,fd,nd,ad,yd],"1D","daily");
+  const intr=intrPick.selected,daily=dailyPick.selected;
   if(!intr&&!daily)throw new Error("No current provider data");
-  const frames:Record<string,Frame>={};
+  const frames:Record<string,any>={};
   if(intr){
-    frames["15M"]={status:"COMPLETED BAR",provider:intr.provider,bars:intr.bars,fetched_at:nowIso()};
+    frames["15M"]=frameFrom(intr,"COMPLETED BAR",intrPick.validation);
     const h1=resample(intr.bars,60,true),h4=resample(intr.bars,240,true);
-    if(h1.length>=80)frames["1H"]={status:"COMPLETED BAR",provider:intr.provider+" · 15M→1H",bars:h1,fetched_at:nowIso()};
-    if(h4.length>=80)frames["4H"]={status:"COMPLETED BAR",provider:intr.provider+" · 15M→4H",bars:h4,fetched_at:nowIso()};
+    if(h1.length>=80)frames["1H"]={status:"COMPLETED BAR",provider:intr.provider+" · 15M→1H",bars:h1,fetched_at:nowIso(),validation:intrPick.validation};
+    if(h4.length>=80)frames["4H"]={status:"COMPLETED BAR",provider:intr.provider+" · 15M→4H",bars:h4,fetched_at:nowIso(),validation:intrPick.validation};
   }
-  if(yh&&!frames["1H"])frames["1H"]={status:"COMPLETED BAR",provider:yh.provider,bars:yh.bars,fetched_at:nowIso()};
-  if(yh&&!frames["4H"]){const h4=resample(yh.bars,240,true);if(h4.length>=80)frames["4H"]={status:"COMPLETED BAR",provider:yh.provider+" · 1H→4H",bars:h4,fetched_at:nowIso()};}
-  if(daily)frames["1D"]={status:"COMPLETED BAR",provider:daily.provider,bars:daily.bars,fetched_at:nowIso()};
-  return {schema_version:1,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),timeframes:frames,provider_trace:trace,
+  if(yh&&!frames["1H"])frames["1H"]={status:"COMPLETED BAR",provider:yh.provider,bars:yh.bars,fetched_at:nowIso(),validation:validateCandidates([yh],"intraday")};
+  if(yh&&!frames["4H"]){const h4=resample(yh.bars,240,true);if(h4.length>=80)frames["4H"]={status:"COMPLETED BAR",provider:yh.provider+" · 1H→4H",bars:h4,fetched_at:nowIso(),validation:validateCandidates([yh],"intraday")};}
+  if(daily)frames["1D"]=frameFrom(daily,"COMPLETED BAR",dailyPick.validation);
+  return {schema_version:2,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),timeframes:frames,provider_trace:trace,
+    data_policy:"Canonical Q-State source: providers are queried independently; current bars are cross-checked when multiple current sources are available; the chosen series must be current and inside the consensus band.",
     credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
 async function equityDailyFast(symbol:string){
   const trace:Trace[]=[];
-  // Yahoo is the fastest no-key server-side route. If it fails, query the keyed
-  // providers concurrently so one slow/rate-limited vendor cannot block the ticker.
-  const yd=await attempt("Yahoo daily fast",()=>yahoo(symbol,"1d","10y",86400,false,false),trace);
-  let daily=pick([yd],"1D");
-  if(!daily){
-    const [md,fd,nd,ad]=await Promise.all([
-      attempt("Massive daily",()=>massive(symbol,false),trace),
-      attempt("FMP daily",()=>fmp(symbol,false),trace),
-      attempt("Finnhub daily",()=>finnhub(symbol,false),trace),
-      attempt("Alpha Vantage daily",()=>alphaDaily(symbol),trace),
-    ]);
-    daily=pick([md,fd,nd,ad],"1D");
-  }
+  const [yd,md,fd,nd,ad]=await Promise.all([
+    attempt("Yahoo daily",()=>yahoo(symbol,"1d","10y",86400,false,false),trace),
+    attempt("Massive daily",()=>massive(symbol,false),trace),
+    attempt("FMP daily",()=>fmp(symbol,false),trace),
+    attempt("Finnhub daily",()=>finnhub(symbol,false),trace),
+    attempt("Alpha Vantage daily",()=>alphaDaily(symbol),trace),
+  ]);
+  const chosen=selectValidated([md,fd,nd,ad,yd],"1D","daily"),daily=chosen.selected;
   if(!daily)throw new Error("No current daily provider data");
-  return {schema_version:1,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),
-    timeframes:{"1D":{status:"COMPLETED BAR",provider:daily.provider,bars:daily.bars,fetched_at:nowIso()}},
-    provider_trace:trace,credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
+  return {schema_version:2,symbol,asset:"STOCK_OR_ETF",fetched_at:nowIso(),
+    timeframes:{"1D":frameFrom(daily,"COMPLETED BAR",chosen.validation)},
+    provider_trace:trace,
+    data_policy:"Canonical Q-State source: daily providers are independently queried and reconciled before a series is selected.",
+    credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
+async function tgmFundamentals(symbol:string){
+  const base="https://tgmcharts.com/api/v1";
+  const specs=[
+    ["summary",`${base}/summary/${encodeURIComponent(symbol)}`],
+    ["income",`${base}/statements/${encodeURIComponent(symbol)}/income-statement?years=4`],
+    ["balance",`${base}/statements/${encodeURIComponent(symbol)}/balance-sheet?period=quarterly&years=2`],
+    ["cashflow",`${base}/statements/${encodeURIComponent(symbol)}/cash-flow?years=4`],
+  ] as const;
+  const settled=await Promise.allSettled(specs.map(([,url])=>getJson(url)));
+  const data:Record<string,any>={},errors:string[]=[];
+  settled.forEach((r,i)=>{const k=specs[i][0];if(r.status==="fulfilled"){const x:any=r.value;if(!x?.symbol||String(x.symbol).toUpperCase()===symbol)data[k]=x;else errors.push(k+": ticker identity mismatch");}else errors.push(k+": "+String((r.reason as Error)?.message||r.reason));});
+  const ok=Object.keys(data).length;
+  return {schema_version:1,symbol,status:ok?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",provider:"TGMCharts / SEC EDGAR-derived public fundamentals",fetched_at:nowIso(),data,errors,
+    policy:"Fundamentals are research context until synchronized historical fundamental features pass Q-State out-of-sample validation; present-day facts never leak into historical forecasts."};
+}
+let macroCache:{at:number,data:any}|null=null;
+async function fredMacro(){
+  if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
+  if(!FRED)return {status:"UNAVAILABLE",provider:"FRED",reason:"FRED key missing",fetched_at:nowIso()};
+  const series:Record<string,string>={DGS10:"10Y nominal Treasury",DFII10:"10Y real Treasury",T10YIE:"10Y breakeven inflation",DTWEXBGS:"Trade-weighted USD"};
+  const entries=Object.entries(series);
+  const settled=await Promise.allSettled(entries.map(([sid])=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id:sid,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
+  const values:Record<string,any>={};
+  settled.forEach((r,i)=>{
+    const [sid,label]=entries[i];
+    if(r.status==="fulfilled"){
+      const j:any=r.value,obs=(j.observations||[]).find((x:any)=>finite(x.value));
+      values[sid]={label,value:obs?num(obs.value):null,date:obs?.date||null};
+    }else values[sid]={label,value:null,error:String((r.reason as Error)?.message||r.reason).slice(0,120)};
+  });
+  const data={status:Object.values(values).some((x:any)=>finite(x.value))?"AVAILABLE":"UNAVAILABLE",provider:"FRED",fetched_at:nowIso(),series:values,
+    policy:"Macro is displayed as research/regime context and receives no forecast weight until historical alignment and OOS ablation prove incremental value."};
+  macroCache={at:Date.now(),data};return data;
+}
+const researchCache=new Map<string,{at:number,data:any}>();
+async function researchBundle(symbol:string){
+  const key=clean(symbol),cached=researchCache.get(key);if(cached&&Date.now()-cached.at<15*60*1000)return cached.data;
+  const [fundamentals,macro]=await Promise.all([tgmFundamentals(key),fredMacro()]);
+  const data={schema_version:1,symbol:key,fetched_at:nowIso(),fundamentals,macro,
+    model_policy:"ONE PRODUCTION MODEL: Q-State Unified. Research context is visible but cannot silently vote into the forecast. Challengers must pass frozen OOS promotion gates before their method is incorporated into the canonical artifact."};
+  researchCache.set(key,{at:Date.now(),data});return data;
+}
+
 async function futureDailyFast(requested:string,source:string){
   const trace:Trace[]=[];
   const d1=await attempt("Yahoo futures daily fast",()=>yahoo(source,"1d","10y",86400,false,false),trace);
@@ -270,10 +359,10 @@ Deno.serve(async (req)=>{
   const origin=req.headers.get("origin");
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(origin)});
   const u=new URL(req.url);
-  if(u.pathname==="/health")return json({status:"OK",service:"Q-State Market API",version:"5.0",host:"Deno Deploy",
-    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA},
-    decision_service:{stock_laya:!!LAYA_SERVICE_URL}},200,origin);
-  if(u.pathname==="/v1/decision"&&req.method==="POST"){
+  if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
+    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED,tgm_fundamentals:true},
+    challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
+  if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
     if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
     try{
       const body=await req.json();
@@ -284,7 +373,7 @@ Deno.serve(async (req)=>{
       const text=await upstream.text();
       if(!upstream.ok)return json({error:"STOCK_LAYA_UPSTREAM",status:upstream.status,message:text.slice(0,500)},502,origin);
       let parsed;try{parsed=JSON.parse(text);}catch{return json({error:"STOCK_LAYA_INVALID_RESPONSE"},502,origin);}
-      return json(parsed,200,origin);
+      return json({classification:"CHALLENGER_ONLY",production_weight:0,policy:"This service cannot make the production decision. A winning method must be incorporated into and revalidated as part of Q-State Unified.",result:parsed},200,origin);
     }catch(e){return json({error:"STOCK_LAYA_UNAVAILABLE",message:String((e as Error)?.message||e)},503,origin);}
   }
   if(u.pathname==="/v1/quote"){
@@ -296,6 +385,12 @@ Deno.serve(async (req)=>{
       return json(quote,200,origin);
     }catch(e){return json({error:"QUOTE_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
+  if(u.pathname==="/v1/research"){
+    const symbol=clean(u.searchParams.get("symbol")||"");
+    if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
+    try{return json(await researchBundle(symbol),200,origin);}
+    catch(e){return json({error:"RESEARCH_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
+  }
   if(u.pathname==="/v1/market"){
     const symbol=clean(u.searchParams.get("symbol")||""),tf=clean(u.searchParams.get("timeframe")||"1D");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -306,5 +401,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Market API",status:"OK",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/decision"]},200,origin);
+  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/challenger/stock-laya"]},200,origin);
 });
