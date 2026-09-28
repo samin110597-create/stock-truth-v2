@@ -162,7 +162,7 @@ export function summarizeLedger(forecasts,outcomes){
     const r=joined.filter(x=>x.regime===name);
     regimes[name]=aggregate(r.filter(x=>x.horizon===10));
   }
-  const pending=(forecasts||[]).filter(f=>!byId.has(f.id)).length;
+  const pending=(forecasts||[]).filter(f=>!byId.get(f.id)?.horizons?.[20]).length;
   return {forecastCount:(forecasts||[]).length,pending,resolvedForecasts:(forecasts||[]).length-pending,timeframes,regimes,joined};
 }
 
