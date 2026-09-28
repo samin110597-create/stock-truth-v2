@@ -43,17 +43,20 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
 
     snap = work / "stock-truth-data"
-    run(["git", "clone", "--depth", "1", "--branch", "data-snapshots", DATA_REPO, snap])
+    run(["git", "clone", "--depth", "1", "--filter=blob:none", "--sparse",
+         "--branch", "data-snapshots", DATA_REPO, snap])
+    run(["git", "-C", snap, "sparse-checkout", "set", "raw"])
 
     data_dir = ROOT / "data"
     data_dir.mkdir(exist_ok=True)
-    for name in ("raw", "quant"):
-        src = snap / name
-        dst = data_dir / name
-        if dst.exists():
-            shutil.rmtree(dst)
-        if src.exists():
-            shutil.copytree(src, dst)
+    raw_dst = data_dir / "raw"
+    if raw_dst.is_symlink() or raw_dst.exists():
+        if raw_dst.is_symlink() or raw_dst.is_file():
+            raw_dst.unlink()
+        else:
+            shutil.rmtree(raw_dst)
+    raw_dst.symlink_to(snap / "raw", target_is_directory=True)
+    print("Using historical raw data in place (no duplicate copy).", flush=True)
 
     run([sys.executable, "scripts/build_laya_stock_dataset.py", "--min-cases", "500"])
     run([sys.executable, "scripts/preprocess_stock_laya.py"])
