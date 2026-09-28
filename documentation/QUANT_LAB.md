@@ -4,9 +4,9 @@
 
 Phase1, Stock-Laya, Chronos/IBM-style candidates, or future experiments are **challengers only**. They have zero production influence until they beat the canonical model on predeclared chronological/OOS gates and ablation. Promotion means incorporating the winning method into the single Q-State artifact—not running two models side by side.
 
-The quant terminal is a **separate application** deployed at `/quant/`.
+Q-State Unified is the **only deployed forecasting/research/analysis application**, at `/quant/`.
 
-It does not reuse the classic Stock Truth HTML, CSS, provider router, technical-analysis engine, structure engine, reversal engine, or setup engine. The only shared runtime resources are:
+The former classic Stock Truth `/web/` entry is a compatibility redirect and its executable modules are excluded from the production Pages artifact. Legacy source is retained only for research history and regression tests. Q-State does not reuse the legacy provider, forecast, structure, reversal, or setup engines. Its runtime resources are:
 
 - sanitized market-data snapshots under `data/`
 - the bundled TradingView Lightweight Charts library
