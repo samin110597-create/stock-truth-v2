@@ -64,10 +64,18 @@ async function backendMarket(symbol,tf,signal){
   const mtf=Object.fromEntries(['15M','1H','4H','1D'].filter(x=>Array.isArray(j?.timeframes?.[x]?.bars)&&j.timeframes[x].bars.length>=60).map(x=>[x,j.timeframes[x].bars]));
   return {symbol,sourceSymbol:j.source_symbol||symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'Deno on-demand API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain Deno Deploy secrets.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
 }
+async function backendResearch(symbol,signal){
+  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');
+  if(!base)return {status:'UNAVAILABLE',reason:'Deno research API is not configured'};
+  try{
+    const u=new URL(base+'/v1/research');u.searchParams.set('symbol',symbol);
+    return await json(u.toString(),signal,30000);
+  }catch(e){return {status:'UNAVAILABLE',reason:e?.message||String(e)};}
+}
 async function apiContext(signal){try{return await json('../data/quant/context.json',signal);}catch{return null;}}
 async function trainedModel(signal){try{return await json('../data/quant/model.json',signal);}catch{return null;}}
 export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}){
-  const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal);let core;
+  const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal),researchPromise=backendResearch(s,signal);let core;
   let backendError=null,storedError=null;
   try{core=await backendMarket(s,timeframe,signal);}
   catch(e){
@@ -79,5 +87,5 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}
     }
   }
   const cfg=await runtimeConfig(signal);
-  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
+  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise,research:await researchPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
 }
