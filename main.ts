@@ -210,7 +210,8 @@ function validateCandidates(candidates:(Candidate|null)[],mode:"daily"|"intraday
   }));
   const med=median(obs.map(x=>x.close));
   const dispersion=med&&obs.length>=2?(Math.max(...obs.map(x=>x.close))-Math.min(...obs.map(x=>x.close)))/med*100:null;
-  const status=obs.length<2?"SINGLE_SOURCE":dispersion!<=0.75?"PASS":dispersion<=2?"WARN":"DISAGREE";
+  const d=dispersion===null?Infinity:Number(dispersion);
+  const status=obs.length<2?"SINGLE_SOURCE":d<=0.75?"PASS":d<=2?"WARN":"DISAGREE";
   return {status,providerCount:obs.length,medianClose:med,dispersionPct:dispersion===null?null:Number(dispersion.toFixed(4)),observations:obs};
 }
 function selectValidated(candidates:(Candidate|null)[],tf:string,mode:"daily"|"intraday"){
