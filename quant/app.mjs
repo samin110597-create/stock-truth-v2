@@ -1,6 +1,7 @@
 import {createChart,CandlestickSeries,HistogramSeries,LineSeries,createSeriesMarkers} from '../vendor/lightweight-charts.mjs';
 import {loadMarketData,detectAsset} from './src/data.mjs';
 import {analyzeQuant} from './src/engine.mjs';
+import {recordIssuedForecast,settleForCurrentSeries,accuracySnapshot} from './src/accuracy.mjs';
 
 const $=s=>document.querySelector(s),finite=Number.isFinite;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -25,6 +26,28 @@ function flattenResearch(obj,prefix='',depth=0,out=[]){
     else if(typeof v==='object'&&!Array.isArray(v))flattenResearch(v,label,depth+1,out);
   }
   return out;
+}
+
+function metric(v,kind='pct'){
+  if(!finite(v))return '—';
+  if(kind==='num')return num(v,4);
+  return pct(v);
+}
+function renderAccuracy(a){
+  const host=$('#accuracy');if(!host)return;
+  if(!a){host.innerHTML='<div class="micro">Forward accuracy ledger unavailable in this browser.</div>';return;}
+  const primary={'15M':20,'1H':10,'4H':5,'1D':10};
+  const cards=['15M','1H','4H','1D'].map(tf=>{
+    const h=primary[tf],m=a.timeframes?.[tf]?.[h]||{};
+    return `<div class="accuracy-card"><div class="label">${tf} · PRIMARY ${h} BARS</div><div class="accuracy-main">${metric(m.directionalAccuracy)}</div><div class="micro">direction · n=${m.directionN||0}</div><div class="accuracy-line"><span>Brier</span><strong>${metric(m.brier,'num')}</strong></div><div class="accuracy-line"><span>Calibration gap</span><strong>${metric(m.calibrationGap)}</strong></div><div class="accuracy-line"><span>Avg MAE</span><strong>${metric(m.avgMaePct)}</strong></div><div class="accuracy-line"><span>TP1 before stop</span><strong>${metric(m.tp1HitRate)}</strong></div></div>`;
+  }).join('');
+  const rows=[];
+  for(const tf of ['15M','1H','4H','1D'])for(const h of [5,10,20]){
+    const m=a.timeframes?.[tf]?.[h]||{};
+    rows.push(`<tr><td>${tf}</td><td>${h}</td><td>${m.directionN||0}</td><td>${metric(m.directionalAccuracy)}</td><td>${m.brierN||0}</td><td>${metric(m.brier,'num')}</td><td>${metric(m.avgMaePct)}</td><td>${metric(m.avgProjectionAbsErrorPct)}</td><td>${metric(m.tp1HitRate)}</td><td>${metric(m.stopBeforeTp1Rate)}</td><td>${metric(m.falseBreakoutRate)}</td></tr>`);
+  }
+  const regimes=Object.entries(a.regimes||{}).filter(([,v])=>(v?.n||0)>0).sort((x,y)=>(y[1].n||0)-(x[1].n||0)).slice(0,8);
+  host.innerHTML=`<div class="accuracy-top"><div><b>FORWARD LEDGER</b><div class="micro">Issued forecasts are immutable. Outcome observations are appended later from completed bars.</div></div><div class="accuracy-counts"><span>${a.forecastCount||0} issued</span><span>${a.resolvedForecasts||0} observed</span><span>${a.pending||0} pending</span><button id="refresh-accuracy" type="button">UPDATE OPEN OUTCOMES</button></div></div><div class="accuracy-grid">${cards}</div><div class="table-scroll"><table class="forecast-table accuracy-table"><thead><tr><th>TF</th><th>Bars</th><th>Dir n</th><th>Direction</th><th>Brier n</th><th>Brier</th><th>MAE</th><th>Median error</th><th>TP1 hit</th><th>Stop first</th><th>False BO</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>${regimes.length?`<div class="regime-grid">${regimes.map(([name,m])=>`<div class="e-item"><b>${esc(name)}</b>10-bar n=${m.n||0} · direction ${metric(m.directionalAccuracy)} · MAE ${metric(m.avgMaePct)}</div>`).join('')}</div>`:''}<div class="micro">Brier/calibration score only the model's exact validated label: whether +1 ATR is reached before −1 ATR within the model horizon. Same-bar double touches and unresolved paths are excluded. Trade collisions are conservative: if stop and target are both touched in one bar, stop wins. This forward ledger is stored in this browser and does not rewrite issued forecasts.</div>`;const btn=$('#refresh-accuracy');if(btn)btn.onclick=()=>refreshOpenAccuracy(a);
 }
 
 function futureTimes(q){
@@ -112,10 +135,22 @@ function render(q){
   $('#integrity').innerHTML=kv('Engine',esc(q.model))+kv('Trained artifact',esc(q.trained?.modelVersion||'Unavailable'))+kv('Trained artifact generated',q.trained?.generatedAt?new Date(q.trained.generatedAt).toLocaleString():'—')+kv('Probability policy',esc(q.state.probabilityStatus))+kv('Probability definition',esc(q.trained?.labelDefinition||'Withheld/unavailable'))+kv('Projection source',esc(q.forecast.source||'—'))+kv('Requested',esc(q.symbol))+kv('Source symbol',esc(q.sourceSymbol))+kv('Bars',q.bars.length.toLocaleString())+kv('Arbitrary-ticker backend',q.runtimeApiConfigured?'ACTIVE':'OFF',q.runtimeApiConfigured?'up':'down')+kv('Data route',q.onDemand?'SECURE ON-DEMAND API':q.runtimeApiConfigured?'API FALLBACK':'SNAPSHOT / FALLBACK ONLY',q.onDemand?'up':'amber')+kv('Primary bar provider',esc(q.provider))+kv('Cross-source check',q.crossValidation?esc(q.crossValidation.status)+(finite(q.crossValidation.dispersionPct)?' · '+num(q.crossValidation.dispersionPct,3)+'% dispersion':''):'—')+kv('Fundamentals',esc(fund.status||'UNAVAILABLE')+' · '+esc(fund.provider||'Deno research route'))+kv('Macro research',esc(macro.status||'UNAVAILABLE')+' · '+esc(macro.provider||'FRED'))+kv('Research weighting','0% until synchronized OOS validation','amber')+kv('Fetched',q.fetchedAt?new Date(q.fetchedAt).toLocaleString():'—')+kv('Data status',esc(q.dataStatus||'—'))+kv('Last completed bar',q.lastCompletedBar?new Date(q.lastCompletedBar*1000).toLocaleString():(lastBar?.date||'—'))+kv('Credential handling',esc(q.credentialPolicy||'No browser credential'))+apiLines+(q.providerTrace?.length?kv('On-demand provider trace',q.providerTrace.map(x=>esc(x.source)+': '+esc(x.status)).join(' · ')):'')+`<div class="micro">${esc(ctx?.purpose||'API context is informational and does not silently change the trade score.')} ${esc(q.caveats.join(' '))}</div>`;
   renderChart(q);
 }
+async function refreshOpenAccuracy(snapshot){
+  const btn=$('#refresh-accuracy');if(btn){btn.disabled=true;btn.textContent='UPDATING…';}
+  try{
+    const observed=new Map((snapshot?.outcomes||[]).map(x=>[x.id,x])),seen=new Set(),pending=(snapshot?.forecasts||[]).filter(x=>!observed.get(x.id)?.horizons?.[20]).sort((a,b)=>String(a.issuedAt).localeCompare(String(b.issuedAt)));
+    for(const f of pending){
+      const key=f.symbol+'|'+f.timeframe;if(seen.has(key))continue;seen.add(key);if(seen.size>12)break;
+      try{const asset=f.asset==='FUTURE'||f.asset==='METAL_PROXY'?'FUTURE':'STOCK',data=await loadMarketData({symbol:f.symbol,asset,timeframe:f.timeframe});await settleForCurrentSeries({symbol:f.symbol,timeframe:f.timeframe,bars:data.bars});}catch{}
+    }
+    renderAccuracy(await accuracySnapshot());
+  }finally{const b=$('#refresh-accuracy');if(b){b.disabled=false;b.textContent='UPDATE OPEN OUTCOMES';}}
+}
 async function run(){
   const symbol=$('#symbol').value.trim().toUpperCase();if(!symbol)return;controller?.abort();controller=new AbortController();$('#status').textContent='Loading secured data, calibrated model and Q-State Unified…';
-  try{const asset=detectAsset(symbol,$('#asset').value),timeframe=$('#tf').value,data=await loadMarketData({symbol,asset,timeframe,signal:controller.signal}),q=analyzeQuant({...data});q.apiContext=data.apiContext;q.dataStatus=data.dataStatus||'COMPLETED BAR';q.lastCompletedBar=data.lastCompletedBar||data.bars?.at(-1)?.end_ts||null;q.onDemand=!!data.onDemand;q.runtimeApiConfigured=!!data.runtimeApiConfigured;q.providerTrace=data.providerTrace||[];q.crossValidation=data.crossValidation||null;render(q);$('#status').textContent=`READY · ${data.onDemand?'SECURE ON-DEMAND API':data.runtimeApiConfigured?'API FALLBACK':'BACKEND OFF · SNAPSHOT/FALLBACK ONLY'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed bars · ${q.state.probabilityStatus}`;history.replaceState(null,'',`?symbol=${encodeURIComponent(symbol)}&tf=${timeframe}&asset=${asset}`);}
+  try{const asset=detectAsset(symbol,$('#asset').value),timeframe=$('#tf').value,data=await loadMarketData({symbol,asset,timeframe,signal:controller.signal}),q=analyzeQuant({...data});q.apiContext=data.apiContext;q.dataStatus=data.dataStatus||'COMPLETED BAR';q.lastCompletedBar=data.lastCompletedBar||data.bars?.at(-1)?.end_ts||null;q.onDemand=!!data.onDemand;q.runtimeApiConfigured=!!data.runtimeApiConfigured;q.providerTrace=data.providerTrace||[];q.crossValidation=data.crossValidation||null;render(q);try{await recordIssuedForecast(q);renderAccuracy(await settleForCurrentSeries(q));}catch{renderAccuracy(null);}$('#status').textContent=`READY · ${data.onDemand?'SECURE ON-DEMAND API':data.runtimeApiConfigured?'API FALLBACK':'BACKEND OFF · SNAPSHOT/FALLBACK ONLY'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed bars · ${q.state.probabilityStatus}`;history.replaceState(null,'',`?symbol=${encodeURIComponent(symbol)}&tf=${timeframe}&asset=${asset}`);}
   catch(e){if(e.name==='AbortError')return;$('#status').textContent='ERROR · '+e.message;$('#decision').innerHTML=`<div>${cell('MODEL ACTION','DATA UNAVAILABLE','amber')}</div>`;$('#chart').innerHTML='<div class="micro" style="padding:40px">No chart until a valid data series is available.</div>';$('#trade').innerHTML='';$('#projections').innerHTML='';$('#state-grid').innerHTML='';}
 }
 $('#form').onsubmit=e=>{e.preventDefault();run();};$('#tf').onchange=()=>run();
+accuracySnapshot().then(renderAccuracy).catch(()=>renderAccuracy(null));
 const qp=new URLSearchParams(location.search);if(qp.get('symbol'))$('#symbol').value=qp.get('symbol').toUpperCase();if(qp.get('tf'))$('#tf').value=qp.get('tf');if(qp.get('asset'))$('#asset').value=qp.get('asset');run();

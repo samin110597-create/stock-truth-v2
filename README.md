@@ -97,6 +97,26 @@ If a head fails, probability is **WITHHELD**. Rule-based market-state analysis m
 
 Targets use validated OOS conditional return bands when promoted; otherwise they remain explicitly labeled scenario/simulation outputs. Stops/invalidation are structural and a published plan is not retroactively rewritten.
 
+## Forward accuracy dashboard
+
+The Q-State page maintains an immutable browser-side forward ledger for every forecast the user actually views. The issued forecast record is never rewritten; later completed bars are stored as separate outcome observations.
+
+The dashboard reports by 15M / 1H / 4H / 1D and 5 / 10 / 20 bars:
+
+- directional accuracy
+- exact-label Brier score for the promoted probability head
+- calibration gap
+- maximum adverse excursion (MAE)
+- median-path projection error
+- TP1-before-stop rate
+- stop-before-TP1 rate
+- false-breakout rate
+- regime-level breakdowns
+
+Probability scoring uses the model's real label: whether +1 issuance ATR is reached before -1 issuance ATR within the model horizon. Same-bar double touches and unresolved paths are excluded. Trade target/stop collisions are scored conservatively with the stop winning.
+
+The ledger is stored in IndexedDB in the user's browser, so it works without API credentials or a write-capable server. The dashboard can refresh open outcomes from the canonical Deno market-data service. This is forward evidence for forecasts actually issued in that browser; it is not presented as a universal production track record.
+
 ## Challenger promotion contract
 
 Phase1, Stock-Laya or another experimental method can affect production only if:
