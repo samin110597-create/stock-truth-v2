@@ -2,7 +2,6 @@ const MASSIVE = Deno.env.get("MASSIVE_KEY") || Deno.env.get("POLYGON_KEY") || ""
 const FMP = Deno.env.get("FMP_API_KEY") || Deno.env.get("FMP_KEY") || "";
 const FINNHUB = Deno.env.get("FINNHUB_API_KEY") || Deno.env.get("FINNHUB_KEY") || "";
 const ALPHA = Deno.env.get("ALPHA_VANTAGE_KEY") || Deno.env.get("ALPHAVANTAGE_KEY") || "";
-const FRED = Deno.env.get("FRED_API_KEY") || Deno.env.get("FRED_KEY") || "";
 const LAYA_SERVICE_URL = Deno.env.get("LAYA_SERVICE_URL") || "";
 const LAYA_SERVICE_TOKEN = Deno.env.get("LAYA_SERVICE_TOKEN") || "";
 const ALLOWED = new Set([
@@ -277,49 +276,6 @@ async function equityDailyFast(symbol:string){
     data_policy:"Canonical Q-State source: daily providers are independently queried and reconciled before a series is selected.",
     credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
-async function tgmFundamentals(symbol:string){
-  const base="https://tgmcharts.com/api/v1";
-  const specs=[
-    ["summary",`${base}/summary/${encodeURIComponent(symbol)}`],
-    ["income",`${base}/statements/${encodeURIComponent(symbol)}/income-statement?years=4`],
-    ["balance",`${base}/statements/${encodeURIComponent(symbol)}/balance-sheet?period=quarterly&years=2`],
-    ["cashflow",`${base}/statements/${encodeURIComponent(symbol)}/cash-flow?years=4`],
-  ] as const;
-  const settled=await Promise.allSettled(specs.map(([,url])=>getJson(url)));
-  const data:Record<string,any>={},errors:string[]=[];
-  settled.forEach((r,i)=>{const k=specs[i][0];if(r.status==="fulfilled"){const x:any=r.value;if(!x?.symbol||String(x.symbol).toUpperCase()===symbol)data[k]=x;else errors.push(k+": ticker identity mismatch");}else errors.push(k+": "+String((r.reason as Error)?.message||r.reason));});
-  const ok=Object.keys(data).length;
-  return {schema_version:1,symbol,status:ok?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",provider:"TGMCharts / SEC EDGAR-derived public fundamentals",fetched_at:nowIso(),data,errors,
-    policy:"Fundamentals are research context until synchronized historical fundamental features pass Q-State out-of-sample validation; present-day facts never leak into historical forecasts."};
-}
-let macroCache:{at:number,data:any}|null=null;
-async function fredMacro(){
-  if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
-  if(!FRED)return {status:"UNAVAILABLE",provider:"FRED",reason:"FRED key missing",fetched_at:nowIso()};
-  const series:Record<string,string>={DGS10:"10Y nominal Treasury",DFII10:"10Y real Treasury",T10YIE:"10Y breakeven inflation",DTWEXBGS:"Trade-weighted USD"};
-  const entries=Object.entries(series);
-  const settled=await Promise.allSettled(entries.map(([sid])=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id:sid,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
-  const values:Record<string,any>={};
-  settled.forEach((r,i)=>{
-    const [sid,label]=entries[i];
-    if(r.status==="fulfilled"){
-      const j:any=r.value,obs=(j.observations||[]).find((x:any)=>finite(x.value));
-      values[sid]={label,value:obs?num(obs.value):null,date:obs?.date||null};
-    }else values[sid]={label,value:null,error:String((r.reason as Error)?.message||r.reason).slice(0,120)};
-  });
-  const data={status:Object.values(values).some((x:any)=>finite(x.value))?"AVAILABLE":"UNAVAILABLE",provider:"FRED",fetched_at:nowIso(),series:values,
-    policy:"Macro is displayed as research/regime context and receives no forecast weight until historical alignment and OOS ablation prove incremental value."};
-  macroCache={at:Date.now(),data};return data;
-}
-const researchCache=new Map<string,{at:number,data:any}>();
-async function researchBundle(symbol:string){
-  const key=clean(symbol),cached=researchCache.get(key);if(cached&&Date.now()-cached.at<15*60*1000)return cached.data;
-  const [fundamentals,macro]=await Promise.all([tgmFundamentals(key),fredMacro()]);
-  const data={schema_version:1,symbol:key,fetched_at:nowIso(),fundamentals,macro,
-    model_policy:"ONE PRODUCTION MODEL: Q-State Unified. Research context is visible but cannot silently vote into the forecast. Challengers must pass frozen OOS promotion gates before their method is incorporated into the canonical artifact."};
-  researchCache.set(key,{at:Date.now(),data});return data;
-}
-
 async function futureDailyFast(requested:string,source:string){
   const trace:Trace[]=[];
   const d1=await attempt("Yahoo futures daily fast",()=>yahoo(source,"1d","10y",86400,false,false),trace);
@@ -360,7 +316,7 @@ Deno.serve(async (req)=>{
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(origin)});
   const u=new URL(req.url);
   if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
-    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED,tgm_fundamentals:true},
+    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA},
     challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
   if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
     if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
@@ -385,12 +341,6 @@ Deno.serve(async (req)=>{
       return json(quote,200,origin);
     }catch(e){return json({error:"QUOTE_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  if(u.pathname==="/v1/research"){
-    const symbol=clean(u.searchParams.get("symbol")||"");
-    if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
-    try{return json(await researchBundle(symbol),200,origin);}
-    catch(e){return json({error:"RESEARCH_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
-  }
   if(u.pathname==="/v1/market"){
     const symbol=clean(u.searchParams.get("symbol")||""),tf=clean(u.searchParams.get("timeframe")||"1D");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -401,5 +351,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/challenger/stock-laya"]},200,origin);
+  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/challenger/stock-laya"]},200,origin);
 });
