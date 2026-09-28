@@ -277,6 +277,45 @@ async function equityDailyFast(symbol:string){
     data_policy:"Canonical Q-State source: daily providers are independently queried and reconciled before a series is selected.",
     credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
+async function tgmFundamentals(symbol:string){
+  const base="https://tgmcharts.com/api/v1";
+  const specs:{key:string;url:string}[]=[
+    {key:"summary",url:`${base}/summary/${encodeURIComponent(symbol)}`},
+    {key:"income",url:`${base}/statements/${encodeURIComponent(symbol)}/income-statement?years=4`},
+    {key:"balance",url:`${base}/statements/${encodeURIComponent(symbol)}/balance-sheet?period=quarterly&years=2`},
+    {key:"cashflow",url:`${base}/statements/${encodeURIComponent(symbol)}/cash-flow?years=4`},
+  ];
+  const settled=await Promise.allSettled(specs.map((s)=>getJson(s.url)));
+  const data:Record<string,unknown>={};
+  const errors:string[]=[];
+  for(let i=0;i<specs.length;i++){
+    const spec=specs[i];
+    const result=settled[i];
+    if(!spec||!result)continue;
+    if(result.status==="fulfilled"){
+      const value:any=result.value;
+      if(value?.symbol&&String(value.symbol).toUpperCase()!==symbol){
+        errors.push(spec.key+": ticker identity mismatch");
+      }else{
+        data[spec.key]=value;
+      }
+    }else{
+      errors.push(spec.key+": "+String((result.reason as Error)?.message||result.reason).slice(0,160));
+    }
+  }
+  const count=Object.keys(data).length;
+  return {
+    schema_version:1,
+    symbol,
+    status:count?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",
+    provider:"TGMCharts / SEC EDGAR-derived public fundamentals",
+    fetched_at:nowIso(),
+    data,
+    errors,
+    policy:"Fundamentals are research context only until synchronized historical features pass leakage-controlled Q-State validation."
+  };
+}
+
 let macroCache:{at:number,data:unknown}|null=null;
 async function fredMacro(){
   if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
@@ -340,7 +379,7 @@ Deno.serve(async (req)=>{
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(origin)});
   const u=new URL(req.url);
   if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
-    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED},
+    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED,tgm_fundamentals:true},
     challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
   if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
     if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
@@ -368,7 +407,10 @@ Deno.serve(async (req)=>{
   if(u.pathname==="/v1/research"){
     const symbol=clean(u.searchParams.get("symbol")||"");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
-    try{return json({schema_version:1,symbol,fetched_at:nowIso(),macro:await fredMacro(),fundamentals:{status:"UNAVAILABLE",reason:"temporarily isolated during deployment repair"}},200,origin);}
+    try{
+      const [fundamentals,macro]=await Promise.all([tgmFundamentals(symbol),fredMacro()]);
+      return json({schema_version:1,symbol,fetched_at:nowIso(),fundamentals,macro,model_policy:"Q-State Unified is the only production model; research context has zero forecast weight until validated."},200,origin);
+    }
     catch(e){return json({error:"RESEARCH_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
   if(u.pathname==="/v1/market"){
