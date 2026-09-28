@@ -202,7 +202,7 @@ def main():
     ap.add_argument("--out", default="data/laya/candidate-evaluation.json")
     ap.add_argument("--device", default=None)
     ap.add_argument("--max-test-cases", type=int, default=int(__import__("os").environ.get("STOCK_LAYA_FAST_TEST_CAP", "1500")))
-    ap.add_argument("--full-test", action="store_true")
+    ap.add_argument("--full-test", action="store_true", default=__import__("os").environ.get("STOCK_LAYA_FAST_EVAL", "0") != "1")
     args = ap.parse_args()
 
     agent = laya.load(args.model, device=args.device)
