@@ -2,6 +2,7 @@ const MASSIVE = Deno.env.get("MASSIVE_KEY") || Deno.env.get("POLYGON_KEY") || ""
 const FMP = Deno.env.get("FMP_API_KEY") || Deno.env.get("FMP_KEY") || "";
 const FINNHUB = Deno.env.get("FINNHUB_API_KEY") || Deno.env.get("FINNHUB_KEY") || "";
 const ALPHA = Deno.env.get("ALPHA_VANTAGE_KEY") || Deno.env.get("ALPHAVANTAGE_KEY") || "";
+const FRED = Deno.env.get("FRED_API_KEY") || Deno.env.get("FRED_KEY") || "";
 const LAYA_SERVICE_URL = Deno.env.get("LAYA_SERVICE_URL") || "";
 const LAYA_SERVICE_TOKEN = Deno.env.get("LAYA_SERVICE_TOKEN") || "";
 const ALLOWED = new Set([
@@ -276,6 +277,29 @@ async function equityDailyFast(symbol:string){
     data_policy:"Canonical Q-State source: daily providers are independently queried and reconciled before a series is selected.",
     credential_policy:"Provider keys remain Deno Deploy secrets and are never returned to the browser."};
 }
+let macroCache:{at:number,data:unknown}|null=null;
+async function fredMacro(){
+  if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
+  if(!FRED)return {status:"UNAVAILABLE",provider:"FRED",reason:"FRED key missing",fetched_at:nowIso()};
+  const ids=["DGS10","DFII10","T10YIE","DTWEXBGS"];
+  const settled=await Promise.allSettled(ids.map((series_id)=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
+  const series:Record<string,unknown>={};
+  for(let i=0;i<ids.length;i++){
+    const r=settled[i];
+    if(r?.status==="fulfilled"){
+      const j:any=r.value;
+      const obs=(j.observations||[]).find((x:any)=>finite(x.value));
+      series[ids[i]]={value:obs?num(obs.value):null,date:obs?.date||null};
+    }else{
+      series[ids[i]]={value:null,error:r?.reason?String((r.reason as Error)?.message||r.reason).slice(0,120):"unknown"};
+    }
+  }
+  const data={status:"AVAILABLE",provider:"FRED",fetched_at:nowIso(),series,
+    policy:"Macro context has zero production forecast weight until synchronized historical ablation proves incremental value."};
+  macroCache={at:Date.now(),data};
+  return data;
+}
+
 async function futureDailyFast(requested:string,source:string){
   const trace:Trace[]=[];
   const d1=await attempt("Yahoo futures daily fast",()=>yahoo(source,"1d","10y",86400,false,false),trace);
@@ -316,7 +340,7 @@ Deno.serve(async (req)=>{
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(origin)});
   const u=new URL(req.url);
   if(u.pathname==="/health")return json({status:"OK",service:"Q-State Unified Data API",version:"6.0",host:"Deno Deploy",canonical_model:"Q-State Unified",
-    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA},
+    providers:{massive:!!MASSIVE,fmp:!!FMP,finnhub:!!FINNHUB,alpha_vantage:!!ALPHA,fred:!!FRED},
     challengers:{stock_laya_service_configured:!!LAYA_SERVICE_URL,production_weight:0}},200,origin);
   if(u.pathname==="/v1/challenger/stock-laya"&&req.method==="POST"){
     if(!LAYA_SERVICE_URL)return json({error:"STOCK_LAYA_UNAVAILABLE",message:"Stock-Laya service is not configured or not yet promoted."},503,origin);
@@ -341,6 +365,12 @@ Deno.serve(async (req)=>{
       return json(quote,200,origin);
     }catch(e){return json({error:"QUOTE_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
+  if(u.pathname==="/v1/research"){
+    const symbol=clean(u.searchParams.get("symbol")||"");
+    if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
+    try{return json({schema_version:1,symbol,fetched_at:nowIso(),macro:await fredMacro(),fundamentals:{status:"UNAVAILABLE",reason:"temporarily isolated during deployment repair"}},200,origin);}
+    catch(e){return json({error:"RESEARCH_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
+  }
   if(u.pathname==="/v1/market"){
     const symbol=clean(u.searchParams.get("symbol")||""),tf=clean(u.searchParams.get("timeframe")||"1D");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
@@ -351,5 +381,5 @@ Deno.serve(async (req)=>{
       return json({...data,requested_timeframe:tf,primary:frame},200,origin);
     }catch(e){return json({error:"DATA_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
-  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","POST /v1/challenger/stock-laya"]},200,origin);
+  return json({service:"Q-State Unified Data API",status:"OK",canonical_model:"Q-State Unified",routes:["/health","/v1/quote?symbol=AAPL","/v1/market?symbol=AAPL&timeframe=1D","/v1/research?symbol=AAPL","POST /v1/challenger/stock-laya"]},200,origin);
 });
