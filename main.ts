@@ -165,6 +165,60 @@ async function finnhub(symbol:string,intraday:boolean){
   if(rows.length<(intraday?300:180))throw new Error("too shallow");
   return {provider:"Finnhub",bars:rows};
 }
+async function fmpQuote(requested:string,source:string=requested){
+  if(!FMP)throw new Error("key missing");
+  const j:any=await getJson("https://financialmodelingprep.com/stable/quote",{symbol:source,apikey:FMP});
+  const x=Array.isArray(j)?j[0]:j;
+  const price=num(x?.price),asOf=num(x?.timestamp);
+  if(price===null||price<=0||asOf===null||asOf<=0)throw new Error("FMP quote unavailable");
+  return {
+    schema_version:2,symbol:requested,source_symbol:source,classification:"SOURCE FACT",
+    price,as_of:asOf,previous_close:num(x?.previousClose),open:num(x?.open),high:num(x?.dayHigh),
+    low:num(x?.dayLow),volume:num(x?.volume),currency:null,exchange:x?.exchange||null,
+    market_state:null,provider:"FMP quote",fetched_at:nowIso(),latency:"Provider/exchange latency depends on subscription."
+  };
+}
+async function finnhubQuote(requested:string,source:string=requested){
+  if(!FINNHUB)throw new Error("key missing");
+  const j:any=await getJson("https://finnhub.io/api/v1/quote",{symbol:source,token:FINNHUB});
+  const price=num(j?.c),asOf=num(j?.t);
+  if(price===null||price<=0||asOf===null||asOf<=0)throw new Error("Finnhub quote unavailable");
+  return {
+    schema_version:2,symbol:requested,source_symbol:source,classification:"SOURCE FACT",
+    price,as_of:asOf,previous_close:num(j?.pc),open:num(j?.o),high:num(j?.h),low:num(j?.l),
+    volume:null,currency:null,exchange:null,market_state:null,provider:"Finnhub quote",
+    fetched_at:nowIso(),latency:"Provider/exchange latency depends on subscription."
+  };
+}
+async function attemptQuote(name:string,fn:()=>Promise<any>,trace:any[]){
+  try{const q=await fn();trace.push({source:name,status:"OK",price:q.price,as_of:q.as_of});return q;}
+  catch(e){trace.push({source:name,status:"FAILED",reason:String((e as Error)?.message||e).slice(0,160)});return null;}
+}
+async function equityQuote(requested:string,source:string=requested){
+  const trace:any[]=[];
+  const [fq,mq,yq]=await Promise.all([
+    attemptQuote("Finnhub quote",()=>finnhubQuote(requested,source),trace),
+    attemptQuote("FMP quote",()=>fmpQuote(requested,source),trace),
+    attemptQuote("Yahoo quote",()=>yahooQuote(requested,source),trace),
+  ]);
+  const candidates=[fq,mq,yq].filter((x):x is any=>!!x&&finite(x.price)&&x.price>0&&finite(x.as_of)&&x.as_of>0);
+  if(!candidates.length)throw new Error("No live quote provider available: "+trace.map(x=>x.source+" "+x.status+(x.reason?" ("+x.reason+")":"")).join("; "));
+  const latest=Math.max(...candidates.map(x=>Number(x.as_of)));
+  const recent=candidates.filter(x=>Math.abs(latest-Number(x.as_of))<=24*60*60);
+  const pool0=recent.length?recent:candidates,med=median(pool0.map(x=>Number(x.price)));
+  const consensus=finite(med)&&pool0.length>=2?pool0.filter(x=>Math.abs(Number(x.price)/Number(med)-1)<=0.015):pool0;
+  const pool=consensus.length?consensus:pool0;
+  const rank=(name:string)=>String(name).includes("Finnhub")?0:String(name).includes("FMP")?1:2;
+  pool.sort((a,b)=>Number(b.as_of)-Number(a.as_of)||rank(a.provider)-rank(b.provider));
+  const chosen=pool[0];
+  const dispersion=finite(med)&&pool0.length>=2?(Math.max(...pool0.map(x=>x.price))-Math.min(...pool0.map(x=>x.price)))/Number(med)*100:null;
+  return {...chosen,source_trace:trace,cross_validation:{
+    status:pool0.length<2?"SINGLE_SOURCE":finite(dispersion)&&dispersion<=0.75?"PASS":finite(dispersion)&&dispersion<=2?"WARN":"DISAGREE",
+    provider_count:pool0.length,dispersion_pct:finite(dispersion)?Number(dispersion.toFixed(4)):null,
+    observations:pool0.map(x=>({provider:x.provider,price:x.price,as_of:x.as_of}))
+  }};
+}
+
 async function alphaDaily(symbol:string){
   if(!ALPHA)throw new Error("key missing");
   const j:any=await getJson("https://www.alphavantage.co/query",{function:"TIME_SERIES_DAILY",symbol,outputsize:"full",apikey:ALPHA});
@@ -400,7 +454,7 @@ Deno.serve(async (req)=>{
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
     try{
       const source=FUTURES[symbol]||symbol;
-      const quote=await yahooQuote(symbol,source);
+      const quote=FUTURES[symbol]?await yahooQuote(symbol,source):await equityQuote(symbol,source);
       return json(quote,200,origin);
     }catch(e){return json({error:"QUOTE_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
