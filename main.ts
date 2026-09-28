@@ -279,45 +279,64 @@ async function equityDailyFast(symbol:string){
 }
 async function tgmFundamentals(symbol:string){
   const base="https://tgmcharts.com/api/v1";
-  const specs=[
-    ["summary",`${base}/summary/${encodeURIComponent(symbol)}`],
-    ["income",`${base}/statements/${encodeURIComponent(symbol)}/income-statement?years=4`],
-    ["balance",`${base}/statements/${encodeURIComponent(symbol)}/balance-sheet?period=quarterly&years=2`],
-    ["cashflow",`${base}/statements/${encodeURIComponent(symbol)}/cash-flow?years=4`],
-  ] as const;
-  const settled=await Promise.allSettled(specs.map(([,url])=>getJson(url)));
-  const data:Record<string,any>={},errors:string[]=[];
-  settled.forEach((r,i)=>{const k=specs[i][0];if(r.status==="fulfilled"){const x:any=r.value;if(!x?.symbol||String(x.symbol).toUpperCase()===symbol)data[k]=x;else errors.push(k+": ticker identity mismatch");}else errors.push(k+": "+String((r.reason as Error)?.message||r.reason));});
-  const ok=Object.keys(data).length;
-  return {schema_version:1,symbol,status:ok?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",provider:"TGMCharts / SEC EDGAR-derived public fundamentals",fetched_at:nowIso(),data,errors,
-    policy:"Fundamentals are research context until synchronized historical fundamental features pass Q-State out-of-sample validation; present-day facts never leak into historical forecasts."};
+  const specs:{key:string;url:string}[]=[
+    {key:"summary",url:`${base}/summary/${encodeURIComponent(symbol)}`},
+    {key:"income",url:`${base}/statements/${encodeURIComponent(symbol)}/income-statement?years=4`},
+    {key:"balance",url:`${base}/statements/${encodeURIComponent(symbol)}/balance-sheet?period=quarterly&years=2`},
+    {key:"cashflow",url:`${base}/statements/${encodeURIComponent(symbol)}/cash-flow?years=4`},
+  ];
+  const settled=await Promise.allSettled(specs.map((s)=>getJson(s.url)));
+  const data:Record<string,unknown>={};
+  const errors:string[]=[];
+  for(let i=0;i<specs.length;i++){
+    const spec=specs[i];
+    const result=settled[i];
+    if(!spec||!result)continue;
+    if(result.status==="fulfilled"){
+      const value:any=result.value;
+      if(value?.symbol&&String(value.symbol).toUpperCase()!==symbol){
+        errors.push(spec.key+": ticker identity mismatch");
+      }else{
+        data[spec.key]=value;
+      }
+    }else{
+      errors.push(spec.key+": "+String((result.reason as Error)?.message||result.reason).slice(0,160));
+    }
+  }
+  const count=Object.keys(data).length;
+  return {
+    schema_version:1,
+    symbol,
+    status:count?(errors.length?"PARTIAL":"AVAILABLE"):"UNAVAILABLE",
+    provider:"TGMCharts / SEC EDGAR-derived public fundamentals",
+    fetched_at:nowIso(),
+    data,
+    errors,
+    policy:"Fundamentals are research context only until synchronized historical features pass leakage-controlled Q-State validation."
+  };
 }
-let macroCache:{at:number,data:any}|null=null;
+
+let macroCache:{at:number,data:unknown}|null=null;
 async function fredMacro(){
   if(macroCache&&Date.now()-macroCache.at<15*60*1000)return macroCache.data;
   if(!FRED)return {status:"UNAVAILABLE",provider:"FRED",reason:"FRED key missing",fetched_at:nowIso()};
-  const series:Record<string,string>={DGS10:"10Y nominal Treasury",DFII10:"10Y real Treasury",T10YIE:"10Y breakeven inflation",DTWEXBGS:"Trade-weighted USD"};
-  const entries=Object.entries(series);
-  const settled=await Promise.allSettled(entries.map(([sid])=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id:sid,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
-  const values:Record<string,any>={};
-  settled.forEach((r,i)=>{
-    const [sid,label]=entries[i];
-    if(r.status==="fulfilled"){
-      const j:any=r.value,obs=(j.observations||[]).find((x:any)=>finite(x.value));
-      values[sid]={label,value:obs?num(obs.value):null,date:obs?.date||null};
-    }else values[sid]={label,value:null,error:String((r.reason as Error)?.message||r.reason).slice(0,120)};
-  });
-  const data={status:Object.values(values).some((x:any)=>finite(x.value))?"AVAILABLE":"UNAVAILABLE",provider:"FRED",fetched_at:nowIso(),series:values,
-    policy:"Macro is displayed as research/regime context and receives no forecast weight until historical alignment and OOS ablation prove incremental value."};
-  macroCache={at:Date.now(),data};return data;
-}
-const researchCache=new Map<string,{at:number,data:any}>();
-async function researchBundle(symbol:string){
-  const key=clean(symbol),cached=researchCache.get(key);if(cached&&Date.now()-cached.at<15*60*1000)return cached.data;
-  const [fundamentals,macro]=await Promise.all([tgmFundamentals(key),fredMacro()]);
-  const data={schema_version:1,symbol:key,fetched_at:nowIso(),fundamentals,macro,
-    model_policy:"ONE PRODUCTION MODEL: Q-State Unified. Research context is visible but cannot silently vote into the forecast. Challengers must pass frozen OOS promotion gates before their method is incorporated into the canonical artifact."};
-  researchCache.set(key,{at:Date.now(),data});return data;
+  const ids=["DGS10","DFII10","T10YIE","DTWEXBGS"];
+  const settled=await Promise.allSettled(ids.map((series_id)=>getJson("https://api.stlouisfed.org/fred/series/observations",{series_id,api_key:FRED,file_type:"json",sort_order:"desc",limit:"10"})));
+  const series:Record<string,unknown>={};
+  for(let i=0;i<ids.length;i++){
+    const r=settled[i];
+    if(r?.status==="fulfilled"){
+      const j:any=r.value;
+      const obs=(j.observations||[]).find((x:any)=>finite(x.value));
+      series[ids[i]]={value:obs?num(obs.value):null,date:obs?.date||null};
+    }else{
+      series[ids[i]]={value:null,error:r?.reason?String((r.reason as Error)?.message||r.reason).slice(0,120):"unknown"};
+    }
+  }
+  const data={status:"AVAILABLE",provider:"FRED",fetched_at:nowIso(),series,
+    policy:"Macro context has zero production forecast weight until synchronized historical ablation proves incremental value."};
+  macroCache={at:Date.now(),data};
+  return data;
 }
 
 async function futureDailyFast(requested:string,source:string){
@@ -388,7 +407,10 @@ Deno.serve(async (req)=>{
   if(u.pathname==="/v1/research"){
     const symbol=clean(u.searchParams.get("symbol")||"");
     if(!symbol||!/^[A-Z0-9.\-=^]{1,24}$/.test(symbol))return json({error:"INVALID_SYMBOL"},400,origin);
-    try{return json(await researchBundle(symbol),200,origin);}
+    try{
+      const [fundamentals,macro]=await Promise.all([tgmFundamentals(symbol),fredMacro()]);
+      return json({schema_version:1,symbol,fetched_at:nowIso(),fundamentals,macro,model_policy:"Q-State Unified is the only production model; research context has zero forecast weight until validated."},200,origin);
+    }
     catch(e){return json({error:"RESEARCH_UNAVAILABLE",symbol,message:String((e as Error)?.message||e)},503,origin);}
   }
   if(u.pathname==="/v1/market"){
