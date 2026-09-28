@@ -111,8 +111,14 @@ def main():
     tok = AutoTokenizer.from_pretrained(model_dir / "tokenizer")
     model = build_model(cfg, encoder_dir=str(model_dir / "encoder"))
     resume_epoch = 0
-    checkpoint_repo = os.environ.get("STOCK_LAYA_CHECKPOINT_REPO", "").strip()
+    checkpoint_repo = os.environ.get("STOCK_LAYA_CHECKPOINT_REPO", "Smit1105/stock-laya-qstate-checkpoints").strip()
     hf_token = os.environ.get("HF_TOKEN", "").strip()
+    if not hf_token:
+        try:
+            from kaggle_secrets import UserSecretsClient
+            hf_token = UserSecretsClient().get_secret("HF_TOKEN") or ""
+        except Exception:
+            hf_token = ""
     resume_root = Path("/kaggle/working/stock-laya-resume")
     resume_weights = None
     if checkpoint_repo and hf_token and snapshot_download is not None:
