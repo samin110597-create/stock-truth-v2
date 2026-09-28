@@ -3,8 +3,6 @@ const FMP = Deno.env.get("FMP_API_KEY") || Deno.env.get("FMP_KEY") || "";
 const FINNHUB = Deno.env.get("FINNHUB_API_KEY") || Deno.env.get("FINNHUB_KEY") || "";
 const ALPHA = Deno.env.get("ALPHA_VANTAGE_KEY") || Deno.env.get("ALPHAVANTAGE_KEY") || "";
 const FRED = Deno.env.get("FRED_API_KEY") || Deno.env.get("FRED_KEY") || "";
-const LAYA_SERVICE_URL = Deno.env.get("LAYA_SERVICE_URL") || "";
-const LAYA_SERVICE_TOKEN = Deno.env.get("LAYA_SERVICE_TOKEN") || "";
 const ALLOWED = new Set([
   "https://samin110597-create.github.io",
   "http://localhost:4173",
