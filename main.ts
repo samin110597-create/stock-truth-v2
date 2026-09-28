@@ -212,9 +212,10 @@ async function equityQuote(requested:string,source:string=requested){
   pool.sort((a,b)=>Number(b.as_of)-Number(a.as_of)||rank(a.provider)-rank(b.provider));
   const chosen=pool[0];
   const dispersion=finite(med)&&pool0.length>=2?(Math.max(...pool0.map(x=>x.price))-Math.min(...pool0.map(x=>x.price)))/Number(med)*100:null;
+  const dispersionNumber=dispersion===null?Infinity:Number(dispersion);
   return {...chosen,source_trace:trace,cross_validation:{
-    status:pool0.length<2?"SINGLE_SOURCE":finite(dispersion)&&dispersion<=0.75?"PASS":finite(dispersion)&&dispersion<=2?"WARN":"DISAGREE",
-    provider_count:pool0.length,dispersion_pct:finite(dispersion)?Number(dispersion.toFixed(4)):null,
+    status:pool0.length<2?"SINGLE_SOURCE":dispersionNumber<=0.75?"PASS":dispersionNumber<=2?"WARN":"DISAGREE",
+    provider_count:pool0.length,dispersion_pct:dispersion===null?null:Number(dispersion.toFixed(4)),
     observations:pool0.map(x=>({provider:x.provider,price:x.price,as_of:x.as_of}))
   }};
 }
