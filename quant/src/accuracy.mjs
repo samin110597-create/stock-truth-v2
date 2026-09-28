@@ -4,7 +4,6 @@ const DB_VERSION=1;
 
 const finite=Number.isFinite;
 const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
 function dirNum(direction){return direction==='BULLISH'||direction==='LONG'?1:direction==='BEARISH'||direction==='SHORT'?-1:0;}
 function cleanProjection(q){
