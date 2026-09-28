@@ -2,7 +2,7 @@
   "deploy": {
     "runtime": {
       "type": "dynamic",
-      "entrypoint": "./main.ts"
+      "entrypoint": "./deno_smoke.ts"
     }
   }
 }
