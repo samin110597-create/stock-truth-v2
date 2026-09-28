@@ -124,7 +124,7 @@ function aggregate(rows){
   const brier=rows.filter(x=>finite(x.brier));
   const mae=rows.filter(x=>finite(x.maePct));
   const proj=rows.filter(x=>finite(x.projectionAbsErrorPct));
-  const trades=rows.map(x=>x.trade).filter(Boolean).filter(x=>x.triggered);
+  const trades=rows.filter(x=>x.stage==='READY').map(x=>x.trade).filter(Boolean).filter(x=>x.triggered);
   const resolvedTrades=trades.filter(x=>x.tp1HitBeforeStop||x.stopBeforeTp1);
   return {
     n:rows.length,
