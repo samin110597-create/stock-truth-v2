@@ -119,7 +119,7 @@ def main():
             hf_token = UserSecretsClient().get_secret("HF_TOKEN") or ""
         except Exception:
             hf_token = ""
-    resume_root = Path("/kaggle/working/stock-laya-resume")
+    resume_root = Path(os.environ.get("STOCK_LAYA_RESUME_DIR", "/tmp/stock-laya-resume"))
     resume_weights = None
     if checkpoint_repo and hf_token and snapshot_download is not None:
         try:
