@@ -24,6 +24,11 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from safetensors.torch import load_file, save_file
 from transformers import AutoTokenizer
+try:
+    from huggingface_hub import HfApi, snapshot_download
+except Exception:
+    HfApi = None
+    snapshot_download = None
 
 from laya.common import build_model, proper_reward
 
@@ -97,7 +102,7 @@ def main():
     device = torch.device("cuda", local_rank)
 
     cfg = json.loads((model_dir / "rl_agent_config.json").read_text())
-    fast_mode = os.environ.get("STOCK_LAYA_FAST", "1") == "1"
+    fast_mode = os.environ.get("STOCK_LAYA_FAST", "0") == "1"
     cfg["gradient_checkpointing"] = not fast_mode
     cfg["max_tokens_per_batch"] = 4096
     cfg["max_len"] = 768 if fast_mode else 1024
@@ -105,7 +110,30 @@ def main():
 
     tok = AutoTokenizer.from_pretrained(model_dir / "tokenizer")
     model = build_model(cfg, encoder_dir=str(model_dir / "encoder"))
-    model.load_state_dict(load_file(model_dir / "model.safetensors"), strict=True)
+    resume_epoch = 0
+    checkpoint_repo = os.environ.get("STOCK_LAYA_CHECKPOINT_REPO", "").strip()
+    hf_token = os.environ.get("HF_TOKEN", "").strip()
+    resume_root = Path("/kaggle/working/stock-laya-resume")
+    resume_weights = None
+    if checkpoint_repo and hf_token and snapshot_download is not None:
+        try:
+            snapshot_download(
+                repo_id=checkpoint_repo,
+                repo_type="model",
+                token=hf_token,
+                allow_patterns=["checkpoint_latest/*"],
+                local_dir=str(resume_root),
+            )
+            candidate = resume_root / "checkpoint_latest" / "model.safetensors"
+            meta = resume_root / "checkpoint_latest" / "checkpoint_meta.json"
+            if candidate.exists():
+                resume_weights = candidate
+                if meta.exists():
+                    resume_epoch = int(json.loads(meta.read_text()).get("epoch", 0))
+        except Exception as e:
+            if rank == 0:
+                print("No resumable HF checkpoint found; starting from base Laya:", e)
+    model.load_state_dict(load_file(resume_weights or (model_dir / "model.safetensors")), strict=True)
     if not fast_mode:
         model.encoder.gradient_checkpointing_enable(
             gradient_checkpointing_kwargs={"use_reentrant": False}
@@ -169,11 +197,12 @@ def main():
             f"Stock-Laya: {len(train_items)} training decisions "
             f"(including {len(experience_items)} capped issued-setup experience decisions), "
             f"{len(calib_items)} chronological calibration decisions, {world} GPUs, "
-            f"mode={'FAST_HEAD_ONLY' if fast_mode else 'FULL_FINE_TUNE'}."
+            f"mode={'FAST_HEAD_ONLY' if fast_mode else 'FULL_FINE_TUNE'}, "
+            f"resume_epoch={resume_epoch}."
         )
     started = time.time()
 
-    for epoch in range(epochs):
+    for epoch in range(resume_epoch, epochs):
         random.Random(4200 + epoch + rank).shuffle(my_items)
         optimizer.zero_grad(set_to_none=True)
         epoch_loss = 0.0
@@ -260,10 +289,26 @@ def main():
                         "epoch": epoch + 1,
                         "epochs": epochs,
                         "avg_loss": epoch_loss / max(1, batches),
+                        "training_mode": "FAST_HEAD_ONLY" if fast_mode else "FULL_FINE_TUNE",
+                        "resumable": True,
                     },
                     indent=2,
                 )
             )
+            if checkpoint_repo and hf_token and HfApi is not None:
+                try:
+                    api = HfApi(token=hf_token)
+                    api.create_repo(checkpoint_repo, repo_type="model", private=True, exist_ok=True)
+                    api.upload_folder(
+                        repo_id=checkpoint_repo,
+                        repo_type="model",
+                        folder_path=str(checkpoint),
+                        path_in_repo="checkpoint_latest",
+                        commit_message=f"Stock-Laya checkpoint epoch {epoch+1}/{epochs}",
+                    )
+                    print(f"Persisted checkpoint epoch {epoch+1}/{epochs} to {checkpoint_repo}")
+                except Exception as e:
+                    print("WARNING: checkpoint upload failed:", e)
 
     if distributed:
         dist.barrier()
