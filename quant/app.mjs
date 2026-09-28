@@ -141,7 +141,7 @@ async function refreshOpenAccuracy(snapshot){
     const observed=new Set((snapshot?.outcomes||[]).map(x=>x.id)),seen=new Set(),pending=(snapshot?.forecasts||[]).filter(x=>!observed.has(x.id)).sort((a,b)=>String(a.issuedAt).localeCompare(String(b.issuedAt)));
     for(const f of pending){
       const key=f.symbol+'|'+f.timeframe;if(seen.has(key))continue;seen.add(key);if(seen.size>12)break;
-      try{const data=await loadMarketData({symbol:f.symbol,asset:f.asset||'AUTO',timeframe:f.timeframe});await settleForCurrentSeries({symbol:f.symbol,timeframe:f.timeframe,bars:data.bars});}catch{}
+      try{const asset=f.asset==='FUTURE'||f.asset==='METAL_PROXY'?'FUTURE':'STOCK',data=await loadMarketData({symbol:f.symbol,asset,timeframe:f.timeframe});await settleForCurrentSeries({symbol:f.symbol,timeframe:f.timeframe,bars:data.bars});}catch{}
     }
     renderAccuracy(await accuracySnapshot());
   }finally{const b=$('#refresh-accuracy');if(b){b.disabled=false;b.textContent='UPDATE OPEN OUTCOMES';}}
