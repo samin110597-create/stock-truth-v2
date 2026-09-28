@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 import numpy as np
+import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import brier_score_loss, log_loss
@@ -214,7 +215,14 @@ def return_bands(pred,rets):
     return out
 
 def train_one(rows):
-    folds=chronological_folds(rows);oos_pred=[];oos_y=[];oos_ret=[];base_pred=[];fold_meta=[]
+    rows=sorted(rows,key=lambda r:r[0])
+    times=np.array(sorted(set(r[0] for r in rows)),dtype=np.int64)
+    if len(times)<320:
+        return {'status':'INSUFFICIENT_TIMESPAN','samples':len(rows),'oos_samples':0,'folds':0}
+    hold_cut=times[max(1,int(len(times)*.94))]
+    dev=[r for r in rows if r[0]<hold_cut]
+    hold=[r for r in rows if r[0]>=hold_cut]
+    folds=chronological_folds(dev);oos_pred=[];oos_y=[];oos_ret=[];base_pred=[];fold_meta=[]
     for tr,te in folds:
         scaler,clf=fit_pipeline(tr)
         X=np.vstack([r[2] for r in te]);p=clf.predict_proba(scaler.transform(X))[:,1]
@@ -237,13 +245,23 @@ def train_one(rows):
     positive_folds=sum(1 for f in fold_meta if f['positive'])
     median_fold_skill=float(np.median(fold_skills)) if fold_skills else None
     min_positive=max(3,math.ceil(len(folds)*.60))
-    validated=bool(len(folds)>=3 and len(oos_y)>=500 and skill>=.005 and ll<=base_ll and positive_folds>=min_positive and median_fold_skill>0)
+    hold_metrics={'n':len(hold),'brier':None,'base_brier':None,'brier_skill':None,'log_loss':None,'base_log_loss':None,'passed':False}
+    if len(hold)>=120 and len(dev)>=600:
+        hs,hc=fit_pipeline(dev)
+        hx=np.vstack([r[2] for r in hold]);hy=np.asarray([r[3] for r in hold],dtype=int)
+        hp=hc.predict_proba(hs.transform(hx))[:,1]
+        hbase=float(np.mean([r[3] for r in dev]))
+        hb=float(brier_score_loss(hy,hp));hbb=float(brier_score_loss(hy,np.full(len(hy),hbase)))
+        hll=float(log_loss(hy,np.clip(hp,1e-6,1-1e-6)));hbll=float(log_loss(hy,np.full(len(hy),np.clip(hbase,1e-6,1-1e-6))))
+        hskill=(hbb-hb)/hbb if hbb>0 else 0.0
+        hold_metrics={'n':len(hold),'start':int(min(r[0] for r in hold)),'end':int(max(r[0] for r in hold)),'brier':hb,'base_brier':hbb,'brier_skill':hskill,'log_loss':hll,'base_log_loss':hbll,'passed':bool(hskill>=0 and hll<=hbll)}
+    validated=bool(len(folds)>=3 and len(oos_y)>=500 and skill>=.005 and ll<=base_ll and positive_folds>=min_positive and median_fold_skill>0 and hold_metrics['passed'])
     scaler,clf=fit_pipeline(rows)
     coef=clf.coef_[0]
     return {
       'status':'VALIDATED' if validated else 'NOT_VALIDATED',
       'validated':validated,'samples':len(rows),'oos_samples':len(oos_y),'folds':len(folds),
-      'metrics':{'brier':brier,'base_brier':base_brier,'brier_skill':skill,'log_loss':ll,'base_log_loss':base_ll,'oos_base_rate':float(np.mean(oy)),'positive_folds':positive_folds,'required_positive_folds':min_positive,'median_fold_skill':median_fold_skill},
+      'metrics':{'brier':brier,'base_brier':base_brier,'brier_skill':skill,'log_loss':ll,'base_log_loss':base_ll,'oos_base_rate':float(np.mean(oy)),'positive_folds':positive_folds,'required_positive_folds':min_positive,'median_fold_skill':median_fold_skill,'untouched_holdout':hold_metrics},
       'scaler':{'mean':scaler.mean_.tolist(),'scale':scaler.scale_.tolist()},
       'intercept':float(clf.intercept_[0]),'coef':coef.tolist(),
       'calibration':calibrate_points(op,oy),
@@ -268,9 +286,9 @@ def main():
       'schema_version':3,'model_version':'QSTATE-UNIFIED-3.0','generated_at':now_iso(),
       'canonical_model':True,'architecture':'ONE PRODUCTION ARTIFACT with causal multi-timeframe/horizon heads; no independent production model voting',
       'features':list(FEATURES),'timeframes':models,'summary':summary,
-      'training':{'symbols':symbols,'asset_classes':assets,'blocks':len(blocks),'validation':'expanding chronological walk-forward with embargo; calibration and return bands use OOS predictions only','challenger_policy':'Phase1, Stock-Laya and other candidate methods are offline challengers only. They have zero production weight unless an untouched/OOS promotion test proves incremental value and the winning method is incorporated into this canonical artifact.'},
+      'training':{'symbols':symbols,'asset_classes':assets,'blocks':len(blocks),'python_version':os.sys.version.split()[0],'sklearn_version':sklearn.__version__,'validation':'expanding chronological walk-forward with embargo plus a final untouched 6% time holdout; calibration and return bands use walk-forward OOS predictions only','challenger_policy':'Phase1, Stock-Laya and other candidate methods are offline challengers only. They have zero production weight unless an untouched/OOS promotion test proves incremental value and the winning method is incorporated into this canonical artifact.'},
       'label_definition':'Probability that price reaches +1 current ATR before -1 current ATR within the stated horizon; unresolved and same-bar ambiguous paths are excluded.',
-      'promotion_rule':'Probability is displayable only when OOS Brier skill >= 0.5%, log loss is no worse than base rate, >=3 folds, >=500 OOS samples, at least 60% of folds show positive Brier skill without worse log loss, and median fold skill is positive.',
+      'promotion_rule':'Probability is displayable only when OOS Brier skill >= 0.5%, log loss is no worse than base rate, >=3 folds, >=500 OOS samples, at least 60% of folds show positive Brier skill without worse log loss, median fold skill is positive, and the untouched final 6% time holdout is not worse than its base-rate benchmark on Brier skill or log loss.',
       'credential_policy':'Model trained only from sanitized snapshots; no credential is read or written by this script.'
     }
     OUT.parent.mkdir(parents=True,exist_ok=True);OUT.write_text(json.dumps(out,separators=(',',':'),allow_nan=False))
