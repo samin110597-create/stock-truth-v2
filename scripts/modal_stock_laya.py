@@ -133,5 +133,6 @@ def train():
 @app.local_entrypoint()
 def main():
     print("Launching Stock-Laya on Modal A10G. The run is resumable.")
-    result = train.remote()
-    print(json.dumps(result, indent=2))
+    call = train.spawn()
+    print("Started detached Modal training call:", call.object_id)
+    print("You may close this launcher; training continues in Modal.")
