@@ -121,7 +121,18 @@ def main():
             hf_token = ""
     resume_root = Path(os.environ.get("STOCK_LAYA_RESUME_DIR", "/tmp/stock-laya-resume"))
     resume_weights = None
-    if checkpoint_repo and hf_token and snapshot_download is not None:
+    local_checkpoint = os.environ.get("STOCK_LAYA_LOCAL_CHECKPOINT_DIR", "").strip()
+    if local_checkpoint:
+        local_dir = Path(local_checkpoint)
+        candidate = local_dir / "model.safetensors"
+        meta = local_dir / "checkpoint_meta.json"
+        if candidate.exists():
+            resume_weights = candidate
+            if meta.exists():
+                resume_epoch = int(json.loads(meta.read_text()).get("epoch", 0))
+            if rank == 0:
+                print(f"Resuming Stock-Laya from local checkpoint epoch {resume_epoch}: {local_dir}")
+    if resume_weights is None and checkpoint_repo and hf_token and snapshot_download is not None:
         try:
             snapshot_download(
                 repo_id=checkpoint_repo,
@@ -301,6 +312,14 @@ def main():
                     indent=2,
                 )
             )
+            local_checkpoint = os.environ.get("STOCK_LAYA_LOCAL_CHECKPOINT_DIR", "").strip()
+            if local_checkpoint:
+                import shutil
+                local_dir = Path(local_checkpoint)
+                if local_dir.exists():
+                    shutil.rmtree(local_dir)
+                shutil.copytree(checkpoint, local_dir)
+                print(f"Persisted local checkpoint epoch {epoch+1}/{epochs} to {local_dir}")
             if checkpoint_repo and hf_token and HfApi is not None:
                 try:
                     api = HfApi(token=hf_token)
