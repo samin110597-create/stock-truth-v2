@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T22:54:20.430Z",
+  "generated_at": "2026-09-30T01:34:49.715Z",
   "method": "Retrospective causal replay; no verified OOS probability claims.",
   "tickers": [
     {
@@ -1801,8 +1801,8 @@
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
+        "1H": 3487,
+        "4H": 992,
         "1D": 2512,
         "1W": 521,
         "1M": 119
