@@ -13,3 +13,5 @@ test('Report calculation, quote and completed-bar clocks separately',()=>{
  const u=dataUsed({quote:q(100),generated_at:'2026-09-21',frames:{'1D':{bars:[{end_ts:80}]},'1H':{bars:[{end_ts:95}]}}},'1H');
  assert.equal(u.quote.as_of,100);assert.equal(u.technical_bar_end,95);assert.equal(u.forecast_daily_bar_end,80);assert.equal(u.calculated_at,'2026-09-21');
 });
+
+test('Provider without a currency field retains unknown currency and valid event time',()=>{const x=q(100,{currency:null});assert.equal(freshestQuote('NVDA',[x],110),x);assert.equal(x.currency,null);});

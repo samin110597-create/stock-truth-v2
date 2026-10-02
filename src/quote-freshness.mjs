@@ -1,7 +1,7 @@
 import {finite} from './numeric.mjs';
 // Select a complete source record, never splice session extremes across providers.
 export function freshestQuote(symbol, candidates, now=Date.now()/1000){
-  const valid=candidates.filter(q=>q&&(!q.symbol||q.symbol===symbol)&&finite(q.price)&&q.price>0&&finite(q.as_of)&&q.as_of>0&&q.as_of<=now+60&&q.currency==='USD');
+  const valid=candidates.filter(q=>q&&(!q.symbol||q.symbol===symbol)&&finite(q.price)&&q.price>0&&finite(q.as_of)&&q.as_of>0&&q.as_of<=now+60&&(!q.currency||q.currency==='USD'));
   return valid.sort((a,b)=>b.as_of-a.as_of||Number(!!b.api_secret_used)-Number(!!a.api_secret_used))[0]||null;
 }
 export function dataUsed(state,tf='1D'){
