@@ -1,3 +1,4 @@
+import {freshestQuote} from './freshness.mjs';
 const PRODUCTS={GOLD:'GC',XAU:'GC',XAUUSD:'GC',GC:'GC',SILVER:'SI',XAG:'SI',XAGUSD:'SI',SI:'SI',OIL:'CL',WTI:'CL',CRUDE:'CL',CL:'CL',NATGAS:'NG',NATURALGAS:'NG',NG:'NG',COPPER:'HG',HG:'HG',PLATINUM:'PL',PL:'PL',PALLADIUM:'PA',PA:'PA',CORN:'ZC',ZC:'ZC',WHEAT:'ZW',ZW:'ZW',SOY:'ZS',SOYBEANS:'ZS',ZS:'ZS'};
 const METAL_PROXY={GC:'GLD',SI:'SLV'};
 const CONTRACT=/^[A-Z]{1,3}[FGHJKMNQUVXZ]\d{1,2}$/;
@@ -30,7 +31,7 @@ async function storedStock(symbol,tf,signal){
   const raw=await json('../data/raw/'+encodeURIComponent(symbol)+'.json',signal),b=recoveredFrame(raw,tf);
   if(!usable(b))throw new Error('stored '+tf+' snapshot is missing, stale, or too shallow');
   const mtf={...mtfFrom(raw.timeframes)};if(!mtf[tf])mtf[tf]=b.bars;
-  return {symbol,sourceSymbol:symbol,asset:raw.security_type||'STOCK',timeframe:tf,bars:b.bars,mtf,provider:b.provider||'GitHub sanitized stock snapshot',fetchedAt:b.fetched_at||raw.fetched_at,dataStatus:b.status||'UNKNOWN',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:'No browser credential. Snapshot was generated outside the quant UI.'};
+  return {symbol,sourceSymbol:symbol,asset:raw.security_type||'STOCK',timeframe:tf,bars:b.bars,mtf,provider:b.provider||'GitHub sanitized stock snapshot',fetchedAt:b.fetched_at||raw.fetched_at,dataStatus:b.status||'UNKNOWN',lastCompletedBar:b.bars.at(-1)?.end_ts||null,quote:raw.quote,credentialPolicy:'No browser credential. Snapshot was generated outside the quant UI.'};
 }
 async function publicStock(symbol,tf,signal){const map={'15M':['15m','60d'],'1H':['60m','2y'],'4H':['60m','2y'],'1D':['1d','10y']},[interval,range]=map[tf]||map['1D'];const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?'+new URLSearchParams({interval,range,includePrePost:'false',includeAdjustedClose:'false',events:'splits'});const j=await json(url,signal),r=j?.chart?.result?.[0];if(!r)throw new Error('Public fallback returned no data for '+symbol);let bars=normalizeYahoo(r,tf);if(tf==='4H')bars=resample4h(bars);if(bars.length<80)throw new Error('Not enough completed '+tf+' bars for '+symbol);return {symbol,sourceSymbol:symbol,asset:'STOCK',timeframe:tf,bars,mtf:{[tf]:bars},provider:'Independent public chart fallback',fetchedAt:new Date().toISOString(),credentialPolicy:'No API secret used in browser fallback.'};}
 async function future(symbol,tf,signal){
@@ -64,6 +65,15 @@ async function backendMarket(symbol,tf,signal){
   const mtf=Object.fromEntries(['15M','1H','4H','1D'].filter(x=>Array.isArray(j?.timeframes?.[x]?.bars)&&j.timeframes[x].bars.length>=60).map(x=>[x,j.timeframes[x].bars]));
   return {symbol,sourceSymbol:j.source_symbol||symbol,asset:j.asset||'STOCK_OR_ETF',timeframe:tf,bars:b.bars,mtf,provider:'Deno on-demand API · '+(b.provider||'market data'),fetchedAt:j.fetched_at||new Date().toISOString(),dataStatus:(b.status||'COMPLETED BAR')+' · ON-DEMAND',lastCompletedBar:b.bars.at(-1)?.end_ts||null,credentialPolicy:j.credential_policy||'Provider credentials remain Deno Deploy secrets.',providerTrace:j.provider_trace||[],crossValidation:b.validation||null,onDemand:true};
 }
+async function currentQuote(symbol,signal){
+  const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');
+  const candidates=await Promise.allSettled([
+    base?json(base+'/v1/quote?'+new URLSearchParams({symbol}),signal,10000):Promise.reject(Error('Backend unavailable')),
+    json('../data/raw/'+encodeURIComponent(symbol)+'.json',signal,6000)
+  ]);
+  const quotes=candidates.flatMap((r,i)=>r.status==='fulfilled'?(i===0?[r.value]:r.value.symbol===symbol?[r.value.quote,...(r.value.secured_quote_candidates||[])]:[]):[]);
+  return freshestQuote(symbol,quotes);
+}
 async function backendResearch(symbol,signal){
   const cfg=await runtimeConfig(signal),base=String(cfg?.apiBase||'').replace(/\/$/,'');
   if(!base)return {status:'UNAVAILABLE',reason:'Deno research API is not configured'};
@@ -75,7 +85,7 @@ async function backendResearch(symbol,signal){
 async function apiContext(signal){try{return await json('../data/quant/context.json',signal);}catch{return null;}}
 async function trainedModel(signal){try{return await json('../data/quant/model.json',signal);}catch{return null;}}
 export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}){
-  const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal),researchPromise=backendResearch(s,signal);let core;
+  const s=clean(symbol),kind=detectAsset(s,asset),contextPromise=apiContext(signal),modelPromise=trainedModel(signal),researchPromise=backendResearch(s,signal),quotePromise=kind==='STOCK'?currentQuote(s,signal).catch(()=>null):Promise.resolve(null);let core;
   let backendError=null,storedError=null;
   try{core=await backendMarket(s,timeframe,signal);}
   catch(e){
@@ -87,5 +97,6 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal}
     }
   }
   const cfg=await runtimeConfig(signal);
-  return {...core,apiContext:await contextPromise,trainedModel:await modelPromise,research:await researchPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
+  return {...core,quote:freshestQuote(s,[core.quote,await quotePromise]),apiContext:await contextPromise,trainedModel:await modelPromise,research:await researchPromise,runtimeApiConfigured:!!String(cfg?.apiBase||'').trim()};
 }
+

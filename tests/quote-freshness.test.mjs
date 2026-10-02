@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {freshestQuote,dataUsed} from '../src/quote-freshness.mjs';
+import {freshestQuote,dataUsed} from '../quant/src/freshness.mjs';
 const q=(as_of,extra={})=>({symbol:'NVDA',price:100,as_of,currency:'USD',...extra});
 test('Newest market timestamp wins; fetched time never makes old data fresh',()=>{
  const newer=q(100,{high:105,provider:'secured'}),older=q(90,{high:900,fetched_at:'2099-01-01'});
