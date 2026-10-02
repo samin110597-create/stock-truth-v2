@@ -122,6 +122,14 @@ jobs:
         run: node scripts/collect-fundamentals.mjs
       - name: Train Q-State 2.0 walk-forward calibrated model
         run: python -u scripts/train_quant_model.py
+      - name: Refresh secured ticker quotes
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        timeout-minutes: 6
+        continue-on-error: true
+        env:
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY || secrets.FINNHUB_API_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          FMP_KEY: ${{ secrets.FMP_KEY || secrets.FMP_API_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+        run: python -u scripts/collect-quotes.py
       - name: Analyze available snapshots and append immutable setup ledger
         if: hashFiles('data/raw/*.json') != ''
         run: npm run analyze
@@ -183,3 +191,4 @@ jobs:
           else:
               raise SystemExit('Production build metadata did not match deployed commit')
           PY
+

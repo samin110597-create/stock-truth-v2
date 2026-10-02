@@ -91,13 +91,15 @@ export async function secureQuote(symbol,signal){
   if(!/^https:\/\//.test(base))throw new Error('Deno backend is not configured.');
   const q=await json(base+'/v1/quote?'+new URLSearchParams({symbol}),signal,10000);
   if(q?.symbol!==symbol)throw new Error('Quote ticker identity mismatch');
+  if(!Number.isFinite(q.price)||q.price<=0||!Number.isFinite(q.as_of)||q.as_of<=0||q.as_of>Date.now()/1000+60)throw new Error('Invalid quote price or event timestamp');
   return {
+    symbol,
     classification:'SOURCE FACT',
     status:'SNAPSHOT',
     price:q.price,
     change:finiteNumber(q.price)&&finiteNumber(q.previous_close)&&q.previous_close>0?q.price-q.previous_close:null,
     change_pct:finiteNumber(q.price)&&finiteNumber(q.previous_close)&&q.previous_close>0?(q.price/q.previous_close-1)*100:null,
-    session_date:q.as_of?new Date(q.as_of*1000).toISOString().slice(0,10):null,
+    session_date:q.as_of?new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(q.as_of*1000)):null,
     open:q.open,high:q.high,low:q.low,volume:q.volume,currency:q.currency||'USD',
     exchange:q.exchange||null,as_of:q.as_of||null,fetched_at:q.fetched_at||new Date().toISOString(),
     provider:q.provider||'Deno quote provider',delay:q.latency||'Provider latency unspecified',
@@ -133,3 +135,4 @@ export function mergeSecure(classic,secured){
     secure_backend:secured.secure_backend
   };
 }
+
