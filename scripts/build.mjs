@@ -2,7 +2,7 @@ import fs from 'node:fs';import path from 'node:path';import {execFileSync} from
 const commit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const root=process.cwd(),out=path.join(root,'dist');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
 // Production ships one executable intelligence surface: Q-State Unified.
-for(const dir of ['config','quant'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
+for(const dir of ['config','quant','v3'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
 fs.mkdirSync(path.join(out,'web'),{recursive:true});fs.copyFileSync('web/index.html',path.join(out,'web/index.html'));
 const qApiBase=String(process.env.QSTATE_API_BASE||'https://stock-truth-v2.samin110597.deno.net').trim().replace(/\/$/,'');
 fs.writeFileSync(path.join(out,'quant/runtime-config.json'),JSON.stringify({apiBase:qApiBase,mode:qApiBase?'on-demand-secure-api':'snapshot-fallback',generatedAt:new Date().toISOString()}));
