@@ -6,7 +6,7 @@ for(const file of files){const s=fs.readFileSync(file,'utf8');if(/vercel\.app|ra
 const webRedirect=fs.readFileSync('dist/web/index.html','utf8');
 if(!/Q-State Unified/i.test(webRedirect)||!/\.\.\/quant\//.test(webRedirect))throw Error('Legacy web compatibility entry must redirect to Q-State Unified');
 const rootRedirect=fs.readFileSync('dist/index.html','utf8');if(!/\.\/quant\//.test(rootRedirect))throw Error('Repository root must open Q-State Unified');
-const required=['dist/web/index.html','dist/quant/index.html','dist/quant/app.mjs','dist/quant/style.css','dist/quant/src/math.mjs','dist/quant/src/data.mjs','dist/quant/src/engine.mjs','dist/quant/src/model.mjs','dist/quant/src/accuracy.mjs','dist/quant/runtime-config.json','dist/data/quant/model.json','dist/vendor/lightweight-charts.mjs','dist/data/calendar.json','dist/licenses/LICENSE','dist/licenses/NOTICE','dist/build.json'];
+const required=['dist/v3/index.html','dist/web/index.html','dist/quant/index.html','dist/quant/app.mjs','dist/quant/style.css','dist/quant/src/math.mjs','dist/quant/src/data.mjs','dist/quant/src/engine.mjs','dist/quant/src/model.mjs','dist/quant/src/accuracy.mjs','dist/quant/runtime-config.json','dist/data/quant/model.json','dist/vendor/lightweight-charts.mjs','dist/data/calendar.json','dist/licenses/LICENSE','dist/licenses/NOTICE','dist/build.json'];
 for(const file of required)if(!fs.existsSync(file))throw Error('Missing deploy file '+file);
 if(fs.existsSync('dist/web/app.mjs')||fs.existsSync('dist/web/worker.mjs')||fs.existsSync('dist/src'))throw Error('Legacy Stock Truth execution engine must not ship; Q-State Unified is the only deployed model');
 if(fs.existsSync('dist/web/quant'))throw Error('Legacy reused web/quant implementation must not ship');
@@ -25,3 +25,8 @@ console.log('Q-State Unified canonical artifact and promotion gates passed.');
 const qRuntime=JSON.parse(fs.readFileSync('dist/quant/runtime-config.json','utf8'));if(typeof qRuntime.apiBase!=='string')throw Error('Invalid Q-State runtime API config');if(qRuntime.apiBase&&!/^https:\/\//.test(qRuntime.apiBase))throw Error('Q-State on-demand API must use HTTPS');
 const buildMeta=JSON.parse(fs.readFileSync('dist/build.json','utf8'));if(Boolean(qRuntime.apiBase)!==Boolean(buildMeta.quant_api_configured))throw Error('Q-State runtime API config disagrees with build metadata');if(buildMeta.model_version!=='QSTATE-UNIFIED-3.0'||buildMeta.canonical_model!==true||buildMeta.legacy_web_deployed!==false)throw Error('Production build identity must expose Q-State Unified as the only deployed model');
 console.log('Q-State on-demand API and one-model build identity passed.');
+
+const legacyV3=fs.readFileSync('dist/v3/index.html','utf8');
+if(!/Q-State Unified/i.test(legacyV3)||!/\.\.\/quant\//.test(legacyV3))throw Error('Legacy V3 compatibility entry must redirect to Q-State Unified');
+if(/\/api\/stock|vercel\.app|eval\s*\(/i.test(legacyV3))throw Error('Legacy V3 compatibility entry must not contain serverless/Vercel runtime dependencies');
+console.log('Legacy V3 compatibility route is GitHub-only and points to Q-State Unified.');
