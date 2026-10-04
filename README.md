@@ -162,3 +162,7 @@ Phase1 remains a separate repository only because research experiments, large tr
 ## Documentation
 
 See `documentation/QUANT_LAB.md` for the detailed one-model architecture, calibration rules and data-integrity policy.
+
+## Legacy V3 compatibility
+
+The historical V3 frontend depended on a server-side `/api/stock` route and is not a valid GitHub Pages runtime. The production build now ships `/v3/` only as a compatibility redirect to Q-State Unified. No legacy V3 serverless function is executed in production.
