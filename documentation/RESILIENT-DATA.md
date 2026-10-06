@@ -25,7 +25,7 @@ No paid plan or billable resource is created by the deployment script.
 
 - Price refresh defaults to 15 minutes; manual and hourly refresh are available.
 - Background tabs do not auto-fetch; quote refresh never reruns model training or history.
-- Gateway quotes cache 60 seconds, intraday history 5 minutes, daily history 15 minutes.
+- Gateway quotes cache 60 seconds (FMP fallback: 15 minutes to reduce quota use), intraday history 5 minutes, daily history 15 minutes.
 - Requests for the same ticker are coalesced within a Worker isolate.
 - Providers have bounded timeouts and a 60-second failure cooldown; browser routes
   have a 90-second cooldown after an outage.

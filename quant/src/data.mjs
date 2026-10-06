@@ -7,7 +7,7 @@ const clean=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
 export function detectAsset(symbol,choice='AUTO'){if(choice&&choice!=='AUTO')return choice;const s=clean(symbol);return PRODUCTS[s]||CONTRACT.test(s)?'FUTURE':'STOCK';}
 let configPromise,calendarPromise;
 const circuits=new Map();
-async function config(){return configPromise??=json(new URL('../runtime-config.json',import.meta.url),null,4000).catch(()=>({apiBase:''}));}
+async function config(){return configPromise??=json(new URL('../runtime-config.json',import.meta.url),null,4000).catch(()=>{configPromise=null;return {apiBase:''};});}
 async function calendar(){return calendarPromise??=json(new URL('../../data/calendar.json',import.meta.url),null,5000).catch(e=>{calendarPromise=null;throw e;});}
 async function gateway(route,symbol,tf,signal){
   const cfg=await config(),base=String(cfg.apiBase||'').replace(/\/$/,'');

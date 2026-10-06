@@ -49,6 +49,6 @@ export default {async fetch(request,env,ctx){
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';if(!budget('ip:'+ip,30,60000))return response({symbol,error:'Please wait before refreshing again'},429);
   if(env.REQUEST_LIMITER){const {success}=await env.REQUEST_LIMITER.limit({key:ip});if(!success)return response({symbol,error:'Please wait before refreshing again'},429);}
   const token=key.url;if(pending.has(token))return (await pending.get(token)).clone();
-  const task=(async()=>{try{const data=isQuote?await getQuote(symbol,env):await history(symbol,tf,env),r=response(data,200,isQuote?60:tf==='1D'?900:300);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}catch{const r=response({symbol,error:'Source unavailable; use independent browser fallback'},503,30);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}})();
+  const task=(async()=>{try{const data=isQuote?await getQuote(symbol,env):await history(symbol,tf,env),r=response(data,200,isQuote?(data.provider==='FMP'?900:60):tf==='1D'?900:300);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}catch{const r=response({symbol,error:'Source unavailable; use independent browser fallback'},503,30);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}})();
   pending.set(token,task);try{return (await task).clone();}finally{pending.delete(token);}
 }};
