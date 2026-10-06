@@ -33,59 +33,6 @@ jobs:
           cache: pip
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: pip install -r requirements.txt
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Validate Deno request-time API
-        run: deno check main.ts
-      - name: Verify live Deno arbitrary-ticker backend
-        continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        env:
-          QSTATE_API_BASE: https://stock-truth-v2.samin110597.deno.net
-        run: |
-          python - <<'PY'
-          import json, os, time, urllib.parse, urllib.request
-          base=os.environ['QSTATE_API_BASE'].rstrip('/')
-          last_error=None
-          for attempt in range(6):
-              stage='health'
-              try:
-                  with urllib.request.urlopen(base+'/health',timeout=15) as r:
-                      health=json.load(r)
-                  if health.get('status')!='OK':
-                      raise RuntimeError('health not OK')
-                  providers=health.get('providers') or {}
-                  if not any(providers.values()):
-                      raise RuntimeError('no secured providers configured in Deno')
-                  checked=[]
-                  for symbol in ['AAPL','NVDA','MU']:
-                      stage=f'market:{symbol}'
-                      q=urllib.parse.urlencode({'symbol':symbol,'timeframe':'1D'})
-                      with urllib.request.urlopen(base+'/v1/market?'+q,timeout=25) as r:
-                          probe=json.load(r)
-                      bars=((probe.get('primary') or {}).get('bars') or [])
-                      if len(bars)<80:
-                          raise RuntimeError(f'insufficient {symbol} bars: {len(bars)}')
-                      trace=probe.get('provider_trace') or []
-                      if not any(x.get('status')=='OK' for x in trace):
-                          raise RuntimeError(f'no successful provider in trace for {symbol}')
-                      stage=f'quote:{symbol}'
-                      qq=urllib.parse.urlencode({'symbol':symbol})
-                      with urllib.request.urlopen(base+'/v1/quote?'+qq,timeout=15) as r:
-                          quote=json.load(r)
-                      if not quote.get('price') or not quote.get('as_of'):
-                          raise RuntimeError(f'invalid quote for {symbol}')
-                      checked.append((symbol,len(bars),quote.get('provider')))
-                  print('Deno backend verified:',checked,'providers=',providers)
-                  break
-              except Exception as e:
-                  last_error=f'{stage}: {e}'
-                  print(f'Deno advisory attempt {attempt+1}/6 failed:',last_error)
-                  time.sleep(5)
-          else:
-              raise SystemExit('Deno backend advisory failed: '+str(last_error))
-          PY
       - name: Unit integrity gates
         run: |
           npm test
@@ -137,10 +84,16 @@ jobs:
         continue-on-error: true
         if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[refresh-data]')))
         run: node scripts/snapshot-store.mjs publish
-      - name: Configure Quant runtime API URL
+      - name: Deploy optional Cloudflare data gateway
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        continue-on-error: true
         env:
-          QSTATE_API_BASE: ${{ vars.QSTATE_API_BASE || 'https://stock-truth-v2.samin110597.deno.net' }}
-        run: echo "QSTATE_API_BASE=${QSTATE_API_BASE}" >> "$GITHUB_ENV"
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
+          FMP_KEY: ${{ secrets.FMP_KEY || secrets.FMP_API_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY || secrets.FINNHUB_API_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+        run: node scripts/deploy-gateway.mjs
       - run: npm run build
       - run: npm run check
       - name: Save validation report and reviewable static build

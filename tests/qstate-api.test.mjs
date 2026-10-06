@@ -28,10 +28,8 @@ test('Deno deployment config is dynamic and root-based',()=>{
   assert.equal(deno.deploy.runtime.entrypoint,'./main.ts');
 });
 
-test('Quant routes all symbols through Deno backend first',()=>{
-  assert.match(data,/async function backendMarket/);
-  assert.match(data,/try\{core=await backendMarket\(s,timeframe,signal\);\}/);
-  assert.match(data,/Deno on-demand API/);
-  assert.match(data,/\/v1\/market/);
-  assert.ok(!fs.existsSync('backend/hf-space/app.py'));
+test('Quant retrieves arbitrary tickers independently of the optional gateway',()=>{
+  assert.match(data,/publicHistory\(s,cal,signal\)/);
+  assert.match(data,/\/v1\/history/);
+  assert.ok(!data.includes('Deno on-demand API'));
 });

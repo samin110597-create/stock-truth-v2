@@ -4,8 +4,8 @@ const root=process.cwd(),out=path.join(root,'dist');fs.rmSync(out,{recursive:tru
 // Production ships one executable intelligence surface: Q-State Unified.
 for(const dir of ['config','quant','v3'])fs.cpSync(dir,path.join(out,dir),{recursive:true});
 fs.mkdirSync(path.join(out,'web'),{recursive:true});fs.copyFileSync('web/index.html',path.join(out,'web/index.html'));
-const qApiBase=String(process.env.QSTATE_API_BASE||'https://stock-truth-v2.samin110597.deno.net').trim().replace(/\/$/,'');
-fs.writeFileSync(path.join(out,'quant/runtime-config.json'),JSON.stringify({apiBase:qApiBase,mode:qApiBase?'on-demand-secure-api':'snapshot-fallback',generatedAt:new Date().toISOString()}));
+const qApiBase=String(process.env.QSTATE_API_BASE||'').trim().replace(/\/$/,'');
+fs.writeFileSync(path.join(out,'quant/runtime-config.json'),JSON.stringify({apiBase:qApiBase,mode:qApiBase?'on-demand-secure-api':'browser-fallback',generatedAt:new Date().toISOString()}));
 if(!fs.existsSync('data/calendar.json'))throw new Error('Generate exchange calendar before building');
 fs.mkdirSync(path.join(out,'data'),{recursive:true});fs.copyFileSync('data/calendar.json',path.join(out,'data/calendar.json'));
 for(const name of ['raw','fundamentals','analysis','quant','index.json','ledger.json','collection.json'])if(fs.existsSync('data/'+name))fs.cpSync('data/'+name,path.join(out,'data',name),{recursive:true});
@@ -19,5 +19,5 @@ function versionModules(dir){for(const item of fs.readdirSync(dir,{withFileTypes
 versionModules(path.join(out,'quant'));
 const quantHtmlFile=path.join(out,'quant/index.html');fs.writeFileSync(quantHtmlFile,fs.readFileSync(quantHtmlFile,'utf8').replace(/(src|href)="(\.\/(?:app\.mjs|style\.css))"/g,(_,attribute,url)=>attribute+'="'+url+'?release='+commit+'"'));
 const qModel=JSON.parse(fs.readFileSync('data/quant/model.json','utf8'));
-fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:qModel.model_version,canonical_model:qModel.canonical_model===true,commit,built_at:new Date().toISOString(),quant_data_mode:qApiBase?'on-demand-secure-api':'snapshot-fallback',quant_api_configured:!!qApiBase,production_modules:['quant/src/data.mjs','quant/src/model.mjs','quant/src/engine.mjs','quant/app.mjs'],legacy_web_deployed:false}));
+fs.writeFileSync(path.join(out,'build.json'),JSON.stringify({model_version:qModel.model_version,canonical_model:qModel.canonical_model===true,commit,built_at:new Date().toISOString(),quant_data_mode:qApiBase?'on-demand-secure-api':'browser-fallback',quant_api_configured:!!qApiBase,production_modules:['quant/src/data.mjs','quant/src/model.mjs','quant/src/engine.mjs','quant/app.mjs'],legacy_web_deployed:false}));
 console.log('Built GitHub Pages static artifact with canonical model '+qModel.model_version);
