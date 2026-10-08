@@ -12,10 +12,10 @@ async function calendar(){return calendarPromise??=json(new URL('../../data/cale
 async function gateway(route,symbol,tf,signal){
   const cfg=await config(),base=String(cfg.apiBase||'').replace(/\/$/,'');
   if(!base||/\.deno\.net/.test(base))throw Error('Secure gateway not configured');
-  if((circuits.get(route)||0)>Date.now())throw Error('Gateway cooling down after an outage');
+  if((circuits.get(route+symbol+(tf||''))||0)>Date.now())throw Error('Gateway cooling down after an outage');
   try{const j=await json(base+route+'?'+new URLSearchParams({symbol,...(tf?{timeframe:tf}:{})}),signal,6500);
     if(j.symbol!==symbol||j.error)throw Error('Gateway response does not match requested ticker');return j;
-  }catch(e){if(!signal?.aborted)circuits.set(route,Date.now()+90000);throw e;}
+  }catch(e){if(!signal?.aborted)circuits.set(route+symbol+(tf||''),Date.now()+90000);throw e;}
 }
 const frames=['15M','1H','4H','1D'];
 const sufficientlyDeep=b=>Array.isArray(b?.bars)&&b.bars.length>=80;
@@ -69,5 +69,5 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal,
   }
   const [quote,apiContext,trainedModel,research,cfg]=await Promise.all([quoteTask,contextPromise,modelPromise,researchPromise,config()]);
   if(signal?.aborted)throw new DOMException('Aborted','AbortError');
-  return {...core,quote:freshestQuote(s,[core.quote,quote]),apiContext,trainedModel,research,runtimeApiConfigured:!!cfg.apiBase};
+  return {...core,quote:freshestQuote(s,[core.quote,quote]),apiContext,trainedModel,research,runtimeApiConfigured:!!cfg.apiBase,calendar:cal};
 }

@@ -11,6 +11,7 @@ function cleanProjection(q){
   return {5:finite(p.bar5)?p.bar5:null,10:finite(p.bar10)?p.bar10:null,20:finite(p.bar20)?p.bar20:null};
 }
 export function forecastRecord(q){
+  if(q.freshness && !q.freshness.allowed)return null;
   const b=q?.bars?.at?.(-1);if(!b)return null;
   const signalEndTs=Number(b.end_ts||0),signalTs=Number(b.ts||0),entry=Number(b.close);
   if(!finite(signalEndTs)||!finite(entry)||entry<=0)return null;

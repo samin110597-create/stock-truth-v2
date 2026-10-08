@@ -1,6 +1,7 @@
 import {createChart,CandlestickSeries,HistogramSeries,LineSeries,createSeriesMarkers} from '../vendor/lightweight-charts.mjs';
 import {loadMarketData,detectAsset,currentQuote} from './src/data.mjs';
 import {quoteFreshness,freshestQuote} from './src/freshness.mjs';
+import {quoteGate,freshnessGate,gateAnalysis} from './src/freshness-guard.mjs';
 import {analyzeQuant} from './src/engine.mjs';
 import {recordIssuedForecast,settleForCurrentSeries,accuracySnapshot} from './src/accuracy.mjs';
 
@@ -9,7 +10,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const money=x=>finite(x)?'$'+x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
 const num=(x,n=2)=>finite(x)?x.toFixed(n):'—';
 const pct=x=>finite(x)?(x*100).toFixed(1)+'%':'—';
-let chart=null,controller=null,requestId=0,activeSymbol=null,activeQuote=null,quoteTimer=null,quoteRequest=0,quoteController=null;
+let chart=null,controller=null,requestId=0,activeSymbol=null,activeQuote=null,quoteTimer=null,quoteRequest=0,quoteController=null,activeAnalysis=null,lastGateAllowed=null,expiryTimer=null;
 const eastern=x=>!x?'Unavailable':new Date(typeof x==='number'?x*1000:x).toLocaleString('en-US',{timeZone:'America/New_York',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
 
 function klass(dir){return dir==='BULLISH'||dir==='LONG'?'up':dir==='BEARISH'||dir==='SHORT'?'down':'amber';}
@@ -153,8 +154,9 @@ async function refreshOpenAccuracy(snapshot){
   }finally{const b=$('#refresh-accuracy');if(b){b.disabled=false;b.textContent='UPDATE OPEN OUTCOMES';}}
 }
 function paintQuote(message=''){
-  const f=quoteFreshness(activeQuote);
-  $('#quote-status').innerHTML=`<div class="label">${esc(activeSymbol||'')} · ${esc(f.label)}</div><div class="quote-price">${money(activeQuote?.price)}</div><div class="micro">Market time: ${eastern(activeQuote?.as_of)} · ${esc(activeQuote?.provider||'No quote source available')}<br>Retrieved: ${eastern(activeQuote?.fetched_at)}. Market-closed quotes retain their last trading timestamp; “recent” does not certify exchange real-time entitlement.${message?'<br>'+esc(message):''}</div>`;
+  const f=quoteFreshness(activeQuote),gate=quoteGate(activeSymbol,activeQuote),market=activeAnalysis?freshnessGate(activeAnalysis).market:null;
+  clearTimeout(expiryTimer);if(gate.allowed)expiryTimer=setTimeout(()=>{paintQuote();enforceFreshness();},Math.max(10,(activeQuote.as_of+900-Date.now()/1000)*1000+10));
+  $('#quote-status').innerHTML=`<div class="label">${esc(activeSymbol||'')} · ${esc(gate.allowed?f.label:gate.status)}${market?.state==='CLOSED'?' · REGULAR MARKET CLOSED':''}</div><div class="quote-price">${gate.allowed?money(activeQuote?.price):'—'}</div><div class="micro">${!gate.allowed&&activeQuote?'Historical quote only: '+money(activeQuote.price)+' · ':''}Market time: ${eastern(activeQuote?.as_of)} · ${esc(activeQuote?.provider||'No quote source available')}<br>Retrieved: ${eastern(activeQuote?.fetched_at)}. Strict limit: quote market time must be within 15 minutes, including outside regular hours. Older quotes are historical only; provider entitlement still applies.${message?'<br>'+esc(message):''}</div>`;
 }
 async function refreshPrice(){
   if(!activeSymbol||detectAsset(activeSymbol,$('#asset').value)!=='STOCK')return;
@@ -167,22 +169,37 @@ async function refreshPrice(){
 function schedulePrice(){clearInterval(quoteTimer);const interval=Number($('#quote-interval').value);if(interval)quoteTimer=setInterval(()=>{if(!document.hidden)refreshPrice();},interval);}
 $('#refresh-quote').onclick=refreshPrice;$('#quote-interval').onchange=schedulePrice;
 // Refresh age labels without making network requests.
-setInterval(()=>{if(activeSymbol)paintQuote();},60000);schedulePrice();
+setInterval(()=>{if(activeSymbol){paintQuote();enforceFreshness();}},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){paintQuote();enforceFreshness();}});
+window.addEventListener('pageshow',()=>{paintQuote();enforceFreshness();});schedulePrice();
+function enforceFreshness(force=false){
+  if(!activeAnalysis)return;
+  const q=gateAnalysis(activeAnalysis);
+  if(force||q.freshness.allowed!==lastGateAllowed){lastGateAllowed=q.freshness.allowed;render(q);}
+  if(!q.freshness.allowed){
+    $('#decision').innerHTML=`<div>${cell('MODEL ACTION','CURRENT SETUP WITHHELD','amber')}<div class="micro">${esc(q.freshness.reasons.join(' · '))}. Click ANALYZE to retrieve fresh inputs.</div></div>`;
+    $('#trade').innerHTML='<h2>CURRENT SETUP WITHHELD</h2><div class="rule">Historical chart and research remain visible. Entry, stop, targets and current forecasts require a quote within 15 minutes and current completed candles.</div>';
+    $('#projections').innerHTML='<div class="micro">Current projections withheld by the freshness gate.</div>';
+    $('#distribution').innerHTML='<div class="micro">Current forecast distribution withheld by the freshness gate.</div>';
+    $('#chart-note').textContent=q.sourceSymbol+' · '+q.timeframe+' · HISTORICAL CONTEXT ONLY — current setup withheld';
+  }
+  return q;
+}
 async function run(){
   const symbol=$('#symbol').value.trim().toUpperCase();if(!symbol)return;
   controller?.abort();quoteController?.abort();quoteRequest++;$('#refresh-quote').disabled=false;controller=new AbortController();const signal=controller.signal,id=++requestId;
-  activeSymbol=symbol;activeQuote=null;paintQuote('Retrieving this ticker…');
+  activeAnalysis=null;lastGateAllowed=null;activeSymbol=symbol;activeQuote=null;paintQuote('Retrieving this ticker…');
   for(const key of ['decision','chart','chart-note','source','distribution','trade','projections','state-grid','evidence','research','integrity','data-asof'])if($('#'+key))$('#'+key).innerHTML='';
   if(chart){chart.remove();chart=null;}$('#status').textContent='Retrieving available data and calculating Q-State Unified…';
   const asset=detectAsset(symbol,$('#asset').value),timeframe=$('#tf').value;
   const quotePromise=asset==='STOCK'?currentQuote(symbol,signal).then(q=>{if(id===requestId){activeQuote=q;paintQuote();}return q;}).catch(()=>null):Promise.resolve(null);
   try{
     const data=await loadMarketData({symbol,asset,timeframe,signal,quotePromise});if(id!==requestId)return;
-    const q=analyzeQuant({...data});q.quote=data.quote;q.research=data.research;q.calculatedAt=new Date().toISOString();q.apiContext=data.apiContext;q.dataStatus=data.dataStatus||'UNKNOWN';q.lastCompletedBar=data.lastCompletedBar||data.bars?.at(-1)?.end_ts||null;q.onDemand=!!data.onDemand;q.runtimeApiConfigured=!!data.runtimeApiConfigured;q.providerTrace=data.providerTrace||[];q.crossValidation=data.crossValidation||null;
-    activeQuote=freshestQuote(symbol,[activeQuote,data.quote]);paintQuote(data.notice||'');render(q);
-    try{if(!['STALE','REVIEW','UNKNOWN'].includes(q.dataStatus))await recordIssuedForecast(q);const accuracy=await settleForCurrentSeries(q);if(id===requestId)renderAccuracy(accuracy);}catch{if(id===requestId)renderAccuracy(null);}
+    const q=analyzeQuant({...data});q.quote=data.quote;q.calendar=data.calendar;q.research=data.research;q.calculatedAt=new Date().toISOString();q.apiContext=data.apiContext;q.dataStatus=data.dataStatus||'UNKNOWN';q.lastCompletedBar=data.lastCompletedBar||data.bars?.at(-1)?.end_ts||null;q.onDemand=!!data.onDemand;q.runtimeApiConfigured=!!data.runtimeApiConfigured;q.providerTrace=data.providerTrace||[];q.crossValidation=data.crossValidation||null;
+    activeQuote=freshestQuote(symbol,[activeQuote,data.quote]);activeAnalysis=q;paintQuote(data.notice||'');const guarded=enforceFreshness(true);
+    try{if(guarded?.freshness.allowed)await recordIssuedForecast(guarded);const accuracy=await settleForCurrentSeries(q);if(id===requestId)renderAccuracy(accuracy);}catch{if(id===requestId)renderAccuracy(null);}
     if(id!==requestId)return;
-    $('#status').textContent=`${data.notice||'READY'} · ${data.onDemand?'SECURE GATEWAY':'INDEPENDENT DATA FALLBACK'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed ${data.timeframe} bars · ${q.dataStatus} · ${q.state.probabilityStatus}`;
+    $('#status').textContent=`${guarded?.freshness.allowed?(data.notice||'READY'):'CURRENT SETUP WITHHELD — '+guarded.freshness.reasons.join('; ')} · ${data.onDemand?'SECURE GATEWAY':'INDEPENDENT DATA FALLBACK'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed ${data.timeframe} bars · ${q.dataStatus} · ${q.state.probabilityStatus}`;
     history.replaceState(null,'',`?symbol=${encodeURIComponent(symbol)}&tf=${timeframe}&asset=${asset}`);
   }catch(e){if(id!==requestId||e.name==='AbortError')return;$('#status').textContent='ANALYSIS UNAVAILABLE · '+e.message;$('#decision').innerHTML=`<div>${cell('MODEL ACTION','DATA UNAVAILABLE','amber')}</div>`;$('#chart').innerHTML='<div class="micro" style="padding:40px">No verified history for this ticker. Try ANALYZE again; price refresh remains independent.</div>';}
 }

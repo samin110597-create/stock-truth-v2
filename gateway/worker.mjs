@@ -17,7 +17,7 @@ async function getQuote(symbol,env){
   const candidates=[];
   if(env.FINNHUB_KEY)try{const j=await upstream('finnhub','https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(symbol),{headers:{'X-Finnhub-Token':env.FINNHUB_KEY}});const q=quote(symbol,j.c,j.t,'Finnhub',{api_secret_used:true});if(Date.now()/1000-q.as_of<=120)return q;candidates.push(q);}catch{}
   if(env.FMP_KEY)try{const j=await upstream('fmp','https://financialmodelingprep.com/stable/quote?'+new URLSearchParams({symbol,apikey:env.FMP_KEY})),q=j?.[0];if(q?.symbol===symbol)candidates.push(quote(symbol,q.price,q.timestamp,'FMP',{api_secret_used:true}));}catch{}
-  if(!candidates.length)try{const j=await upstream('yahoo','https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=5d'),m=j?.chart?.result?.[0]?.meta;if(m?.symbol?.toUpperCase()===symbol&&m.currency==='USD')candidates.push(quote(symbol,m.regularMarketPrice,m.regularMarketTime,'Yahoo server quote',{api_secret_used:false}));}catch{}
+  if(!candidates.some(q=>Date.now()/1000-q.as_of<=900))try{const j=await upstream('yahoo','https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=5d'),m=j?.chart?.result?.[0]?.meta;if(m?.symbol?.toUpperCase()===symbol&&m.currency==='USD')candidates.push(quote(symbol,m.regularMarketPrice,m.regularMarketTime,'Yahoo server quote',{api_secret_used:false}));}catch{}
   if(!candidates.length)throw Error('Quote unavailable');return candidates.sort((a,b)=>b.as_of-a.as_of)[0];
 }
 async function history(symbol,tf,env){
@@ -45,10 +45,10 @@ export default {async fetch(request,env,ctx){
   const symbol=(url.searchParams.get('symbol')||'').trim().toUpperCase(),tf=url.searchParams.get('timeframe')||'1D';
   if(!valid(symbol)||!['15M','1H','4H','1D'].includes(tf))return response({error:'Invalid symbol or timeframe'},400);
   const isQuote=url.pathname==='/v1/quote',key=new Request(url.origin+url.pathname+'?'+new URLSearchParams({symbol,...(isQuote?{}:{timeframe:tf})}));
-  const cache=globalThis.caches?.default,cached=cache&&await cache.match(key);if(cached)return cached;
+  const cache=globalThis.caches?.default,cached=cache&&await cache.match(key);if(cached){if(!isQuote)return cached;const q=await cached.clone().json();if(Number.isFinite(q.as_of)&&Date.now()/1000-q.as_of<=900)return cached;}
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';if(!budget('ip:'+ip,30,60000))return response({symbol,error:'Please wait before refreshing again'},429);
   if(env.REQUEST_LIMITER){const {success}=await env.REQUEST_LIMITER.limit({key:ip});if(!success)return response({symbol,error:'Please wait before refreshing again'},429);}
   const token=key.url;if(pending.has(token))return (await pending.get(token)).clone();
-  const task=(async()=>{try{const data=isQuote?await getQuote(symbol,env):await history(symbol,tf,env),r=response(data,200,isQuote?(data.provider==='FMP'?900:60):tf==='1D'?900:300);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}catch{const r=response({symbol,error:'Source unavailable; use independent browser fallback'},503,30);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}})();
+  const task=(async()=>{try{const data=isQuote?await getQuote(symbol,env):await history(symbol,tf,env),r=response(data,200,isQuote?Math.max(1,Math.min(data.provider==='FMP'?900:60,Math.floor(data.as_of+900-Date.now()/1000))):tf==='1D'?900:300);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}catch{const r=response({symbol,error:'Source unavailable; use independent browser fallback'},503,30);if(cache)ctx.waitUntil(cache.put(key,r.clone()));return r;}})();
   pending.set(token,task);try{return (await task).clone();}finally{pending.delete(token);}
 }};
