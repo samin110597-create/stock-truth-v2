@@ -177,6 +177,7 @@ function enforceFreshness(force=false){
   const q=gateAnalysis(activeAnalysis);
   if(force||q.freshness.allowed!==lastGateAllowed){lastGateAllowed=q.freshness.allowed;render(q);}
   if(!q.freshness.allowed){
+    $('#status').textContent='CURRENT SETUP WITHHELD — '+q.freshness.reasons.join('; ')+' · '+q.timeframe+' historical chart retained';
     $('#decision').innerHTML=`<div>${cell('MODEL ACTION','CURRENT SETUP WITHHELD','amber')}<div class="micro">${esc(q.freshness.reasons.join(' · '))}. Click ANALYZE to retrieve fresh inputs.</div></div>`;
     $('#trade').innerHTML='<h2>CURRENT SETUP WITHHELD</h2><div class="rule">Historical chart and research remain visible. Entry, stop, targets and current forecasts require a quote within 15 minutes and current completed candles.</div>';
     $('#projections').innerHTML='<div class="micro">Current projections withheld by the freshness gate.</div>';
