@@ -2,6 +2,7 @@ import {createChart,CandlestickSeries,HistogramSeries,LineSeries,createSeriesMar
 import {loadMarketData,detectAsset,currentQuote} from './src/data.mjs';
 import {quoteFreshness,freshestQuote} from './src/freshness.mjs';
 import {quoteGate,freshnessGate,gateAnalysis} from './src/freshness-guard.mjs';
+import {buildBriefing} from './src/briefing.mjs';
 import {analyzeQuant} from './src/engine.mjs';
 import {recordIssuedForecast,settleForCurrentSeries,accuracySnapshot} from './src/accuracy.mjs';
 
@@ -54,17 +55,16 @@ function renderAccuracy(a){
 }
 
 function futureTimes(q){
-  const n=20,last=q.bars.at(-1);
-  if(q.timeframe==='1D'){
-    const out=[],d=new Date(last.date+'T00:00:00Z');
-    while(out.length<n){d.setUTCDate(d.getUTCDate()+1);const wd=d.getUTCDay();if(wd!==0&&wd!==6)out.push(d.toISOString().slice(0,10));}
-    return out;
-  }
-  const step={'15M':900,'1H':3600,'4H':14400}[q.timeframe]||86400,out=[];let t=last.ts;
-  for(let i=0;i<n;i++){t+=step;out.push(t);}return out;
+  const sessions=Object.entries(q.calendar?.sessions||{}).sort(([a],[b])=>a.localeCompare(b)),last=q.bars.at(-1);
+  if(q.timeframe==='1D')return sessions.filter(([date])=>date>last.date).slice(0,20).map(([date])=>date);
+  const step={'15M':900,'1H':3600,'4H':14400}[q.timeframe],out=[];
+  if(!step)return out;
+  for(const [,bounds]of sessions){for(let t=bounds[0];t<bounds[1];t+=step){if(t>last.ts)out.push(t);if(out.length===20)return out;}}
+  return out;
 }
 function drawProjection(q){
   const times=futureTimes(q),lastTime=q.timeframe==='1D'?q.bars.at(-1).date:q.bars.at(-1).ts,lastPrice=q.bars.at(-1).close,pr=q.forecast.projection;
+  if(times.length<20)return;
   if(pr?.source==='WALK_FORWARD_OOS_CONDITIONAL_RETURNS'){
     const sets=[
       {name:'primary',color:'#49d7e6',width:2,lineStyle:0},
@@ -133,14 +133,34 @@ function render(q){
   $('#evidence').innerHTML=`<div class="evidence-list"><div class="e-item"><b>WALK-FORWARD MODEL</b>${esc(trainedEvidence)}</div><div class="e-item"><b>MULTI-TIMEFRAME</b>${esc(mtfDetail)} · alignment with current trade ${finite(q.mtf?.alignmentWithTrade)?num(q.mtf.alignmentWithTrade,2):'—'}</div><div class="e-item"><b>STRUCTURE</b>${esc(s.pattern)} · ${esc(s.method)} · directional state ${s.direction>0?'up':s.direction<0?'down':'neutral'}</div><div class="e-item"><b>DIVERGENCE</b>${esc(s.divergence?.type||'No confirmed RSI pivot divergence')}</div><div class="e-item"><b>RECENT SWEEP</b>${esc(s.recentSweep?s.recentSweep.dir>0?'Bullish downside liquidity sweep':'Bearish upside liquidity sweep':'None in the recent window')}</div><div class="e-item"><b>RECENT STRUCTURE EVENTS</b>${recent.length?recent.map(e=>esc(e.type)+' @ '+money(e.level)+' · scale '+(e.scale||'—')).join(' · '):'None'}</div><div class="e-item"><b>RULE-BASED HISTORICAL CONTEXT</b>${h.n?`${(h.rate*100).toFixed(1)}% of ${h.n} simplified same-direction historical states were positive after ${h.horizon} bars; 95% interval ${pct(h.interval.low)}–${pct(h.interval.high)}.`:'Insufficient comparable sample.'}</div><div class="e-item"><b>FUNDAMENTAL RESEARCH</b>${esc(fund.status||'UNAVAILABLE')} · ${esc(fund.provider||'No fundamentals response')} · ${Object.keys(fund.data||{}).length} sourced blocks. Present-day fundamentals are descriptive until historical OOS ablation proves incremental forecast value.</div><div class="e-item"><b>MACRO CONTEXT · FRED</b>${esc(macroText||providers.fred?.reason||macro.reason||'No sanitized FRED context yet.')} · model weight: 0 until validated.</div></div>`;
   const summary=fund.data?.summary||{};const fundamentalRows=[...flattenResearch(summary.valuation||summary.metrics||{},'Valuation'),...flattenResearch(summary.profitability||{},'Profitability'),...flattenResearch(summary.financialHealth||{},'Financial health')].slice(0,24);
   const macroRows=Object.entries(macroSeries).filter(([,v])=>v?.value!=null).map(([sid,v])=>[v.label||sid,String(v.value)+(sid==='DGS10'||sid==='DFII10'||sid==='T10YIE'?'%':'')]);
-  $('#research').innerHTML=`<div class="evidence-list"><div class="e-item"><b>FUNDAMENTALS · ${esc(fund.status||'UNAVAILABLE')}</b><div class="micro">Source updated: ${eastern(summary.asOf?.dataUpdatedAt)} · Retrieved: ${eastern(q.research?.fetched_at)} · ${esc(fund.provider||'Unavailable')}</div>${fundamentalRows.length?fundamentalRows.map(([a,b])=>`${esc(a)}: <strong>${esc(b)}</strong>`).join(' · '):esc(fund.errors?.join(' · ')||fund.reason||'No sourced summary fields available.')}</div><div class="e-item"><b>MACRO · ${esc(macro.status||providers.fred?.status||'UNAVAILABLE')}</b>${macroRows.length?macroRows.map(([a,b])=>`${esc(a)}: <strong>${esc(b)}</strong>`).join(' · '):esc(macro.reason||providers.fred?.reason||'No sourced macro values available.')}</div><div class="e-item"><b>MODEL USE</b>Research inputs are visible here, but their production forecast weight is 0% until synchronized historical features pass leakage-controlled OOS ablation and the winning method is incorporated into the one Q-State artifact.</div></div>`;
+  $('#research').innerHTML=`<div class="evidence-list"><div class="e-item"><b>FUNDAMENTALS · ${esc(fund.status||'UNAVAILABLE')}</b><div class="micro">Source updated: ${eastern(summary.asOf?.dataUpdatedAt)} · Retrieved: ${eastern(q.research?.fetched_at)} · ${esc(fund.provider||'Unavailable')}</div>${fundamentalRows.length?fundamentalRows.map(([a,b])=>`${esc(a)}: <strong>${esc(b)}</strong>`).join(' · '):esc(fund.errors?.join(' · ')||fund.reason||'No sourced summary fields available.')}</div><div class="e-item"><b>MACRO · ${esc(macroRows.length?'SOURCED CONTEXT':macro.status||providers.fred?.status||'UNAVAILABLE')}</b>${macroRows.length?macroRows.map(([a,b])=>`${esc(a)}: <strong>${esc(b)}</strong>`).join(' · '):esc(macro.reason||providers.fred?.reason||'No sourced macro values available.')}</div><div class="e-item"><b>MODEL USE</b>Research inputs are visible here, but their production forecast weight is 0% until synchronized historical features pass leakage-controlled OOS ablation and the winning method is incorporated into the one Q-State artifact.</div></div>`;
   const apiLines=providerRows.length?Object.entries(providers).map(([name,v])=>kv('API '+name.toUpperCase(),esc(v?.status||'UNKNOWN')+(v?.reason?' · '+esc(v.reason):''),v?.status==='OK'?'up':'amber')).join(''):kv('API context','No context manifest yet','amber');
   $('#integrity').innerHTML=kv('Engine',esc(q.model))+kv('Trained artifact',esc(q.trained?.modelVersion||'Unavailable'))+kv('Trained artifact generated',q.trained?.generatedAt?eastern(q.trained.generatedAt):'—')+kv('Probability policy',esc(q.state.probabilityStatus))+kv('Probability definition',esc(q.trained?.labelDefinition||'Withheld/unavailable'))+kv('Projection source',esc(q.forecast.source||'—'))+kv('Requested',esc(q.symbol))+kv('Source symbol',esc(q.sourceSymbol))+kv('Bars',q.bars.length.toLocaleString())+kv('Secure gateway configured',q.runtimeApiConfigured?'YES · availability checked per request':'NO · independent public retrieval enabled',q.runtimeApiConfigured?'up':'amber')+kv('Data route',q.onDemand?'SECURE ON-DEMAND API':q.runtimeApiConfigured?'INDEPENDENT FALLBACK':'DIRECT PUBLIC / SAVED FALLBACK',q.onDemand?'up':'amber')+kv('Primary bar provider',esc(q.provider))+kv('Cross-source check',q.crossValidation?esc(q.crossValidation.status)+(finite(q.crossValidation.dispersionPct)?' · '+num(q.crossValidation.dispersionPct,3)+'% dispersion':''):'—')+kv('Fundamentals',esc(fund.status||'UNAVAILABLE')+' · '+esc(fund.provider||'Independent fundamentals source'))+kv('Macro research',esc(macro.status||'UNAVAILABLE')+' · '+esc(macro.provider||'FRED'))+kv('Research weighting','0% until synchronized OOS validation','amber')+kv('Fetched',q.fetchedAt?eastern(q.fetchedAt):'—')+kv('Data status',esc(q.dataStatus||'—'))+kv('Last completed bar',q.lastCompletedBar?eastern(q.lastCompletedBar):(lastBar?.date||'—'))+kv('Credential handling',esc(q.credentialPolicy||'No browser credential'))+apiLines+(q.providerTrace?.length?kv('On-demand provider trace',q.providerTrace.map(x=>esc(x.source)+': '+esc(x.status)).join(' · ')):'')+`<div class="micro">${esc(ctx?.purpose||'API context is informational and does not silently change the trade score.')} ${esc(q.caveats.join(' '))}</div>`;
   const quote=q.quote,bar=q.bars.at(-1);
   $('#integrity').insertAdjacentHTML('afterbegin',kv('Quote source',esc(quote?.provider||'Unavailable'))+kv('Quote market time',eastern(quote?.as_of))+kv('Quote retrieved',eastern(quote?.fetched_at))+kv('Output calculated',eastern(q.calculatedAt)));
-  let note=$('#data-asof');if(!note){note=document.createElement('div');note.id='data-asof';note.className='micro';$('#status').insertAdjacentElement('afterend',note);}
-  note.innerHTML=`<b>DATA USED · EASTERN TIME</b><br>Quote used at calculation: ${money(quote?.price)} · ${eastern(quote?.as_of)} · ${esc(quote?.provider||'QUOTE UNAVAILABLE')}<br>${esc(q.timeframe)} technicals / structure / forecast use completed ${q.timeframe==='1D'?'session '+esc(bar?.session||bar?.date||'Unavailable'):'bar '+eastern(bar?.end_ts)} · ${esc(q.provider)}<br>History retrieved: ${eastern(q.fetchedAt)} · Output calculated: ${eastern(q.calculatedAt)}<br>Research retrieved: ${eastern(q.research?.fetched_at)} · Financial reporting dates remain separate from retrieval time.<br>${esc(quote?.delay||quote?.latency||'Quote latency unspecified by provider')}. Click ANALYZE to refresh all available data.`;
+  let note=$('#data-asof');if(!note){note=document.createElement('details');note.id='data-asof';note.className='micro';$('#status').insertAdjacentElement('afterend',note);}
+  note.innerHTML=`<summary>Data sources & exact timestamps · Eastern time</summary>Quote used at calculation: ${money(quote?.price)} · ${eastern(quote?.as_of)} · ${esc(quote?.provider||'QUOTE UNAVAILABLE')}<br>${esc(q.timeframe)} technicals / structure / forecast use completed ${q.timeframe==='1D'?'session '+esc(bar?.session||bar?.date||'Unavailable'):'bar '+eastern(bar?.end_ts)} · ${esc(q.provider)}<br>History retrieved: ${eastern(q.fetchedAt)} · Output calculated: ${eastern(q.calculatedAt)}<br>Research retrieved: ${eastern(q.research?.fetched_at)} · Financial reporting dates remain separate from retrieval time.<br>${esc(quote?.delay||quote?.latency||'Quote latency unspecified by provider')}. Click ANALYZE to refresh all available data.`;
   renderChart(q);
+}
+function renderBriefing(raw,gate){
+  const v=buildBriefing(raw,gate),p=raw.plan,k=v.dir>0?'up':v.dir<0?'down':'amber',asof=eastern(v.bar.end_ts);
+  const trigger=v.dir>0?(p?.trigger??v.resistance):(p?.trigger??v.support),failure=p?.stop;
+  const context=`${raw.symbol} · ${raw.timeframe} · completed candle ${asof} · reference close ${money(v.close)}`;
+  $('#decision').innerHTML=`<div class="brief-main"><div class="eyebrow">WHAT TO DO NOW · ${esc(v.mode)}</div><h2 class="${k}">${esc(v.action)}</h2><p>${esc(v.reason)}</p><div class="brief-context">${esc(context)}</div></div><div class="brief-bias"><span class="label">Directional outlook</span><strong class="${k}">${esc(v.bias)}</strong><p>${esc(raw.structure.pattern)} · RSI ${num(raw.indicators.rsi,1)}<br>${raw.state.probabilityStatus==='WALK_FORWARD_VALIDATED'?'Validated model available':'Win probability not validated'}</p></div>`;
+  const trend=finite(raw.indicators.ema20)?(v.close>raw.indicators.ema20?'above':'below')+' its 20-bar average at '+money(raw.indicators.ema20):'without a complete moving-average history';
+  $('#roadmap').innerHTML=`<div class="panel-head"><span>THE PRICE-ACTION ROADMAP</span><span>${esc(v.horizonLabel)}</span></div><div class="roadmap-grid"><article><h3>1. The current read</h3><p>${esc(raw.symbol)} closed ${trend}. Structure is ${esc(raw.structure.pattern)}. ${raw.structure.recentSweep?(raw.structure.recentSweep.dir>0?'A recent downside sweep supports a potential rebound.':'A recent upside sweep warns of rejection.'):'No recent confirmed liquidity sweep adds conviction.'}</p><p>Support <b>${money(v.support)}</b> · Resistance <b>${money(v.resistance)}</b></p></article><article><h3>2. What must happen</h3><p>${finite(trigger)?`Wait for a completed ${esc(raw.timeframe)} candle ${v.dir>0?'above':'below'} <b>${money(trigger)}</b>, or a confirmed ${v.dir>0?'bullish pullback':'bearish bounce rejection'} in the planned zone.`:'Wait for price to leave the confirmed range; no usable directional trigger exists yet.'}</p><p>${gate.allowed?'A fresh quote alone does not confirm the candle trigger.':'Refresh with ANALYZE before entering. These are planning levels, not a live signal.'}</p></article><article><h3>3. When to abandon it</h3><p>${finite(failure)?`A completed close ${v.dir>0?'below':'above'} <b>${money(failure)}</b> invalidates the ${v.dir>0?'bullish':'bearish'} candle-based thesis.`:'No directional invalidation is established. Remain on the sidelines.'}</p><p>Do not chase a price that has already reached the first objective. Recalculate risk from the actual fill.</p></article></div>`;
+  const e=v.execution;
+  $('#trade').innerHTML=`<h2>${gate.allowed?'CONDITIONAL EXECUTION PLAN':'PLANNING LEVELS · NOT LIVE'}</h2><div class="trade-action ${k}">${esc(v.bias)}</div>${p?kv('Reaction zone',money(p.entryZone.low)+' – '+money(p.entryZone.high),'amber'):''}${e?kv('Example approach',esc(e.name))+kv('Assumed entry',money(e.entry),'cyan')+kv('Invalidation / stop reference',money(e.stop),'down')+e.targets.map((t,i)=>kv('Objective '+(i+1),money(t.price)+' · '+num(t.riskReward)+'R','up')).join('')+kv('Reward / risk to first objective',finite(e.rr)?num(e.rr)+'R':'No directional target'):'<p class="rule">No coherent entry / stop / target geometry is available. Wait for a new setup.</p>'}<div class="rule"><b>Before entry:</b> ${esc(v.reason)}<br><br>R multiples use the assumed entry shown above; costs, slippage and gaps can change realized risk. Targets behind this entry are excluded.</div>`;
+  const r=v.range,available=[r.low,r.mid,r.high].every(finite);
+  const conditionUp=finite(v.resistance)?'Close above '+money(v.resistance)+' and hold on a retest':'Confirm a new higher high and hold the breakout';
+  const conditionDown=finite(v.support)?'Close below '+money(v.support)+' and fail to reclaim it':'Confirm a new lower low and failed reclaim';
+  $('#projections').innerHTML=`<div class="panel-head"><span>WHERE PRICE COULD GO</span><span>${esc(v.horizonLabel)} · ${esc(v.mode)}</span></div><p class="scenario-note">${esc(context)}. ${esc(v.rangeSource)}. These conditional paths can fail; the displayed range is not a proven confidence interval.</p><div class="scenario-grid"><article class="scenario bull"><div class="label">BULL CASE · ${r.high>=v.close?'UPSIDE':'RECOVERY'} PATH</div><strong>${available?money(r.high):'Unavailable'}</strong><p>${esc(conditionUp)}.</p><small>Upper-quartile model outcome, not a guaranteed target.</small></article><article class="scenario base"><div class="label">BASE CASE · MODEL CENTER</div><strong>${available?money(r.mid):'Unavailable'}</strong><p>${available?'Middle range '+money(r.low)+' – '+money(r.high)+'.':'Insufficient return distribution.'} ${v.dir?'The directional lean is '+(v.dir>0?'upward':'downward')+', but this does not establish a likely winner.':'No clear directional advantage.'}</p><small>No scenario probabilities claimed unless validated.</small></article><article class="scenario bear"><div class="label">BEAR CASE · ${r.low<=v.close?'DOWNSIDE':'PULLBACK'} PATH</div><strong>${available?money(r.low):'Unavailable'}</strong><p>${esc(conditionDown)}.</p><small>Lower-quartile model outcome; losses can exceed this level.</small></article></div>`;
+  renderChart({...raw,plan:gate.allowed&&e&&p?{...p,entry:e.entry,targets:e.targets.map((t,i)=>({...t,name:'TP'+(i+1)}))}:null});
+  if(!gate.allowed){
+    $('#distribution').innerHTML='<div class="micro">Live forecast issuance is blocked. Candle-based planning scenarios above remain visible with their source timestamp.</div>';
+    // Show as-of projections without restoring live entry/stop/target overlays.
+    $('#chart-note').textContent=context+' · CANDLE-BASED SCENARIOS ONLY · live entry blocked';
+  }
 }
 async function refreshOpenAccuracy(snapshot){
   const btn=$('#refresh-accuracy');if(btn){btn.disabled=true;btn.textContent='UPDATING…';}
@@ -175,14 +195,10 @@ window.addEventListener('pageshow',()=>{paintQuote();enforceFreshness();});sched
 function enforceFreshness(force=false){
   if(!activeAnalysis)return;
   const q=gateAnalysis(activeAnalysis);
-  if(force||q.freshness.allowed!==lastGateAllowed){lastGateAllowed=q.freshness.allowed;render(q);}
-  if(!q.freshness.allowed){
-    $('#status').textContent='CURRENT SETUP WITHHELD — '+q.freshness.reasons.join('; ')+' · '+q.timeframe+' historical chart retained';
-    $('#decision').innerHTML=`<div>${cell('MODEL ACTION','CURRENT SETUP WITHHELD','amber')}<div class="micro">${esc(q.freshness.reasons.join(' · '))}. Click ANALYZE to retrieve fresh inputs.</div></div>`;
-    $('#trade').innerHTML='<h2>CURRENT SETUP WITHHELD</h2><div class="rule">Historical chart and research remain visible. Entry, stop, targets and current forecasts require a quote within 15 minutes and current completed candles.</div>';
-    $('#projections').innerHTML='<div class="micro">Current projections withheld by the freshness gate.</div>';
-    $('#distribution').innerHTML='<div class="micro">Current forecast distribution withheld by the freshness gate.</div>';
-    $('#chart-note').textContent=q.sourceSymbol+' · '+q.timeframe+' · HISTORICAL CONTEXT ONLY — current setup withheld';
+  const gateKey=[q.freshness.allowed,q.freshness.historyStatus,q.freshness.quote.status].join('|');
+  if(force||gateKey!==lastGateAllowed){
+    lastGateAllowed=gateKey;render(q);renderBriefing(activeAnalysis,q.freshness);
+    if(!q.freshness.allowed)$('#status').textContent='PLANNING MODE · '+q.freshness.reasons.join('; ')+' · Live entry blocked; candle-based roadmap available below';
   }
   return q;
 }
@@ -190,7 +206,7 @@ async function run(){
   const symbol=$('#symbol').value.trim().toUpperCase();if(!symbol)return;
   controller?.abort();quoteController?.abort();quoteRequest++;$('#refresh-quote').disabled=false;controller=new AbortController();const signal=controller.signal,id=++requestId;
   activeAnalysis=null;lastGateAllowed=null;activeSymbol=symbol;activeQuote=null;paintQuote('Retrieving this ticker…');
-  for(const key of ['decision','chart','chart-note','source','distribution','trade','projections','state-grid','evidence','research','integrity','data-asof'])if($('#'+key))$('#'+key).innerHTML='';
+  for(const key of ['decision','roadmap','chart','chart-note','source','distribution','trade','projections','state-grid','evidence','research','integrity','data-asof'])if($('#'+key))$('#'+key).innerHTML='';
   if(chart){chart.remove();chart=null;}$('#status').textContent='Retrieving available data and calculating Q-State Unified…';
   const asset=detectAsset(symbol,$('#asset').value),timeframe=$('#tf').value;
   const quotePromise=asset==='STOCK'?currentQuote(symbol,signal).then(q=>{if(id===requestId){activeQuote=q;paintQuote();}return q;}).catch(()=>null):Promise.resolve(null);
@@ -200,7 +216,7 @@ async function run(){
     activeQuote=freshestQuote(symbol,[activeQuote,data.quote]);activeAnalysis=q;paintQuote(data.notice||'');const guarded=enforceFreshness(true);
     try{if(guarded?.freshness.allowed)await recordIssuedForecast(guarded);const accuracy=await settleForCurrentSeries(q);if(id===requestId)renderAccuracy(accuracy);}catch{if(id===requestId)renderAccuracy(null);}
     if(id!==requestId)return;
-    $('#status').textContent=`${guarded?.freshness.allowed?(data.notice||'READY'):'CURRENT SETUP WITHHELD — '+guarded.freshness.reasons.join('; ')} · ${data.onDemand?'SECURE GATEWAY':'INDEPENDENT DATA FALLBACK'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed ${data.timeframe} bars · ${q.dataStatus} · ${q.state.probabilityStatus}`;
+    $('#status').textContent=`${guarded?.freshness.allowed?(data.notice||'READY'):'PLANNING MODE — '+guarded.freshness.reasons.join('; ')} · ${data.onDemand?'SECURE GATEWAY':'INDEPENDENT DATA FALLBACK'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed ${data.timeframe} bars · ${q.dataStatus} · ${q.state.probabilityStatus}`;
     history.replaceState(null,'',`?symbol=${encodeURIComponent(symbol)}&tf=${timeframe}&asset=${asset}`);
   }catch(e){if(id!==requestId||e.name==='AbortError')return;$('#status').textContent='ANALYSIS UNAVAILABLE · '+e.message;$('#decision').innerHTML=`<div>${cell('MODEL ACTION','DATA UNAVAILABLE','amber')}</div>`;$('#chart').innerHTML='<div class="micro" style="padding:40px">No verified history for this ticker. Try ANALYZE again; price refresh remains independent.</div>';}
 }

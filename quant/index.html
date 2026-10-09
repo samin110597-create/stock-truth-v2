@@ -12,7 +12,7 @@
 <main>
 <header class="top">
   <div><div class="eyebrow">INDEPENDENT QUANT SYSTEM</div><h1>Q-STATE <span>// UNIFIED FORECAST · RESEARCH · ANALYSIS</span></h1></div>
-  <div class="security">GITHUB SECRET DATA PIPELINE</div>
+  <div class="security">SWING PLAN · PRICE PATHS · RESEARCH</div>
 </header>
 
 <section class="command">
@@ -26,7 +26,8 @@
 <div id="status">Q-State Unified canonical engine ready.</div>
 </section>
 
-<section id="decision" class="decision"></section>
+<section id="decision" class="decision" aria-live="polite"></section>
+<section id="roadmap" class="roadmap"></section>
 <section class="layout">
   <div class="chart-shell">
     <div class="panel-head"><span>PRICE / STRUCTURE / FORECAST</span><span id="source"></span></div>
@@ -37,17 +38,17 @@
 </section>
 
 <section id="projections" class="projections"></section>
-<section id="state-grid" class="state-grid"></section>
+<details class="advanced"><summary>Technical indicators & model diagnostics</summary><section id="state-grid" class="state-grid"></section></details>
 
-<section class="lower-grid">
+<details class="advanced"><summary>Inspect structure evidence & forecast distribution</summary><section class="lower-grid">
   <section class="block"><div class="panel-head"><span>FORECAST DISTRIBUTION</span><span>OOS BANDS / 2,000-PATH FALLBACK</span></div><div id="distribution"></div></section>
   <section class="block"><div class="panel-head"><span>STRUCTURE EVIDENCE</span><span>NON-REPAINT PIVOTS</span></div><div id="evidence"></div></section>
 </section>
 
-<section class="block"><div class="panel-head"><span>RESEARCH CONTEXT</span><span>FUNDAMENTALS + MACRO · ZERO FORECAST WEIGHT UNTIL VALIDATED</span></div><div id="research"></div></section>
-<section class="block"><div class="panel-head"><span>Q-STATE ACCURACY DASHBOARD</span><span>IMMUTABLE FORWARD LEDGER · COMPLETED-BAR OUTCOMES</span></div><div id="accuracy"></div></section>
-<section class="block"><div class="panel-head"><span>MODEL INTEGRITY</span><span>ONE CANONICAL MODEL</span></div><div id="integrity"></div></section>
-<footer>Standalone quant page · walk-forward calibration · multi-timeframe execution gates · probabilities withheld unless promoted out of sample.</footer>
+</details><section class="block"><div class="panel-head"><span>RESEARCH CONTEXT</span><span>FUNDAMENTALS + MACRO · ZERO FORECAST WEIGHT UNTIL VALIDATED</span></div><div id="research"></div></section>
+<details class="advanced"><summary>Track forecast accuracy</summary><section class="block"><div class="panel-head"><span>Q-STATE ACCURACY DASHBOARD</span><span>IMMUTABLE FORWARD LEDGER · COMPLETED-BAR OUTCOMES</span></div><div id="accuracy"></div></section>
+</details><details class="advanced"><summary>Data provenance & model integrity</summary><section class="block"><div class="panel-head"><span>MODEL INTEGRITY</span><span>ONE CANONICAL MODEL</span></div><div id="integrity"></div></section>
+</details><footer>Standalone quant page · walk-forward calibration · multi-timeframe execution gates · probabilities withheld unless promoted out of sample.</footer>
 <script type="module" src="./app.mjs"></script>
 </main>
 </body>
