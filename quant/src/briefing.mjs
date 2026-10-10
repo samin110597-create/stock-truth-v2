@@ -5,6 +5,11 @@ export function buildBriefing(q,gate){
  const rows=q.forecast.monteCarlo||[],h={'15M':20,'1H':10,'4H':5,'1D':10}[q.timeframe]||10;
  const mc=rows.find(x=>x.step===h),band=q.trained?.horizons?.[h];
  const valid=band?.validated&&band.returnBand,range=valid?{low:b.close*Math.exp(band.returnBand.q25),mid:b.close*Math.exp(band.returnBand.q50),high:b.close*Math.exp(band.returnBand.q75)}:{low:mc?.p25,mid:mc?.median,high:mc?.p75};
+ const bullStructure=q.structure.resistance?.find(x=>finite(resistance)&&x.price>resistance)?.price,bearStructure=q.structure.support?.find(x=>finite(support)&&x.price<support)?.price;
+ const bullObjective=finite(bullStructure)?bullStructure:finite(resistance)&&range.high>resistance?range.high:null;
+ const bearObjective=finite(bearStructure)?bearStructure:finite(support)&&range.low<support?range.low:null;
+ const bullSource=finite(bullStructure)?'Next confirmed resistance; timing is not forecast.':'Model range reference beyond resistance; not conditioned on a breakout.';
+ const bearSource=finite(bearStructure)?'Next confirmed support; timing is not forecast.':'Model range reference beyond support; not conditioned on a breakdown.';
  const historyOK=gate.historyStatus==='COMPLETED BAR',mode=!historyOK?'HISTORICAL REVIEW':gate.allowed?'CURRENT DATA':'CANDLE-BASED PLAN · LIVE ENTRY BLOCKED';
  const pathways=[];
  if(p&&finite(p.stop)){
@@ -19,11 +24,11 @@ export function buildBriefing(q,gate){
  const chased=execution&&finite(freshPrice)&&execution.targets[0]&&dir*(freshPrice-execution.targets[0].price)>=0;
  let action='WAIT FOR CONFIRMATION',reason='The model has a directional lean, but the entry trigger still needs a completed candle.';
  if(!historyOK){action='WAIT — UPDATE HISTORY';reason='Completed candles are missing or need review. Levels below are historical reference only.';}
- else if(!gate.allowed){action='PLAN NOW · WAIT TO ENTER';reason='Use the completed-candle roadmap below. A price within 15 minutes is required before considering an entry.';}
  else if(invalidated){action='AVOID THIS SETUP';reason='The current quote has crossed the planned invalidation. Reassess with a new completed candle; do not use the old entry.';}
  else if(chased){action='DO NOT CHASE';reason='The current quote is already beyond the first planned objective. Wait for a new pullback or a newly calculated setup.';}
  else if(!dir){action='WAIT — RANGE / NO EDGE';reason='Directional evidence is mixed. Wait for a confirmed break of the range.';}
  else if(!execution||execution.rr<1.35){action='WAIT — REWARD TOO SMALL';reason='The nearest usable target does not offer at least 1.35 times the planned risk. A directional bias alone is not an entry.';}
  else if(q.state.stage==='READY'){action=dir>0?'WATCH LONG ENTRY':'WATCH SHORT ENTRY';reason='The model setup passes its filters. Enter only after the specified completed-bar confirmation, with fresh data and acceptable execution price.';}
- return {mode,action,reason,dir,support,resistance,close:b.close,bar:b,horizon:h,horizonLabel:q.timeframe==='1D'?h+' trading sessions':h+' completed '+q.timeframe+' bars',range,rangeSource:valid?'Validated conditional return range':'Volatility simulation · not a calibrated probability',pathways,execution,historyOK,invalidated,chased,bias:dir>0?'UPWARD LEAN':dir<0?'DOWNWARD LEAN':'RANGE / MIXED'};
+ if(historyOK&&!gate.allowed){if(action==='WATCH LONG ENTRY'||action==='WATCH SHORT ENTRY'||action==='WAIT FOR CONFIRMATION')action='PLAN NOW · WAIT TO ENTER';reason+=' Live entry is blocked until a quote within 15 minutes is available.';}
+ return {bullObjective,bearObjective,bullSource,bearSource,mode,action,reason,dir,support,resistance,close:b.close,bar:b,horizon:h,horizonLabel:q.timeframe==='1D'?h+' trading sessions':h+' completed '+q.timeframe+' bars',range,rangeSource:valid?'Validated conditional return range':'Volatility simulation · not a calibrated probability',pathways,execution,historyOK,invalidated,chased,bias:dir>0?'UPWARD LEAN':dir<0?'DOWNWARD LEAN':'RANGE / MIXED'};
 }
