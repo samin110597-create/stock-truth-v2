@@ -11,3 +11,5 @@ test('price crossing loss level retires the buy plan before a candle closes',()=
 test('rounding cannot overstate the permissible entry or invent an arrival date',()=>{const p=plainLanguage({...q,plan:{...q.plan,stop:95.013}},gate,v);assert.ok(p.zone.high<=p.cap);assert.match(p.timing,/not a promise/);assert.match(p.rule,/not a proven win rate/);});
 
 test('stale quotes never populate reward labeled as current',()=>{assert.equal(plainLanguage(q,{allowed:false},v).currentRR,null);});
+
+test('opposing price structure makes direction unclear and old history makes no current destination claim',()=>{assert.equal(plainLanguage({...q,structure:{...q.structure,direction:-1}},gate,v).mixed,true);const p=plainLanguage(q,gate,{...v,historyOK:false});assert.match(p.destination,/cannot establish a current/);assert.match(p.risk,/no current buying/);});

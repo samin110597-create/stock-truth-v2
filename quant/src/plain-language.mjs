@@ -6,13 +6,13 @@ export function plainLanguage(q,gate,v){
  const fresh=gate.allowed&&finite(q.quote?.price),price=fresh?q.quote.price:b.close;
  const time={'1D':'daily close','4H':'completed 4-hour period','1H':'completed hour','15M':'completed 15-minute period'}[q.timeframe]||'completed period';
  const opposite=(q.mtf?.rows||[]).filter(x=>x.timeframe!==q.timeframe&&x.bias*dir<0);
- const mixed=dir!==0&&opposite.length>0;
+ const mixed=dir!==0&&(opposite.length>0||q.structure.direction*dir<0);
  const direction=!v.historyOK?'Direction unavailable until price history is updated':!dir||mixed?'The direction is unclear':dir>0?'The recent price pattern points upward':'The recent price pattern points downward';
  const pattern=q.structure.pattern;
- const why=mixed?'The available time periods disagree, so a confident up-or-down call is not justified.':pattern==='HH + HL'?'Recent rises and dips have ended at higher prices.':pattern==='LH + LL'?'Recent rises and dips have ended at lower prices.':'The latest completed prices give only a tentative direction.';
+ const why=!v.historyOK?'Only historical price evidence is available.':mixed?'The available trend and price-pattern evidence disagree, so a confident up-or-down call is not justified.':pattern==='HH + HL'?'Recent rises and dips have ended at higher prices.':pattern==='LH + LL'?'Recent rises and dips have ended at lower prices.':'The latest completed prices give only a tentative direction.';
  const nearest=dir>0?v.resistance:dir<0?v.support:null;
- const destination=finite(nearest)?'The first area to watch is '+money(nearest)+', where the move may stall or reverse.':'There is no reliable nearby destination yet.';
- const timing=q.timeframe==='1D'?'Use this as a plan for the next '+v.horizon+' trading days, not a promise that a target will be reached by then.':'This view covers the next '+v.horizon+' completed '+({'15M':'15-minute','1H':'hourly','4H':'4-hour'}[q.timeframe]||q.timeframe)+' periods. Closed-market hours do not count.';
+ const destination=!v.historyOK?'These older levels cannot establish a current destination.':finite(nearest)?'The first area to watch is '+money(nearest)+', where the move may stall or reverse.':'There is no reliable nearby destination yet.';
+ const timing=!v.historyOK?'Update the completed price history before using a forward-looking plan.':q.timeframe==='1D'?'Use this as a plan for the next '+v.horizon+' trading days, not a promise that a target will be reached by then.':'This view covers the next '+v.horizon+' completed '+({'15M':'15-minute','1H':'hourly','4H':'4-hour'}[q.timeframe]||q.timeframe)+' periods. Closed-market hours do not count.';
  // Use the closest known obstacle, never a distant TP selected to improve the ratio.
  const low=p?.entryZone?.low,high=p?.entryZone?.high,stop=p?.stop;
  const candidates=[...(p?.targets||[]).map(x=>x.price),...(q.structure.resistance||[]).map(x=>x.price)].filter(x=>finite(x)&&finite(low)&&x>low);
@@ -36,7 +36,7 @@ export function plainLanguage(q,gate,v){
  if(!v.historyOK||broken||v.chased){action=!v.historyOK?'WAIT FOR UPDATED DATA':broken?'DO NOT USE THIS BUY PLAN':'DO NOT CHASE';buy=broken?'Price has reached or crossed the planned loss level. A new completed price pattern is needed before another buy plan.':!v.historyOK?'Price history is incomplete or stale. Treat the displayed levels as historical references.':'The first planned destination has already been reached. Wait for a new plan.';}
  else if(mixed||!dir){action='WAIT — DIRECTION UNCLEAR';buy='Do not buy solely because price touches the displayed area. The price evidence needs to agree first.';}
  if(!fresh){if(action.startsWith('BUY CONDITIONS'))action='WAIT FOR A FRESH PRICE';buy+=' No current buy signal: a quote no more than 15 minutes old is required.';}
- const risk=dir>0&&finite(stop)?'If buying, the planned exit if wrong is '+money(stop)+'. Do not wait for the daily close to manage that loss. A gap or fast move can produce a worse exit.':dir<0?'This is a falling-price view, not a recommendation to buy the dip.':'No buy or loss limit is established.';
+ const risk=!v.historyOK?'There is no current buying or loss-limit plan until the missing history is updated.':dir>0&&finite(stop)?'If buying, the planned exit if wrong is '+money(stop)+'. Do not wait for the daily close to manage that loss. A gap or fast move can produce a worse exit.':dir<0?'This is a falling-price view, not a recommendation to buy the dip.':'No buy or loss limit is established.';
  const reward=dir>0&&finite(first)&&finite(stop)?'First possible selling area: '+money(first)+'. '+(fresh&&currentRR!==null?'At '+money(price)+', potential gain is '+money(gain)+' versus '+money(loss)+' of planned loss per share ('+currentRR.toFixed(2)+' to 1).':'The gain-to-loss comparison will update when a fresh price is available.'):'No reliable buy-side reward comparison is available.';
  return {direction,why,destination,timing,action,buy,risk,reward,zone,first,cap,currentRR,bounce,mixed,broken,rule:'The 2-to-1 screen is a planning rule, not a proven win rate. It does not identify the exact bottom or guarantee a profit.'};
 }
