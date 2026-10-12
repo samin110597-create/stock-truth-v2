@@ -9,3 +9,5 @@ test('near obstacle cannot be skipped in favor of distant targets',()=>{const p=
 test('touch alone, stale data, conflicting periods and falling patterns never permit a buy',()=>{assert.equal(plainLanguage({...q,bars:[{high:101},q.bars[1]]},gate,v).action,'WAIT');assert.ok(!plainLanguage(q,{allowed:false},v).action.startsWith('BUY'));assert.equal(plainLanguage({...q,mtf:{rows:[{timeframe:'4H',bias:-1}]}},gate,v).action,'WAIT — DIRECTION UNCLEAR');assert.equal(plainLanguage(q,gate,{...v,dir:-1}).zone,null);});
 test('price crossing loss level retires the buy plan before a candle closes',()=>{const p=plainLanguage({...q,quote:{price:94}},gate,v);assert.equal(p.action,'DO NOT USE THIS BUY PLAN');assert.equal(p.broken,true);});
 test('rounding cannot overstate the permissible entry or invent an arrival date',()=>{const p=plainLanguage({...q,plan:{...q.plan,stop:95.013}},gate,v);assert.ok(p.zone.high<=p.cap);assert.match(p.timing,/not a promise/);assert.match(p.rule,/not a proven win rate/);});
+
+test('stale quotes never populate reward labeled as current',()=>{assert.equal(plainLanguage(q,{allowed:false},v).currentRR,null);});

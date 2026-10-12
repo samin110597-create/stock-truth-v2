@@ -22,7 +22,7 @@ export function plainLanguage(q,gate,v){
  const bottom=finite(low)?Math.ceil(low*100)/100:null;
  const zone=dir>0&&finite(bottom)&&finite(top)&&finite(stop)&&bottom>stop&&top>=bottom?{low:bottom,high:top}:null;
  const gain=finite(first)?first-price:null,loss=finite(stop)?price-stop:null;
- const currentRR=finite(gain)&&finite(loss)&&gain>0&&loss>0?gain/loss:null;
+ const currentRR=fresh&&finite(gain)&&finite(loss)&&gain>0&&loss>0?gain/loss:null;
  // A bounce must overlap the proposed zone, close up, and clear the prior high.
  const bounce=!!(zone&&previous&&b.low<=zone.high&&b.high>=zone.low&&b.close>b.open&&b.close>previous.high&&b.low>stop);
  const broken=!!(p&&dir&&((finite(price)&&dir*(price-stop)<=0)||(finite(b.low)&&dir>0&&b.low<=stop)||(finite(b.high)&&dir<0&&b.high>=stop)));
