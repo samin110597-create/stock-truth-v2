@@ -25,7 +25,9 @@ async function history(symbol,tf,env){
   if(env.MASSIVE_KEY)try{
     const daily=tf==='1D',mult=daily?1:tf==='15M'?15:30,span=daily?'day':'minute';
     const end=fetched_at.slice(0,10),start=new Date(Date.now()-(daily?1000:60)*86400000).toISOString().slice(0,10);
-    const url='https://api.massive.com/v2/aggs/ticker/'+encodeURIComponent(symbol)+'/range/'+mult+'/'+span+'/'+start+'/'+end+'?'+new URLSearchParams({adjusted:'true',sort:'desc',limit:daily?'600':'3000'});
+    // Massive limits underlying minute aggregates, not returned 30-minute candles.
+    // 3,000 minute records yielded only a few sessions and starved the 4H study.
+    const url='https://api.massive.com/v2/aggs/ticker/'+encodeURIComponent(symbol)+'/range/'+mult+'/'+span+'/'+start+'/'+end+'?'+new URLSearchParams({adjusted:'true',sort:'desc',limit:daily?'600':'50000'});
     const payload=await upstream('massive',url,{headers:{Authorization:'Bearer '+env.MASSIVE_KEY}});
     if(payload.ticker!==symbol||!payload.results?.length)throw Error('No history');
     return {symbol,timeframe:tf,provider:'Massive adjusted OHLCV',format:'massive',intervalSeconds:daily?86400:mult*60,payload,fetched_at};
@@ -44,7 +46,7 @@ export default {async fetch(request,env,ctx){
   if(!['/v1/quote','/v1/history'].includes(url.pathname))return response({error:'Not found'},404);
   const symbol=(url.searchParams.get('symbol')||'').trim().toUpperCase(),tf=url.searchParams.get('timeframe')||'1D';
   if(!valid(symbol)||!['15M','1H','4H','1D'].includes(tf))return response({error:'Invalid symbol or timeframe'},400);
-  const isQuote=url.pathname==='/v1/quote',key=new Request(url.origin+url.pathname+'?'+new URLSearchParams({symbol,...(isQuote?{}:{timeframe:tf})}));
+  const isQuote=url.pathname==='/v1/quote',key=new Request(url.origin+url.pathname+'?'+new URLSearchParams({symbol,...(isQuote?{}:{timeframe:tf,historyVersion:'2'})}));
   const cache=globalThis.caches?.default,cached=cache&&await cache.match(key);if(cached){if(!isQuote)return cached;const q=await cached.clone().json();if(Number.isFinite(q.as_of)&&Date.now()/1000-q.as_of<=900)return cached;}
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';if(!budget('ip:'+ip,30,60000))return response({symbol,error:'Please wait before refreshing again'},429);
   if(env.REQUEST_LIMITER){const {success}=await env.REQUEST_LIMITER.limit({key:ip});if(!success)return response({symbol,error:'Please wait before refreshing again'},429);}

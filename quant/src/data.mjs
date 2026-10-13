@@ -13,7 +13,8 @@ async function gateway(route,symbol,tf,signal){
   const cfg=await config(),base=String(cfg.apiBase||'').replace(/\/$/,'');
   if(!base||/\.deno\.net/.test(base))throw Error('Secure gateway not configured');
   if((circuits.get(route+symbol+(tf||''))||0)>Date.now())throw Error('Gateway cooling down after an outage');
-  try{const j=await json(base+route+'?'+new URLSearchParams({symbol,...(tf?{timeframe:tf}:{})}),signal,6500);
+  // History can try two bounded 4.5-second providers in sequence.
+  try{const j=await json(base+route+'?'+new URLSearchParams({symbol,...(tf?{timeframe:tf}:{})}),signal,route==='/v1/history'?11000:6500);
     if(j.symbol!==symbol||j.error)throw Error('Gateway response does not match requested ticker');return j;
   }catch(e){if(!signal?.aborted)circuits.set(route+symbol+(tf||''),Date.now()+90000);throw e;}
 }

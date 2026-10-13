@@ -22,6 +22,28 @@ test('gateway rejects arbitrary proxy URLs and invalid symbols before provider r
  assert.equal((await worker.fetch(new Request('https://test.invalid/proxy?url=https://example.com'),{},ctx)).status,404);
  assert.equal((await worker.fetch(new Request('https://test.invalid/v1/quote?symbol=../../secret'),{},ctx)).status,400);
 });
+test('gateway requests enough base minutes to build a usable four-hour study',async()=>{
+ const previous=globalThis.fetch,calendar={sessions:{}},rows=[];
+ for(let i=0;i<60;i++){
+  const d=new Date(Date.UTC(2026,0,5+i));if([0,6].includes(d.getUTCDay()))continue;
+  const date=d.toISOString().slice(0,10),start=Date.parse(date+'T14:30:00Z')/1000;
+  calendar.sessions[date]=[start,start+23400];
+  for(let n=0;n<13;n++)rows.push({t:(start+n*1800)*1000,o:100,h:102,l:99,c:101,v:100});
+ }
+ globalThis.fetch=async input=>{const url=new URL(input);
+  assert.equal(url.hostname,'api.massive.com');assert.match(url.pathname,/\/range\/30\/minute\//);
+  // Model the provider's base-minute limit, not a limit on returned candles.
+  const max=Math.floor(Number(url.searchParams.get('limit'))/30);
+  return Response.json({ticker:'HISTORYTEST',results:rows.slice(-max)});
+ };
+ try{
+  const r=await worker.fetch(new Request('https://test.invalid/v1/history?symbol=HISTORYTEST&timeframe=1H'),{MASSIVE_KEY:'private-history-key'},{waitUntil(){}});
+  assert.equal(r.status,200);const raw=await r.json();assert.equal(raw.intervalSeconds,1800);
+  const block=normalizeHistory(raw,'4H',calendar,Date.parse('2026-03-10T22:00:00Z')/1000);
+  assert.ok(block.bars.length>=80,'enough complete sessions for the four-hour engine');
+  assert.ok(!JSON.stringify(raw).includes('private-history-key'));
+ }finally{globalThis.fetch=previous;}
+});
 test('gateway coalesces simultaneous ticker quote requests without exposing credentials',async()=>{
  const previous=globalThis.fetch;let calls=0;
  globalThis.fetch=async()=>{calls++;await new Promise(r=>setTimeout(r,10));return Response.json({c:123.45,t:Math.floor(now)});};
