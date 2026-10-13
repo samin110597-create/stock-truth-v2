@@ -21,7 +21,7 @@ async function getQuote(symbol,env){
   if(!candidates.length)throw Error('Quote unavailable');return candidates.sort((a,b)=>b.as_of-a.as_of)[0];
 }
 async function history(symbol,tf,env){
-  const fetched_at=new Date().toISOString();
+  const fetched_at=new Date().toISOString();let older=null,olderLast=0;
   if(env.MASSIVE_KEY)try{
     const daily=tf==='1D',mult=daily?1:tf==='15M'?15:30,span=daily?'day':'minute';
     const end=fetched_at.slice(0,10),start=new Date(Date.now()-(daily?1000:60)*86400000).toISOString().slice(0,10);
@@ -30,13 +30,23 @@ async function history(symbol,tf,env){
     const url='https://api.massive.com/v2/aggs/ticker/'+encodeURIComponent(symbol)+'/range/'+mult+'/'+span+'/'+start+'/'+end+'?'+new URLSearchParams({adjusted:'true',sort:'desc',limit:daily?'600':'50000'});
     const payload=await upstream('massive',url,{headers:{Authorization:'Bearer '+env.MASSIVE_KEY}});
     if(payload.ticker!==symbol||!payload.results?.length)throw Error('No history');
-    return {symbol,timeframe:tf,provider:'Massive adjusted OHLCV',format:'massive',intervalSeconds:daily?86400:mult*60,payload,fetched_at};
+    const result={symbol,timeframe:tf,provider:'Massive adjusted OHLCV',format:'massive',intervalSeconds:daily?86400:mult*60,payload,fetched_at};
+    olderLast=Math.max(...payload.results.map(b=>Number(b.t)||0))/1000;
+    // A successful end-of-day entitlement must not hide newer intraday data.
+    // This is a fallback trigger only; the browser certifies completed sessions.
+    if(daily||Date.now()/1000-olderLast<=5400)return result;
+    older=result;
   }catch{}
+  try{
   const interval=tf==='1D'?'1d':tf==='15M'?'15m':'60m',range=tf==='1D'?'2y':'60d';
   const payload=await upstream('yahoo','https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?'+new URLSearchParams({interval,range,includePrePost:'false'}));
   const meta=payload?.chart?.result?.[0]?.meta;
   if(meta?.symbol?.toUpperCase()!==symbol||meta.currency!=='USD')throw Error('No matching USD history');
+  const timestamps=payload.chart.result[0].timestamp||[];
+  if(!timestamps.length)throw Error('No history');
+  if(older&&Math.max(...timestamps)<=olderLast)return older;
   return {symbol,timeframe:tf,provider:'Yahoo server OHLCV',format:'yahoo',payload,fetched_at};
+  }catch(error){if(older)return older;throw error;}
 }
 export default {async fetch(request,env,ctx){
   const url=new URL(request.url);

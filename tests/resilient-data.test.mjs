@@ -31,6 +31,7 @@ test('gateway requests enough base minutes to build a usable four-hour study',as
   for(let n=0;n<13;n++)rows.push({t:(start+n*1800)*1000,o:100,h:102,l:99,c:101,v:100});
  }
  globalThis.fetch=async input=>{const url=new URL(input);
+  if(url.hostname==='query1.finance.yahoo.com')return Response.json({chart:{result:[{meta:{symbol:'HISTORYTEST',currency:'USD'},timestamp:[rows[0].t/1000]}]}});
   assert.equal(url.hostname,'api.massive.com');assert.match(url.pathname,/\/range\/30\/minute\//);
   // Model the provider's base-minute limit, not a limit on returned candles.
   const max=Math.floor(Number(url.searchParams.get('limit'))/30);
@@ -50,6 +51,19 @@ test('gateway coalesces simultaneous ticker quote requests without exposing cred
  try{const req=new Request('https://test.invalid/v1/quote?symbol=NEWTEST'),ctx={waitUntil(){}};
  const rs=await Promise.all([worker.fetch(req,{FINNHUB_KEY:'private-test-key'},ctx),worker.fetch(req,{FINNHUB_KEY:'private-test-key'},ctx)]);
  assert.equal(calls,1);for(const r of rs){const body=await r.text();assert.ok(!body.includes('private-test-key'));assert.equal(JSON.parse(body).symbol,'NEWTEST');assert.equal(r.headers.get('Cache-Control'),'public, max-age=60');}
+ }finally{globalThis.fetch=previous;}
+});
+test('successful but old intraday source cannot suppress newer fallback data',async()=>{
+ const previous=globalThis.fetch;let calls=0;
+ globalThis.fetch=async input=>{
+  calls++;const url=new URL(input);
+  if(url.hostname==='api.massive.com')return Response.json({ticker:'FRESHHISTORY',results:[{t:(now-86400)*1000,o:10,h:12,l:9,c:11,v:100}]});
+  assert.equal(url.hostname,'query1.finance.yahoo.com');
+  return Response.json({chart:{result:[{meta:{symbol:'FRESHHISTORY',currency:'USD'},timestamp:[now-3600],indicators:{quote:[{open:[11],high:[13],low:[10],close:[12],volume:[100]}]}}]}});
+ };
+ try{
+  const r=await worker.fetch(new Request('https://test.invalid/v1/history?symbol=FRESHHISTORY&timeframe=1H'),{MASSIVE_KEY:'private-history-key'},{waitUntil(){}});
+  assert.equal(r.status,200);assert.equal((await r.json()).format,'yahoo');assert.equal(calls,2);
  }finally{globalThis.fetch=previous;}
 });
 test('an unseen ticker works without gateway or repository snapshot; requested intraday degrades to daily',async()=>{
