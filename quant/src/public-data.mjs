@@ -82,7 +82,7 @@ export async function publicHistory(symbol,calendar,signal){
   throw Error('Public daily history unavailable for '+symbol);
 }
 export function normalizeHistory(j,tf,calendar,now=Date.now()/1000){
-  const out=[],seconds={'15M':900,'1H':3600,'4H':3600,'1D':86400}[tf];
+  const out=[],seconds=j.intervalSeconds||({'15M':900,'1H':3600,'4H':3600,'1D':86400}[tf]);
   let rows=[];
   if(j.format==='massive')rows=(j.payload?.results||[]).map(b=>({t:b.t/1000,o:b.o,h:b.h,l:b.l,c:b.c,v:b.v}));
   else {const r=j.payload?.chart?.result?.[0],q=r?.indicators?.quote?.[0];
@@ -98,9 +98,10 @@ export function normalizeHistory(j,tf,calendar,now=Date.now()/1000){
   }
   out.sort((a,b)=>a.ts-b.ts);
   let bars=out;
-  if(tf==='4H'){
-    bars=[];const groups=new Map();for(const b of out){const k=b.date; if(!groups.has(k))groups.set(k,[]);groups.get(k).push(b);}
-    for(const g of groups.values())for(let i=0;i<g.length;i+=4){const z=g.slice(i,i+4),bounds=calendar.sessions[z[0].date],start=bounds[0]+Math.floor((z[0].ts-bounds[0])/14400)*14400,end=Math.min(start+14400,bounds[1]);
+  if(tf==='4H'||tf==='1H'&&seconds<3600){
+    const width=tf==='4H'?14400:3600;bars=[];const groups=new Map();
+    for(const b of out){const bounds=calendar.sessions[b.date],start=bounds[0]+Math.floor((b.ts-bounds[0])/width)*width,key=b.date+':'+start;if(!groups.has(key))groups.set(key,{start,end:Math.min(start+width,bounds[1]),items:[]});groups.get(key).items.push(b);}
+    for(const {start,end,items:z}of groups.values()){
       if(z[0].ts!==start||z.at(-1).end_ts!==end||z.some((b,k)=>k&&b.ts!==z[k-1].end_ts))continue;
       bars.push({...z[0],end_ts:end,high:Math.max(...z.map(b=>b.high)),low:Math.min(...z.map(b=>b.low)),close:z.at(-1).close,volume:z.every(b=>finite(b.volume))?z.reduce((s,b)=>s+b.volume,0):null});
     }

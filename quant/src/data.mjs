@@ -20,7 +20,7 @@ async function gateway(route,symbol,tf,signal){
 const frames=['15M','1H','4H','1D'];
 const sufficientlyDeep=b=>Array.isArray(b?.bars)&&b.bars.length>=80;
 function bundle(symbol,tf,block,timeframes,extra={}){
-  return {symbol,sourceSymbol:symbol,asset:'STOCK',timeframe:tf,bars:block.bars,mtf:Object.fromEntries(frames.filter(t=>timeframes[t]?.bars?.length>=60&&timeframes[t].status!=='STALE').map(t=>[t,timeframes[t].bars])),provider:block.provider||'Saved data',fetchedAt:block.fetched_at,dataStatus:block.status||'UNKNOWN',lastCompletedBar:block.bars.at(-1)?.end_ts,credentialPolicy:'Provider secrets stay on the server. Browser fallbacks require no credentials.',...extra};
+  return {symbol,sourceSymbol:symbol,asset:'STOCK',timeframe:tf,bars:block.bars,timeframeBlocks:timeframes,mtf:Object.fromEntries(frames.filter(t=>timeframes[t]?.bars?.length>=60&&timeframes[t].status==='COMPLETED BAR').map(t=>[t,timeframes[t].bars])),provider:block.provider||'Saved data',fetchedAt:block.fetched_at,dataStatus:block.status||'UNKNOWN',lastCompletedBar:block.bars.at(-1)?.end_ts,credentialPolicy:'Provider secrets stay on the server. Browser fallbacks require no credentials.',...extra};
 }
 async function saved(symbol,signal){try{const j=await json('../data/raw/'+encodeURIComponent(symbol)+'.json',signal,4000);return j.symbol===symbol?j:null;}catch{return null;}}
 export async function currentQuote(symbol,signal){
@@ -29,12 +29,12 @@ export async function currentQuote(symbol,signal){
   if(signal?.aborted)throw new DOMException('Aborted','AbortError');
   return freshestQuote(s,results.flatMap((r,i)=>r.status==='fulfilled'?(i===2?[r.value?.quote,...(r.value?.secured_quote_candidates||[])]:[r.value]):[]));
 }
-export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal,quotePromise=null}){
+export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal,quotePromise=null,researchPromise=null}){
   const s=clean(symbol),kind=detectAsset(s,asset);
   if(!/^[A-Z0-9][A-Z0-9.\-^:=]{0,19}$/.test(s)||!frames.includes(timeframe))throw Error('Enter a valid ticker and timeframe.');
   const cal=await calendar();
   const contextPromise=json('../data/quant/context.json',signal,4000).catch(()=>null),modelPromise=json('../data/quant/model.json',signal,4000).catch(()=>null);
-  const researchPromise=publicResearch(s,signal).catch(()=>({fundamentals:{status:'UNAVAILABLE',reason:'Fundamentals source unavailable'}}));
+  const researchTask=researchPromise||publicResearch(s,signal).catch(()=>({fundamentals:{status:'UNAVAILABLE',reason:'Fundamentals source unavailable'}}));
   const quoteTask=quotePromise|| (kind==='STOCK'?currentQuote(s,signal).catch(()=>null):Promise.resolve(null));
   let core;
   if(kind==='FUTURE'){
@@ -51,23 +51,24 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal,
     }
   }else{
     // Request-time retrieval is independent of repository membership and scheduled jobs.
+    const requests=[...new Set(['1H','1D',...(timeframe==='15M'?['15M']:[])])];
     const results=await Promise.allSettled([
-      gateway('/v1/history',s,timeframe,signal).then(j=>normalizeHistory(j,timeframe,cal)),
+      Promise.allSettled(requests.map(tf=>gateway('/v1/history',s,tf,signal))),
       publicHistory(s,cal,signal),saved(s,signal)
     ]);
     if(signal?.aborted)throw new DOMException('Aborted','AbortError');
-    const secure=results[0].status==='fulfilled'?results[0].value:null,daily=results[1].status==='fulfilled'?results[1].value:null,raw=results[2].status==='fulfilled'?results[2].value:null;
-    const timeframes={};for(const tf of frames){if(raw?.timeframes?.[tf])timeframes[tf]=refreshBlock(raw.timeframes[tf],tf,cal);}
-    // Choose newest completed history; prefer clean source when equally current.
-    const choose=(a,b)=>[a,b].filter(sufficientlyDeep).sort((x,y)=>(y.bars.at(-1).end_ts-x.bars.at(-1).end_ts)||Number(x.status==='REVIEW')-Number(y.status==='REVIEW'))[0];
+    const daily=results[1].status==='fulfilled'?results[1].value:null,raw=results[2].status==='fulfilled'?results[2].value:null;
+    const timeframes={},live={};for(const tf of frames){if(raw?.timeframes?.[tf])timeframes[tf]=refreshBlock(raw.timeframes[tf],tf,cal);}
+    const choose=(a,b)=>[a,b].filter(x=>x?.bars?.length).sort((x,y)=>(y.bars.at(-1).end_ts-x.bars.at(-1).end_ts)||Number(x.status==='REVIEW')-Number(y.status==='REVIEW')||y.bars.length-x.bars.length)[0];
     if(daily)timeframes['1D']=choose(daily,timeframes['1D']);
-    if(secure)timeframes[timeframe]=choose(secure,timeframes[timeframe]);
+    if(results[0].status==='fulfilled')results[0].value.forEach((r,i)=>{if(r.status!=='fulfilled')return;for(const tf of requests[i]==='1H'?['1H','4H']:[requests[i]]){try{const block=normalizeHistory(r.value,tf,cal);live[tf]=block;timeframes[tf]=choose(block,timeframes[tf]);}catch{}}});
+    const secure=live[timeframe];
     let actual=timeframe,block=timeframes[actual],notice='';
     if((!sufficientlyDeep(block)||block.status==='STALE')&&timeframe!=='1D'&&sufficientlyDeep(timeframes['1D'])){actual='1D';block=timeframes['1D'];notice=timeframe+' UNAVAILABLE / STALE · Showing daily analysis instead. No intraday signal is implied.';}
     if(!sufficientlyDeep(block))throw Error('History unavailable or fewer than 80 completed bars for '+s+'. The quote can still be refreshed independently.');
     core=bundle(s,actual,block,timeframes,{requestedTimeframe:timeframe,notice,onDemand:block===secure,quote:raw?.quote});
   }
-  const [quote,apiContext,trainedModel,research,cfg]=await Promise.all([quoteTask,contextPromise,modelPromise,researchPromise,config()]);
+  const [quote,apiContext,trainedModel,research,cfg]=await Promise.all([quoteTask,contextPromise,modelPromise,researchTask,config()]);
   if(signal?.aborted)throw new DOMException('Aborted','AbortError');
   return {...core,quote:freshestQuote(s,[core.quote,quote]),apiContext,trainedModel,research,runtimeApiConfigured:!!cfg.apiBase,calendar:cal};
 }

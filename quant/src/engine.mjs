@@ -21,7 +21,7 @@ function multiScalePivots(bars){
   const highs=dedupe(allH,'H'),lows=dedupe(allL,'L'),majorHighs=highs.filter(x=>x.scale>=4),majorLows=lows.filter(x=>x.scale>=4);
   return {highs:majorHighs.length>=2?majorHighs:highs,lows:majorLows.length>=2?majorLows:lows,allHighs:highs,allLows:lows};
 }
-function structureEngine(bars,rsiSeries){
+export function structureEngine(bars,rsiSeries){
   const {highs,lows,allHighs,allLows}=multiScalePivots(bars),events=[],activeH=[],activeL=[];let hix=0,lix=0,trend=0,lastH=null,lastL=null;
   for(let i=0;i<bars.length;i++){
     while(hix<highs.length&&highs[hix].confirmedAt<=i){activeH.push({...highs[hix],broken:false});lastH=activeH.at(-1);hix++;}

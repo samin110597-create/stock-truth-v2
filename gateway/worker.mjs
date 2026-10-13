@@ -23,12 +23,12 @@ async function getQuote(symbol,env){
 async function history(symbol,tf,env){
   const fetched_at=new Date().toISOString();
   if(env.MASSIVE_KEY)try{
-    const daily=tf==='1D',mult=tf==='15M'?15:1,span=daily?'day':tf==='15M'?'minute':'hour';
+    const daily=tf==='1D',mult=daily?1:tf==='15M'?15:30,span=daily?'day':'minute';
     const end=fetched_at.slice(0,10),start=new Date(Date.now()-(daily?1000:60)*86400000).toISOString().slice(0,10);
     const url='https://api.massive.com/v2/aggs/ticker/'+encodeURIComponent(symbol)+'/range/'+mult+'/'+span+'/'+start+'/'+end+'?'+new URLSearchParams({adjusted:'true',sort:'desc',limit:daily?'600':'3000'});
     const payload=await upstream('massive',url,{headers:{Authorization:'Bearer '+env.MASSIVE_KEY}});
     if(payload.ticker!==symbol||!payload.results?.length)throw Error('No history');
-    return {symbol,timeframe:tf,provider:'Massive adjusted OHLCV',format:'massive',payload,fetched_at};
+    return {symbol,timeframe:tf,provider:'Massive adjusted OHLCV',format:'massive',intervalSeconds:daily?86400:mult*60,payload,fetched_at};
   }catch{}
   const interval=tf==='1D'?'1d':tf==='15M'?'15m':'60m',range=tf==='1D'?'2y':'60d';
   const payload=await upstream('yahoo','https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?'+new URLSearchParams({interval,range,includePrePost:'false'}));

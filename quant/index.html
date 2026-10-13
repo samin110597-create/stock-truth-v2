@@ -26,8 +26,11 @@
 <div id="status">Q-State Unified canonical engine ready.</div>
 </section>
 
+<nav class="view-tabs" role="tablist" aria-label="Analysis view"><button id="tab-price" role="tab" aria-selected="true" aria-controls="price-view">Price action</button><button id="tab-fundamentals" role="tab" aria-selected="false" aria-controls="fundamentals-view" tabindex="-1">Fundamentals</button></nav>
+<div id="price-view" role="tabpanel" aria-labelledby="tab-price">
 <section id="decision" class="decision" aria-live="polite"></section>
 <section id="roadmap" class="roadmap"></section>
+<section id="price-study" class="block"></section>
 <section class="layout">
   <div class="chart-shell">
     <div class="panel-head"><span>PRICE / STRUCTURE / FORECAST</span><span id="source"></span></div>
@@ -45,10 +48,10 @@
   <section class="block"><div class="panel-head"><span>STRUCTURE EVIDENCE</span><span>NON-REPAINT PIVOTS</span></div><div id="evidence"></div></section>
 </section>
 
-</details><section class="block"><div class="panel-head"><span>RESEARCH CONTEXT</span><span>FUNDAMENTALS + MACRO · ZERO FORECAST WEIGHT UNTIL VALIDATED</span></div><div id="research"></div></section>
+</details>
 <details class="advanced"><summary>Track forecast accuracy</summary><section class="block"><div class="panel-head"><span>Q-STATE ACCURACY DASHBOARD</span><span>IMMUTABLE FORWARD LEDGER · COMPLETED-BAR OUTCOMES</span></div><div id="accuracy"></div></section>
 </details><details class="advanced"><summary>Data provenance & model integrity</summary><section class="block"><div class="panel-head"><span>MODEL INTEGRITY</span><span>ONE CANONICAL MODEL</span></div><div id="integrity"></div></section>
-</details><footer>Standalone quant page · walk-forward calibration · multi-timeframe execution gates · probabilities withheld unless promoted out of sample.</footer>
+</details></div><section id="fundamentals-view" class="block" role="tabpanel" aria-labelledby="tab-fundamentals" hidden><div id="research">Enter a ticker and choose ANALYZE.</div></section><footer>Standalone quant page · walk-forward calibration · multi-timeframe execution gates · probabilities withheld unless promoted out of sample.</footer>
 <script type="module" src="./app.mjs"></script>
 </main>
 </body>
