@@ -59,6 +59,7 @@ test('successful but old intraday source cannot suppress newer fallback data',as
   calls++;const url=new URL(input);
   if(url.hostname==='api.massive.com')return Response.json({ticker:'FRESHHISTORY',results:[{t:(now-86400)*1000,o:10,h:12,l:9,c:11,v:100}]});
   assert.equal(url.hostname,'query1.finance.yahoo.com');
+  assert.equal(url.searchParams.get('range'),'3mo');
   return Response.json({chart:{result:[{meta:{symbol:'FRESHHISTORY',currency:'USD'},timestamp:[now-3600],indicators:{quote:[{open:[11],high:[13],low:[10],close:[12],volume:[100]}]}}]}});
  };
  try{

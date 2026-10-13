@@ -34,11 +34,13 @@ async function history(symbol,tf,env){
     olderLast=Math.max(...payload.results.map(b=>Number(b.t)||0))/1000;
     // A successful end-of-day entitlement must not hide newer intraday data.
     // This is a fallback trigger only; the browser certifies completed sessions.
-    if(daily||Date.now()/1000-olderLast<=5400)return result;
+    if(Date.now()/1000-olderLast<=(daily?129600:5400))return result;
     older=result;
   }catch{}
   try{
-  const interval=tf==='1D'?'1d':tf==='15M'?'15m':'60m',range=tf==='1D'?'2y':'60d';
+  // Use provider-supported range tokens. Hourly data supports three months;
+  // shorter intraday intervals stay inside the provider's recent-history limit.
+  const interval=tf==='1D'?'1d':tf==='15M'?'15m':'60m',range=tf==='1D'?'2y':tf==='15M'?'1mo':'3mo';
   const payload=await upstream('yahoo','https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?'+new URLSearchParams({interval,range,includePrePost:'false'}));
   const meta=payload?.chart?.result?.[0]?.meta;
   if(meta?.symbol?.toUpperCase()!==symbol||meta.currency!=='USD')throw Error('No matching USD history');
@@ -56,7 +58,7 @@ export default {async fetch(request,env,ctx){
   if(!['/v1/quote','/v1/history'].includes(url.pathname))return response({error:'Not found'},404);
   const symbol=(url.searchParams.get('symbol')||'').trim().toUpperCase(),tf=url.searchParams.get('timeframe')||'1D';
   if(!valid(symbol)||!['15M','1H','4H','1D'].includes(tf))return response({error:'Invalid symbol or timeframe'},400);
-  const isQuote=url.pathname==='/v1/quote',key=new Request(url.origin+url.pathname+'?'+new URLSearchParams({symbol,...(isQuote?{}:{timeframe:tf,historyVersion:'2'})}));
+  const isQuote=url.pathname==='/v1/quote',key=new Request(url.origin+url.pathname+'?'+new URLSearchParams({symbol,...(isQuote?{}:{timeframe:tf,historyVersion:'3'})}));
   const cache=globalThis.caches?.default,cached=cache&&await cache.match(key);if(cached){if(!isQuote)return cached;const q=await cached.clone().json();if(Number.isFinite(q.as_of)&&Date.now()/1000-q.as_of<=900)return cached;}
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';if(!budget('ip:'+ip,30,60000))return response({symbol,error:'Please wait before refreshing again'},429);
   if(env.REQUEST_LIMITER){const {success}=await env.REQUEST_LIMITER.limit({key:ip});if(!success)return response({symbol,error:'Please wait before refreshing again'},429);}
