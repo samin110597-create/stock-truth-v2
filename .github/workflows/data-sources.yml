@@ -1,0 +1,28 @@
+name: Check price-data sources
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/check-data-sources.mjs
+      - .github/workflows/data-sources.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check source access and latest market timestamps
+        env:
+          MASSIVE_KEY: ${{ secrets.MASSIVE_KEY || secrets.MASSIVE_API_KEY || secrets.POLYGON_API_KEY || secrets.POLYGON_KEY || secrets.POLYGON }}
+          FMP_KEY: ${{ secrets.FMP_KEY || secrets.FMP_API_KEY || secrets.FINANCIAL_MODELING_PREP_API_KEY || secrets.FMP }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY || secrets.FINNHUB_API_KEY || secrets.FINHUB_API_KEY || secrets.FINNHUB_TOKEN || secrets.FINNHUB }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY || secrets.ALPHA_VANTAGE_API_KEY || secrets.ALPHAVANTAGE_API_KEY || secrets.ALPHAVANTAGE_KEY || secrets.ALPHA_VANTAGE }}
+        run: node scripts/check-data-sources.mjs
