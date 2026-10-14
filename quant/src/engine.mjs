@@ -44,6 +44,7 @@ export function structureEngine(bars,rsiSeries){
   }
   // A newer completed break overrides an older peak/dip sequence.
   const latestBreak=[...events].reverse().find(e=>e.type==='BOS'||e.type==='CHoCH');
+  const priorPatternDirection=pattern==='HH + HL'?1:pattern==='LH + LL'?-1:0;
   if(latestBreak&&latestBreak.i>=Math.max(h2.at(-1)?.i??0,l2.at(-1)?.i??0))dir=latestBreak.dir;
   const support=lows.filter(x=>x.price<price).sort((a,b)=>b.price-a.price).slice(0,3),resistance=highs.filter(x=>x.price>price).sort((a,b)=>a.price-b.price).slice(0,3);
   let divergence=null;
@@ -52,7 +53,7 @@ export function structureEngine(bars,rsiSeries){
   // Pivot divergence expires; a months-old disagreement is not current evidence.
   if(divergence&&divergence.i<bars.length-10)divergence=null;
   const recentSweep=[...events].reverse().find(e=>e.type==='LIQUIDITY SWEEP'&&e.i>=bars.length-14)||null;
-  return {pattern,direction:dir,highs,lows,allHighs,allLows,support,resistance,events,divergence,recentSweep,method:'confirmed multi-scale pivots 2/4/7; structure uses scale >=4 when available'};
+  return {pattern,direction:dir,patternOverridden:!!(priorPatternDirection&&dir!==priorPatternDirection),highs,lows,allHighs,allLows,support,resistance,events,divergence,recentSweep,method:'confirmed multi-scale pivots 2/4/7; structure uses scale >=4 when available'};
 }
 function historicalContext(bars,currentDir,horizon=10){
   if(!currentDir||bars.length<220)return {status:'INSUFFICIENT',n:0,rate:null,interval:{low:null,high:null},horizon};

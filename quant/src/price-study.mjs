@@ -27,7 +27,7 @@ export function studyFrame(tf,block){
  const efficiency10=travel>0?Math.abs(c.at(-1)-c.at(-11))/travel:0;
  const closePressure5=bars.slice(-5).reduce((sum,x)=>sum+(x.high>x.low?(2*x.close-x.high-x.low)/(x.high-x.low):0),0)/5;
  const rsiChange3=finite(momentum[i])&&finite(momentum[i-3])?momentum[i]-momentum[i-3]:null;
- return {tf,status:'COMPLETED BAR',count:bars.length,provider:block.provider,last:b.end_ts,close:b.close,direction,trend,pattern:s.pattern,structureDirection:s.direction,support:s.support.map(x=>x.price),resistance:s.resistance.map(x=>x.price),events:recent,rsi:momentum[i],rsiChange3,efficiency10,closePressure5,average20:avg[i],average50:slow[i],volumeRatio:finite(vol)&&vol>0&&finite(b.volume)?b.volume/vol:null,typicalMove:atr,closeLocation:range>0?(b.close-b.low)/range:null,change5:i>=5?(b.close/c[i-5]-1)*100:null,divergence:s.divergence&&s.divergence.i>=bars.length-10?s.divergence:null};
+ return {tf,status:'COMPLETED BAR',count:bars.length,provider:block.provider,last:b.end_ts,close:b.close,direction,trend,pattern:s.pattern,patternOverridden:s.patternOverridden,structureDirection:s.direction,support:s.support.map(x=>x.price),resistance:s.resistance.map(x=>x.price),events:recent,rsi:momentum[i],rsiChange3,efficiency10,closePressure5,average20:avg[i],average50:slow[i],volumeRatio:finite(vol)&&vol>0&&finite(b.volume)?b.volume/vol:null,typicalMove:atr,closeLocation:range>0?(b.close-b.low)/range:null,change5:i>=5?(b.close/c[i-5]-1)*100:null,divergence:s.divergence&&s.divergence.i>=bars.length-10?s.divergence:null};
 }
 export function priceStudy(blocks,calendar,now=Date.now()/1000){
  const weekly=completedWeeks(blocks?.['1D'],calendar,now);

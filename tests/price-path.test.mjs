@@ -36,7 +36,7 @@ test('RSI is neutral for a completely flat series and bounded for monotonic pric
 test('a new completed breakdown overrides the preceding higher-high/higher-low pattern',()=>{
  const bars=Array.from({length:100},(_,i)=>{const c=100+i*.3+Math.sin(i*Math.PI/10)*5;return {open:c,high:c+1,low:c-1,close:c};});
  const old=structureEngine(bars,rsi(bars.map(x=>x.close)));assert.equal(old.pattern,'HH + HL');
- bars.push({open:125,high:126,low:80,close:81});const broken=structureEngine(bars,rsi(bars.map(x=>x.close)));assert.equal(broken.direction,-1);assert.equal(broken.events.at(-1).dir,-1);
+ bars.push({open:125,high:126,low:80,close:81});const broken=structureEngine(bars,rsi(bars.map(x=>x.close)));assert.equal(broken.direction,-1);assert.equal(broken.patternOverridden,true);assert.equal(broken.events.at(-1).dir,-1);
 });
 test('projection text escapes symbols and does not invent a level in price discovery',()=>{
  const input={...q,symbol:'<script>',structure:{allHighs:[],allLows:[]}},html=pricePathHTML(input,pricePath(input,gate));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));assert.match(html,/destination is withheld/);
