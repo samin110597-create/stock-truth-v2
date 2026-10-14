@@ -16,7 +16,7 @@ export function completedWeeks(daily,calendar,now=Date.now()/1000){
 }
 export function studyFrame(tf,block){
  const bars=block?.bars||[],minimum=tf==='1W'?25:60;
- if(block?.status!=='COMPLETED BAR'||bars.length<minimum)return {tf,status:block?.status==='COMPLETED BAR'?'INSUFFICIENT DATA':block?.status||'UNAVAILABLE',count:bars.length,provider:block?.provider,last:bars.at(-1)?.end_ts};
+ if(block?.status!=='COMPLETED BAR'||bars.length<minimum)return {tf,status:block?.status==='COMPLETED BAR'?'INSUFFICIENT DATA':block?.status||'UNAVAILABLE',count:bars.length,provider:block?.provider,sourceAttempts:block?.source_attempts,last:bars.at(-1)?.end_ts};
  const c=bars.map(b=>b.close),avg=ema(c,20),slow=ema(c,50),momentum=rsi(c,14),s=structureEngine(bars,momentum),i=c.length-1,b=bars[i];
  const trend=c[i]>avg[i]&&avg[i]>avg[i-3]?1:c[i]<avg[i]&&avg[i]<avg[i-3]?-1:0;
  const direction=s.direction&&trend===s.direction?trend:0;

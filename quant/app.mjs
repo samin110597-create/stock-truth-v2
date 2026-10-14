@@ -148,7 +148,7 @@ function render(q){
 }
 function renderPriceStudy(q){
   const cards=(q.priceStudy||[]).map(x=>{
-    if(x.status!=='COMPLETED BAR')return `<article class="trend-card"><h3>${esc(x.tf)} · ${esc(x.status)}</h3><p>No current trend is claimed for this period. ${x.count||0} completed bars available.</p><div class="label">Last available: ${eastern(x.last)} · ${esc(x.provider||'No source')}</div></article>`;
+    if(x.status!=='COMPLETED BAR')return `<article class="trend-card"><h3>${esc(x.tf)} · ${esc(x.status)}</h3><p>No current trend is claimed for this period. ${x.count||0} completed bars available.</p>${x.sourceAttempts?.length?'<p class="micro">Source checks: '+x.sourceAttempts.map(a=>esc(a.provider)+': '+esc(a.status==='AVAILABLE'?'data received; last completed time below':a.status)).join(' · ')+'</p>':''}<div class="label">Last available: ${eastern(x.last)} · ${esc(x.provider||'No source')}</div></article>`;
     const direction=x.direction>0?'RISING':x.direction<0?'FALLING':'MIXED / SIDEWAYS',k=x.direction>0?'up':x.direction<0?'down':'amber';
     const pattern=x.pattern==='HH + HL'?'Both the recent peaks and dips are getting higher.':x.pattern==='LH + LL'?'Both the recent peaks and dips are getting lower.':'Recent peaks and dips do not form a consistent sequence.';
     const events=x.events.map(e=>`${e.type==='LIQUIDITY SWEEP'?(e.dir>0?'Price dipped below a prior low but recovered':'Price exceeded a prior high but fell back'):(e.dir>0?'Price finished above a confirmed peak':'Price finished below a confirmed low')} at ${money(e.level)} (${eastern(e.at)})`).join('. ');

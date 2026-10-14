@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {quoteFreshness} from '../quant/src/freshness.mjs';
 import {normalizeHistory,parsePublicHistory} from '../quant/src/public-data.mjs';
-import worker from '../gateway/worker.mjs';
+import worker,{regularHistoryEnd,expectedRegularEnd} from '../gateway/worker.mjs';
 const now=Date.now()/1000;
 test('quote status is tied to market time, never retrieval time',()=>{
  assert.equal(quoteFreshness({as_of:now-3600,fetched_at:new Date().toISOString()},now).status,'OLDER QUOTE');
@@ -54,13 +54,13 @@ test('gateway coalesces simultaneous ticker quote requests without exposing cred
  }finally{globalThis.fetch=previous;}
 });
 test('successful but old intraday source cannot suppress newer fallback data',async()=>{
- const previous=globalThis.fetch;let calls=0;
+ const previous=globalThis.fetch;let calls=0;const latest=Date.parse('2026-10-13T19:00:00Z')/1000,old=latest-86400;
  globalThis.fetch=async input=>{
   calls++;const url=new URL(input);
-  if(url.hostname==='api.massive.com')return Response.json({ticker:'FRESHHISTORY',results:[{t:(now-86400)*1000,o:10,h:12,l:9,c:11,v:100}]});
+  if(url.hostname==='api.massive.com')return Response.json({ticker:'FRESHHISTORY',results:[{t:old*1000,o:10,h:12,l:9,c:11,v:100}]});
   assert.equal(url.hostname,'query1.finance.yahoo.com');
   assert.equal(url.searchParams.get('range'),'3mo');
-  return Response.json({chart:{result:[{meta:{symbol:'FRESHHISTORY',currency:'USD'},timestamp:[now-3600],indicators:{quote:[{open:[11],high:[13],low:[10],close:[12],volume:[100]}]}}]}});
+  return Response.json({chart:{result:[{meta:{symbol:'FRESHHISTORY',currency:'USD'},timestamp:[latest],indicators:{quote:[{open:[11],high:[13],low:[10],close:[12],volume:[100]}]}}]}});
  };
  try{
   const r=await worker.fetch(new Request('https://test.invalid/v1/history?symbol=FRESHHISTORY&timeframe=1H'),{MASSIVE_KEY:'private-history-key'},{waitUntil(){}});
@@ -87,4 +87,28 @@ test('stale history cannot publish a trade-ready recommendation',async()=>{
  const bars=Array.from({length:100},(_,i)=>({ts:1000+i*86400,end_ts:2000+i*86400,open:100+i,high:103+i,low:99+i,close:102+i,volume:1000,complete:true}));
  const result=analyzeQuant({symbol:'TEST',bars,dataStatus:'STALE'});
  assert.equal(result.state.stage,'DATA REVIEW');assert.match(result.state.action,/NO TRADE/);assert.equal(result.plan?.quality,'WITHHELD');
+});
+
+test('after-hours prints cannot beat a newer completed regular-session candle',()=>{
+ const now=Date.parse('2026-10-14T15:45:00Z')/1000;
+ const row=t=>({t:Date.parse(t),o:100,h:102,l:99,c:101});
+ const primary={results:[row('2026-10-13T19:30:00Z'),row('2026-10-14T13:00:00Z')]};
+ assert.equal(regularHistoryEnd(primary,'massive',1800,now),Date.parse('2026-10-13T20:00:00Z')/1000);
+ assert.equal(expectedRegularEnd('1H',now),Date.parse('2026-10-14T15:30:00Z')/1000);
+ const current={results:[row('2026-10-14T15:00:00Z'),row('2026-10-14T15:30:00Z')]};
+ assert.equal(regularHistoryEnd(current,'massive',1800,now),Date.parse('2026-10-14T15:30:00Z')/1000);
+ assert.equal(expectedRegularEnd('1H',Date.parse('2026-11-03T16:45:00Z')/1000),Date.parse('2026-11-03T16:30:00Z')/1000);
+});
+test('quote-source rate limit does not suppress the separate history fallback',async()=>{
+ const previous=globalThis.fetch;
+ globalThis.fetch=async input=>{
+  if(new URL(input).searchParams.get('range')==='5d')return new Response('{}',{status:429});
+  return Response.json({chart:{result:[{meta:{symbol:'SEPARATE',currency:'USD'},timestamp:[1791919800],indicators:{quote:[{open:[10],high:[12],low:[9],close:[11],volume:[100]}]}}]}});
+ };
+ try{
+  const ctx={waitUntil(){}};
+  assert.equal((await worker.fetch(new Request('https://test.invalid/v1/quote?symbol=SEPARATE'),{},ctx)).status,503);
+  const r=await worker.fetch(new Request('https://test.invalid/v1/history?symbol=SEPARATE&timeframe=1H'),{},ctx);
+  assert.equal(r.status,200);assert.equal((await r.json()).source_attempts[0].status,'AVAILABLE');
+ }finally{globalThis.fetch=previous;}
 });

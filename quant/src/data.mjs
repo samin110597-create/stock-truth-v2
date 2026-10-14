@@ -62,7 +62,7 @@ export async function loadMarketData({symbol,asset='AUTO',timeframe='1D',signal,
     const timeframes={},live={};for(const tf of frames){if(raw?.timeframes?.[tf])timeframes[tf]=refreshBlock(raw.timeframes[tf],tf,cal);}
     const choose=(a,b)=>[a,b].filter(x=>x?.bars?.length).sort((x,y)=>(y.bars.at(-1).end_ts-x.bars.at(-1).end_ts)||Number(x.status==='REVIEW')-Number(y.status==='REVIEW')||y.bars.length-x.bars.length)[0];
     if(daily)timeframes['1D']=choose(daily,timeframes['1D']);
-    if(results[0].status==='fulfilled')results[0].value.forEach((r,i)=>{if(r.status!=='fulfilled')return;for(const tf of requests[i]==='1H'?['1H','4H']:[requests[i]]){try{const block=normalizeHistory(r.value,tf,cal);live[tf]=block;timeframes[tf]=choose(block,timeframes[tf]);}catch{}}});
+    if(results[0].status==='fulfilled')results[0].value.forEach((r,i)=>{if(r.status!=='fulfilled')return;for(const tf of requests[i]==='1H'?['1H','4H']:[requests[i]]){try{const block=normalizeHistory(r.value,tf,cal);live[tf]=block;timeframes[tf]={...choose(block,timeframes[tf]),source_attempts:block.source_attempts};}catch{}}});
     const secure=live[timeframe];
     let actual=timeframe,block=timeframes[actual],notice='';
     if((!sufficientlyDeep(block)||block.status==='STALE')&&timeframe!=='1D'&&sufficientlyDeep(timeframes['1D'])){actual='1D';block=timeframes['1D'];notice=timeframe+' UNAVAILABLE / STALE · Showing daily analysis instead. No intraday signal is implied.';}

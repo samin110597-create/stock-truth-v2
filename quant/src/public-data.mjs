@@ -106,7 +106,7 @@ export function normalizeHistory(j,tf,calendar,now=Date.now()/1000){
       bars.push({...z[0],end_ts:end,high:Math.max(...z.map(b=>b.high)),low:Math.min(...z.map(b=>b.low)),close:z.at(-1).close,volume:z.every(b=>finite(b.volume))?z.reduce((s,b)=>s+b.volume,0):null});
     }
   }
-  return refreshBlock({bars,quality:'PASS',provider:j.provider,fetched_at:j.fetched_at},tf,calendar,now);
+  return refreshBlock({bars,quality:'PASS',provider:j.provider,fetched_at:j.fetched_at,source_attempts:j.source_attempts},tf,calendar,now);
 }
 export async function publicResearch(symbol,signal){
   const base='https://tgmcharts.com/api/v1';
