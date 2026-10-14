@@ -4,6 +4,7 @@ import {quoteFreshness,freshestQuote} from './src/freshness.mjs';
 import {quoteGate,freshnessGate,gateAnalysis} from './src/freshness-guard.mjs';
 import {buildBriefing} from './src/briefing.mjs';
 import {plainLanguage} from './src/plain-language.mjs';
+import {pricePathHTML} from './src/price-path-view.mjs';
 import {priceStudy} from './src/price-study.mjs';
 import {publicResearch} from './src/public-data.mjs';
 import {researchHTML} from './src/research-view.mjs';
@@ -71,7 +72,7 @@ function drawProjection(q){
   if(times.length<20)return;
   if(pr?.source==='WALK_FORWARD_OOS_CONDITIONAL_RETURNS'){
     const sets=[
-      {name:'primary',color:'#49d7e6',width:2,lineStyle:0},
+      {name:'primary',color:'#49d7e6',width:2,lineStyle:2},
       {name:'pullback',color:'#7f93a3',width:1,lineStyle:2},
       {name:'expansion',color:'#b794f4',width:1,lineStyle:2}
     ];
@@ -79,7 +80,7 @@ function drawProjection(q){
     return;
   }
   if(pr){
-    const sets=[{name:'primary',color:'#49d7e6',width:2,lineStyle:0},{name:'pullback',color:'#7f93a3',width:1,lineStyle:2},{name:'expansion',color:'#b794f4',width:1,lineStyle:2}];
+    const sets=[{name:'primary',color:'#49d7e6',width:2,lineStyle:2},{name:'pullback',color:'#7f93a3',width:1,lineStyle:2},{name:'expansion',color:'#b794f4',width:1,lineStyle:2}];
     for(const s of sets){const p=pr[s.name];if(!p)continue;const line=chart.addSeries(LineSeries,{color:s.color,lineWidth:s.width,lineStyle:s.lineStyle,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});line.setData([{time:lastTime,value:lastPrice},{time:times[4],value:p.bar5},{time:times[9],value:p.bar10},{time:times[19],value:p.bar20}].filter(x=>finite(x.value)));}
     return;
   }
@@ -152,7 +153,7 @@ function renderPriceStudy(q){
     const direction=x.direction>0?'RISING':x.direction<0?'FALLING':'MIXED / SIDEWAYS',k=x.direction>0?'up':x.direction<0?'down':'amber';
     const pattern=x.pattern==='HH + HL'?'Both the recent peaks and dips are getting higher.':x.pattern==='LH + LL'?'Both the recent peaks and dips are getting lower.':'Recent peaks and dips do not form a consistent sequence.';
     const events=x.events.map(e=>`${e.type==='LIQUIDITY SWEEP'?(e.dir>0?'Price dipped below a prior low but recovered':'Price exceeded a prior high but fell back'):(e.dir>0?'Price finished above a confirmed peak':'Price finished below a confirmed low')} at ${money(e.level)} (${eastern(e.at)})`).join('. ');
-    return `<article class="trend-card"><h3>${esc(x.tf)} · <span class="${k}">${direction}</span></h3><div class="label">Completed ${eastern(x.last)} · ${x.count} bars · ${esc(x.provider)}</div><p>${pattern} Price is ${x.close>x.average20?'above':'below'} its recent average (${money(x.average20)}), which is ${x.trend>0?'rising':x.trend<0?'falling':'not showing a clear direction'}. ${x.direction===0?'The trend and price pattern do not agree enough for a clear direction.':''}</p><p><b>Where buyers previously stepped in:</b> ${x.support.map(money).join(' → ')||'No confirmed level'}<br><b>Where sellers previously stepped in:</b> ${x.resistance.map(money).join(' → ')||'No confirmed level'}</p><p><b>Recent price action:</b> ${esc(events||'No new confirmed break or failed break in the last five periods.')}</p><p><b>Strength of the move:</b> Last five periods ${num(x.change5)}%. Latest volume ${finite(x.volumeRatio)?num(x.volumeRatio)+' times the previous 20-period average':'unavailable'}. The usual high-to-low movement, including gaps, is about ${money(x.typicalMove)} per period. ${x.divergence?'Price and momentum are moving in opposite directions; a reversal is possible but not confirmed.':''}</p><p><b>What to watch next:</b> ${x.resistance.length?'A completed finish above '+money(x.resistance[0])+' would show progress upward. ':''}${x.support.length?'A completed finish below '+money(x.support[0])+' would show deterioration. ':''}A brief touch is not confirmation. These are observed levels, not guaranteed destinations.</p></article>`;
+    return `<article class="trend-card"><h3>${esc(x.tf)} · <span class="${k}">${direction}</span></h3><div class="label">Completed ${eastern(x.last)} · ${x.count} bars · ${esc(x.provider)}</div><p>${pattern} Price is ${x.close>x.average20?'above':'below'} its recent average (${money(x.average20)}), which is ${x.trend>0?'rising':x.trend<0?'falling':'not showing a clear direction'}. ${x.direction===0?'The trend and price pattern do not agree enough for a clear direction.':''}</p><p><b>Where buyers previously stepped in:</b> ${x.support.map(money).join(' → ')||'No confirmed level'}<br><b>Where sellers previously stepped in:</b> ${x.resistance.map(money).join(' → ')||'No confirmed level'}</p><p><b>Recent price action:</b> ${esc(events||'No new confirmed break or failed break in the last five periods.')}</p><p><b>Strength of the move:</b> Last five periods ${num(x.change5)}%. Latest volume ${finite(x.volumeRatio)?num(x.volumeRatio)+' times the previous 20-period average':'unavailable'}. The usual high-to-low movement, including gaps, is about ${money(x.typicalMove)} per period. ${x.divergence?'Price and momentum are moving in opposite directions; a reversal is possible but not confirmed.':''}</p><p><b>Momentum and pressure:</b> RSI ${num(x.rsi,1)}${finite(x.rsiChange3)?' ('+(x.rsiChange3>0?'+':'')+num(x.rsiChange3,1)+' over three periods)':''}. ${x.rsi>70?'Momentum is stretched upward; that alone is not a sell signal.':x.rsi<30?'Momentum is stretched downward; that alone is not a buy signal.':'Momentum is not at the usual extreme thresholds.'} The latest five candles finished ${x.closePressure5>.2?'mostly toward their highs':x.closePressure5<-.2?'mostly toward their lows':'without consistent buying or selling pressure'}. ${finite(x.efficiency10)?num(x.efficiency10*100,0)+'% of the last ten periods’ price travel became net progress. A low value means more back-and-forth movement.':''}</p><p><b>What to watch next:</b> ${x.resistance.length?'A completed finish above '+money(x.resistance[0])+' would show progress upward. ':''}${x.support.length?'A completed finish below '+money(x.support[0])+' would show deterioration. ':''}A brief touch is not confirmation. These are observed levels, not guaranteed destinations.</p></article>`;
   });
   $('#price-study').innerHTML='<div class="panel-head"><span>PRICE ACTION ACROSS FOUR TIME PERIODS</span><span>Completed prices only</span></div><p class="scenario-note">Hourly: entry timing · 4-hour: swing development · Daily: main swing trend · Weekly: broader direction. A falling hour inside a rising week can be a pullback, but is not automatically a buy. Four-hour bars start at the exchange open; the final period can be shorter. Weekly bars exclude the unfinished week. These descriptions do not claim a measured win probability.</p><div class="trend-grid">'+cards.join('')+'</div>';
 }
@@ -165,13 +166,12 @@ function renderBriefing(raw,gate){
   $('#roadmap').innerHTML=`<div class="panel-head"><span>WHEN TO BUY — AND WHEN TO WALK AWAY</span><span>${esc(v.horizonLabel)}</span></div><div class="roadmap-grid"><article><h3>1. A better buying opportunity</h3><p>${esc(plain.buy)}</p></article><article><h3>2. Is the reward worth it?</h3><p>${esc(plain.reward)}</p><p>${esc(plain.rule)}</p></article><article><h3>3. If the move goes wrong</h3><p>${esc(plain.risk)}</p><p>Refresh with ANALYZE before acting. Check the price you can actually buy at; a moving price can change the plan.</p></article></div>`;
   const e=v.execution;
   $('#trade').innerHTML=`<h2>${gate.allowed?'BUYING PLAN · CONDITIONS REQUIRED':'PLANNING ONLY · PRICE TOO OLD'}</h2><div class="trade-action amber">${esc(plain.action)}</div>${v.dir>0?kv('Area to watch for a buy',plain.zone?money(plain.zone.low)+' – '+money(plain.zone.high):'No qualifying area','cyan')+kv('First possible selling area',money(plain.first))+kv('Planned exit if wrong',money(p?.stop),'down')+kv('Gain / loss at latest fresh price',finite(plain.currentRR)?num(plain.currentRR)+' to 1':'Unavailable'):'<p class="rule">No buy plan while the evidence is falling or unclear.</p>'}<div class="rule">${esc(plain.buy)}<br><br>${esc(plain.rule)}</div>`;
-  const r=v.range,available=[r.low,r.mid,r.high].every(finite);
-  const conditionUp=finite(v.resistance)?'Finish a period above '+money(v.resistance)+', then stay above it when price returns to that area':'Confirm a new higher high and hold the breakout';
-  const conditionDown=finite(v.support)?'Finish a period below '+money(v.support)+', then remain below it on the next rebound':'Confirm a new lower low and failed reclaim';
-  $('#projections').innerHTML=`<div class="panel-head"><span>WHERE PRICE COULD GO</span><span>${esc(v.horizonLabel)} · ${esc(v.mode)}</span></div><p class="scenario-note">${esc(context)}. ${esc(v.rangeSource)}. Bull/bear levels are conditional structural roadmaps, not forecasts of when a trigger will occur. The base-case range is a separate model distribution, not a proven confidence interval.</p><div class="scenario-grid"><article class="scenario bull"><div class="label">IF PRICE RISES</div><strong>${finite(v.bullObjective)?money(v.bullObjective):'No confirmed objective'}</strong><p>${esc(conditionUp)}.</p><small>${finite(v.bullObjective)?esc(v.bullSource):'No sourced objective beyond the trigger. Wait for new structure.'}</small></article><article class="scenario base"><div class="label">ESTIMATED MIDDLE — NOT A TARGET</div><strong>${available?money(r.mid):'Unavailable'}</strong><p>${available?'Middle range '+money(r.low)+' – '+money(r.high)+'.':'Insufficient return distribution.'} ${plain.mixed?'The available time periods disagree; no clear direction is established.':v.dir?'The directional lean is '+(v.dir>0?'upward':'downward')+', but this does not establish a likely winner.':'No clear directional advantage.'}</p><small>No scenario probabilities claimed unless validated.</small></article><article class="scenario bear"><div class="label">IF PRICE FALLS</div><strong>${finite(v.bearObjective)?money(v.bearObjective):'No confirmed objective'}</strong><p>${esc(conditionDown)}.</p><small>${finite(v.bearObjective)?esc(v.bearSource):'No sourced objective beyond the trigger. Wait for new structure.'}</small></article></div>`;
-  renderChart({...raw,plan:plain.action.startsWith('BUY CONDITIONS')&&p?{...p,entryZone:plain.zone,entry:raw.quote.price,targets:[{name:'First selling area',price:plain.first}]}:null});
-  if(!gate.allowed){
-    $('#distribution').innerHTML='<div class="micro">Live forecast issuance is blocked. Candle-based planning scenarios above remain visible with their source timestamp.</div>';
+  $('#projections').innerHTML=pricePathHTML(raw,v.path);
+  const projectionAllowed=v.historyOK&&!v.path.moved;
+  renderChart({...raw,forecast:projectionAllowed?raw.forecast:{...raw.forecast,projection:null,monteCarlo:[]},plan:plain.action.startsWith('BUY CONDITIONS')&&p?{...p,entryZone:plain.zone,entry:raw.quote.price,targets:[{name:'First selling area',price:plain.first}]}:null});
+  $('#chart-note').textContent=context+' · '+(projectionAllowed?'Dashed paths are model estimates, not guaranteed destinations.':'Old model paths withheld; new completed-price confirmation required.');
+  if(!gate.allowed||v.path.moved){
+    $('#distribution').innerHTML='<div class="micro">New forecast issuance is blocked while quotes/history are stale or price has materially moved beyond the candle-based view. Historical levels remain visible with their source timestamp.</div>';
     // Show as-of projections without restoring live entry/stop/target overlays.
     $('#chart-note').textContent=context+' · CANDLE-BASED SCENARIOS ONLY · live entry blocked';
   }
@@ -196,7 +196,7 @@ async function refreshPrice(){
   if(!activeSymbol||detectAsset(activeSymbol,$('#asset').value)!=='STOCK')return;
   quoteController?.abort();quoteController=new AbortController();const local=++quoteRequest,symbol=activeSymbol;
   $('#refresh-quote').disabled=true;
-  try{const q=await currentQuote(symbol,quoteController.signal);if(local!==quoteRequest||symbol!==activeSymbol)return;activeQuote=freshestQuote(symbol,[q,activeQuote]);paintQuote(q?'Price refreshed. Analysis remains tied to its displayed completed-bar timestamp.':'Refresh unavailable; last successful quote retained with its original time.');}
+  try{const q=await currentQuote(symbol,quoteController.signal);if(local!==quoteRequest||symbol!==activeSymbol)return;activeQuote=freshestQuote(symbol,[q,activeQuote]);if(activeAnalysis){activeAnalysis.quote=activeQuote;enforceFreshness(true);}paintQuote(q?'Price refreshed. Analysis remains tied to its displayed completed-bar timestamp.':'Refresh unavailable; last successful quote retained with its original time.');}
   catch(e){if(local===quoteRequest&&symbol===activeSymbol&&e.name!=='AbortError')paintQuote('Refresh failed; last successful quote retained with its original time.');}
   finally{if(local===quoteRequest)$('#refresh-quote').disabled=false;}
 }
@@ -230,8 +230,8 @@ async function run(){
   try{
     const data=await loadMarketData({symbol,asset,timeframe,signal,quotePromise,researchPromise});if(id!==requestId)return;
     const q=analyzeQuant({...data});q.quote=data.quote;q.calendar=data.calendar;q.priceStudy=priceStudy(data.timeframeBlocks,data.calendar);q.research=data.research;q.calculatedAt=new Date().toISOString();q.apiContext=data.apiContext;q.dataStatus=data.dataStatus||'UNKNOWN';q.lastCompletedBar=data.lastCompletedBar||data.bars?.at(-1)?.end_ts||null;q.onDemand=!!data.onDemand;q.runtimeApiConfigured=!!data.runtimeApiConfigured;q.providerTrace=data.providerTrace||[];q.crossValidation=data.crossValidation||null;
-    activeQuote=freshestQuote(symbol,[activeQuote,data.quote]);activeAnalysis=q;paintQuote(data.notice||'');const guarded=enforceFreshness(true);
-    try{if(guarded?.freshness.allowed)await recordIssuedForecast(guarded);const accuracy=await settleForCurrentSeries(q);if(id===requestId)renderAccuracy(accuracy);}catch{if(id===requestId)renderAccuracy(null);}
+    activeQuote=freshestQuote(symbol,[activeQuote,data.quote]);q.quote=activeQuote;activeAnalysis=q;paintQuote(data.notice||'');const guarded=enforceFreshness(true);
+    try{if(guarded?.freshness.allowed&&!buildBriefing(q,guarded.freshness).path.moved)await recordIssuedForecast(guarded);const accuracy=await settleForCurrentSeries(q);if(id===requestId)renderAccuracy(accuracy);}catch{if(id===requestId)renderAccuracy(null);}
     if(id!==requestId)return;
     $('#status').textContent=`${guarded?.freshness.allowed?(data.notice||'READY'):'PLANNING MODE — '+guarded.freshness.reasons.join('; ')} · ${data.onDemand?'SECURE GATEWAY':'INDEPENDENT DATA FALLBACK'} · ${data.provider} · ${data.bars.length.toLocaleString()} completed ${data.timeframe} bars · ${q.dataStatus} · ${q.state.probabilityStatus}`;
     history.replaceState(null,'',`?symbol=${encodeURIComponent(symbol)}&tf=${timeframe}&asset=${asset}${location.hash}`);

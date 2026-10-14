@@ -42,10 +42,15 @@ export function structureEngine(bars,rsiSeries){
     const hh=h2[1].price>h2[0].price,hl=l2[1].price>l2[0].price,lh=h2[1].price<h2[0].price,ll=l2[1].price<l2[0].price;
     if(hh&&hl){pattern='HH + HL';dir=1;} else if(lh&&ll){pattern='LH + LL';dir=-1;}
   }
+  // A newer completed break overrides an older peak/dip sequence.
+  const latestBreak=[...events].reverse().find(e=>e.type==='BOS'||e.type==='CHoCH');
+  if(latestBreak&&latestBreak.i>=Math.max(h2.at(-1)?.i??0,l2.at(-1)?.i??0))dir=latestBreak.dir;
   const support=lows.filter(x=>x.price<price).sort((a,b)=>b.price-a.price).slice(0,3),resistance=highs.filter(x=>x.price>price).sort((a,b)=>a.price-b.price).slice(0,3);
   let divergence=null;
   if(l2.length===2&&finite(rsiSeries[l2[0].i])&&finite(rsiSeries[l2[1].i])&&l2[1].price<l2[0].price&&rsiSeries[l2[1].i]>rsiSeries[l2[0].i]+2)divergence={dir:1,type:'BULLISH RSI DIVERGENCE',i:l2[1].i};
   if(h2.length===2&&finite(rsiSeries[h2[0].i])&&finite(rsiSeries[h2[1].i])&&h2[1].price>h2[0].price&&rsiSeries[h2[1].i]<rsiSeries[h2[0].i]-2)divergence={dir:-1,type:'BEARISH RSI DIVERGENCE',i:h2[1].i};
+  // Pivot divergence expires; a months-old disagreement is not current evidence.
+  if(divergence&&divergence.i<bars.length-10)divergence=null;
   const recentSweep=[...events].reverse().find(e=>e.type==='LIQUIDITY SWEEP'&&e.i>=bars.length-14)||null;
   return {pattern,direction:dir,highs,lows,allHighs,allLows,support,resistance,events,divergence,recentSweep,method:'confirmed multi-scale pivots 2/4/7; structure uses scale >=4 when available'};
 }

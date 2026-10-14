@@ -1,11 +1,12 @@
+import {pricePath} from './price-path.mjs';
 // Explain the canonical engine; no second prediction model or invented probabilities.
 export function buildBriefing(q,gate){
  const finite=Number.isFinite,b=q.bars.at(-1),p=q.plan,dir=q.state.direction==='BULLISH'?1:q.state.direction==='BEARISH'?-1:0;
- const support=q.structure.support?.[0]?.price,resistance=q.structure.resistance?.[0]?.price;
+ const path=pricePath(q,gate),support=path.levels.below[0]?.price,resistance=path.levels.above[0]?.price;
  const rows=q.forecast.monteCarlo||[],h={'15M':20,'1H':10,'4H':5,'1D':10}[q.timeframe]||10;
  const mc=rows.find(x=>x.step===h),band=q.trained?.horizons?.[h];
  const valid=band?.validated&&band.returnBand,range=valid?{low:b.close*Math.exp(band.returnBand.q25),mid:b.close*Math.exp(band.returnBand.q50),high:b.close*Math.exp(band.returnBand.q75)}:{low:mc?.p25,mid:mc?.median,high:mc?.p75};
- const bullStructure=q.structure.resistance?.find(x=>finite(resistance)&&x.price>resistance)?.price,bearStructure=q.structure.support?.find(x=>finite(support)&&x.price<support)?.price;
+ const bullStructure=path.levels.above[1]?.price,bearStructure=path.levels.below[1]?.price;
  const bullObjective=finite(bullStructure)?bullStructure:finite(resistance)&&range.high>resistance?range.high:null;
  const bearObjective=finite(bearStructure)?bearStructure:finite(support)&&range.low<support?range.low:null;
  const bullSource=finite(bullStructure)?'Next confirmed resistance; timing is not forecast.':'Model range reference beyond resistance; not conditioned on a breakout.';
@@ -30,5 +31,5 @@ export function buildBriefing(q,gate){
  else if(!execution||execution.rr<1.35){action='WAIT — REWARD TOO SMALL';reason='The nearest usable target does not offer at least 1.35 times the planned risk. A directional bias alone is not an entry.';}
  else if(q.state.stage==='READY'){action=dir>0?'WATCH LONG ENTRY':'WATCH SHORT ENTRY';reason='The model setup passes its filters. Enter only after the specified completed-bar confirmation, with fresh data and acceptable execution price.';}
  if(historyOK&&!gate.allowed){if(action==='WATCH LONG ENTRY'||action==='WATCH SHORT ENTRY'||action==='WAIT FOR CONFIRMATION')action='PLAN NOW · WAIT TO ENTER';reason+=' Live entry is blocked until a quote within 15 minutes is available.';}
- return {bullObjective,bearObjective,bullSource,bearSource,mode,action,reason,dir,support,resistance,close:b.close,bar:b,horizon:h,horizonLabel:q.timeframe==='1D'?h+' trading sessions':h+' completed '+q.timeframe+' bars',range,rangeSource:valid?'Validated conditional return range':'Volatility simulation · not a calibrated probability',pathways,execution,historyOK,invalidated,chased,bias:dir>0?'UPWARD LEAN':dir<0?'DOWNWARD LEAN':'RANGE / MIXED'};
+ return {path,bullObjective,bearObjective,bullSource,bearSource,mode,action,reason,dir,support,resistance,close:b.close,bar:b,horizon:h,horizonLabel:q.timeframe==='1D'?h+' trading sessions':h+' completed '+q.timeframe+' bars',range,rangeSource:valid?'Validated conditional return range':'Volatility simulation · not a calibrated probability',pathways,execution,historyOK,invalidated,chased,bias:dir>0?'UPWARD LEAN':dir<0?'DOWNWARD LEAN':'RANGE / MIXED'};
 }
