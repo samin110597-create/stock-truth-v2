@@ -13,3 +13,9 @@ test('rounding cannot overstate the permissible entry or invent an arrival date'
 test('stale quotes never populate reward labeled as current',()=>{assert.equal(plainLanguage(q,{allowed:false},v).currentRR,null);});
 
 test('opposing price structure makes direction unclear and old history makes no current destination claim',()=>{assert.equal(plainLanguage({...q,structure:{...q.structure,direction:-1}},gate,v).mixed,true);const p=plainLanguage(q,gate,{...v,historyOK:false});assert.match(p.destination,/cannot establish a current/);assert.match(p.risk,/no current buying/);});
+
+
+test('retired plans cannot leave old stops or reward instructions visible',()=>{
+ const p=plainLanguage({...q,quote:{price:94}},gate,v);assert.equal(p.planRetired,true);assert.equal(p.zone,null);assert.match(p.risk,/previous buying plan is retired/);assert.doesNotMatch(p.risk,/\$95/);assert.match(p.reward,/retired/);
+ const moved=plainLanguage(q,gate,{...v,path:{moved:true,moveDirection:-1,changePct:-2}});assert.equal(moved.planRetired,true);assert.equal(moved.zone,null);assert.match(moved.reward,/retired/);
+});
