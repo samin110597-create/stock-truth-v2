@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-26T23:23:45.748Z",
+  "generated_at": "2026-10-27T01:44:55.874Z",
   "method": "Retrospective causal replay; no verified OOS probability claims.",
   "tickers": [
     {
@@ -1404,31 +1404,31 @@
     },
     {
       "symbol": "USAR",
-      "daily_bars": 126,
+      "daily_bars": 824,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
         "1H": 2810,
         "4H": 799,
-        "1D": 126,
-        "1W": 25,
-        "1M": 5
+        "1D": 824,
+        "1W": 171,
+        "1M": 38
       },
       "strict_n": 0,
-      "adaptive_n": 0,
+      "adaptive_n": 1,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
+          "n": 1,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.7934567085261071
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.364965087034908,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
