@@ -1,58 +1,58 @@
 {
-  "generated_at": "2026-11-19T03:38:19.227Z",
+  "generated_at": "2026-11-19T21:48:12.610Z",
   "method": "Retrospective causal replay; no verified OOS probability claims.",
   "tickers": [
     {
       "symbol": "AAOI",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 5,
+      "adaptive_n": 9,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 9,
+          "wins": 6,
+          "frequency": 0.6666666666666666,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.35419734749908977,
+            "high": 0.879418401317257
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 0.854697956397596,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 5,
+          "wins": 4,
+          "frequency": 0.8,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.3755282641185388,
+            "high": 0.9637768390302125
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.986451188210291,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 5,
+          "wins": 3,
+          "frequency": 0.6,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.23071993220883708,
+            "high": 0.8823817688407467
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 3.190071686445406,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -60,55 +60,55 @@
     },
     {
       "symbol": "AEHR",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 1,
-      "adaptive_n": 1,
+      "strict_n": 6,
+      "adaptive_n": 11,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 11,
+          "wins": 4,
+          "frequency": 0.36363636363636365,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.15166223614131383,
+            "high": 0.6462032231083628
           },
-          "mean_net_r": -1.0237448918302807,
+          "mean_net_r": -0.12034471762706973,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 4,
+          "wins": 1,
+          "frequency": 0.25,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.045586062644636216,
+            "high": 0.6993639475573634
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.3780801408511763,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
+          "n": 3,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.5615060804490177
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.2279664547886513,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -116,30 +116,30 @@
     },
     {
       "symbol": "ALAB",
-      "daily_bars": 502,
+      "daily_bars": 671,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3459,
+        "4H": 983,
+        "1D": 671,
+        "1W": 138,
+        "1M": 31
       },
-      "strict_n": 1,
-      "adaptive_n": 2,
+      "strict_n": 2,
+      "adaptive_n": 3,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 2,
+          "n": 3,
           "wins": 1,
-          "frequency": 0.5,
+          "frequency": 0.3333333333333333,
           "ci95": {
-            "low": 0.09452865480086614,
-            "high": 0.9054713451991339
+            "low": 0.0614903152761605,
+            "high": 0.7923450448735121
           },
-          "mean_net_r": 0.9027976505278452,
+          "mean_net_r": 0.26489548398982077,
           "classification": "CALCULATION"
         },
         {
@@ -151,7 +151,7 @@
             "low": 0,
             "high": 0.6576280471103807
           },
-          "mean_net_r": -1.0358197352021157,
+          "mean_net_r": -1.0358197446904933,
           "classification": "CALCULATION"
         },
         {
@@ -163,7 +163,7 @@
             "low": 0,
             "high": 0.6576280471103807
           },
-          "mean_net_r": -1.0358197352021157,
+          "mean_net_r": -1.0358197446904933,
           "classification": "CALCULATION"
         }
       ],
@@ -172,55 +172,55 @@
     },
     {
       "symbol": "AMAT",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 2,
+      "adaptive_n": 7,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 7,
+          "wins": 2,
+          "frequency": 0.2857142857142857,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.0822171657090155,
+            "high": 0.6410709098517873
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.36502620390374013,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
+          "n": 5,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.43449149475208104
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.7208897853076349,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
+          "n": 3,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.5615060804490177
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.1034976510882026,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -228,55 +228,55 @@
     },
     {
       "symbol": "AMBA",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3353,
-        "15M": 1117,
-        "30M": 558,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4676,
+        "15M": 1556,
+        "30M": 776,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 6,
+      "adaptive_n": 10,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 10,
+          "wins": 4,
+          "frequency": 0.4,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.16817758120350967,
+            "high": 0.6873304525498135
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 0.09416490842027865,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 5,
+          "wins": 2,
+          "frequency": 0.4,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.1176182311592533,
+            "high": 0.769280067791163
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 0.4241355744870881,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 4,
+          "wins": 2,
+          "frequency": 0.5,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.15003570882017148,
+            "high": 0.8499642911798285
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.6353731913527918,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -284,55 +284,55 @@
     },
     {
       "symbol": "APP",
-      "daily_bars": 502,
+      "daily_bars": 1408,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3459,
+        "4H": 983,
+        "1D": 1408,
+        "1W": 291,
+        "1M": 66
       },
       "strict_n": 0,
-      "adaptive_n": 1,
+      "adaptive_n": 4,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 1,
-          "frequency": 1,
+          "n": 4,
+          "wins": 2,
+          "frequency": 0.5,
           "ci95": {
-            "low": 0.20654329147389294,
-            "high": 1
+            "low": 0.15003570882017148,
+            "high": 0.8499642911798285
           },
-          "mean_net_r": 2.5522478347502684,
+          "mean_net_r": 0.4592494262112785,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
+          "n": 2,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.6576280471103807
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.0239490580874384,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
+          "n": 2,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.6576280471103807
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.0239490580874384,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -340,16 +340,72 @@
     },
     {
       "symbol": "AVGO",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
+      },
+      "strict_n": 5,
+      "adaptive_n": 9,
+      "adaptive_metrics": [
+        {
+          "target": "TP1",
+          "n": 9,
+          "wins": 3,
+          "frequency": 0.3333333333333333,
+          "ci95": {
+            "low": 0.12058159868274293,
+            "high": 0.6458026525009102
+          },
+          "mean_net_r": 0.21757520206887046,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 6,
+          "wins": 2,
+          "frequency": 0.3333333333333333,
+          "ci95": {
+            "low": 0.09676933255921683,
+            "high": 0.7000116786584712
+          },
+          "mean_net_r": 0.43501808565961797,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP3",
+          "n": 4,
+          "wins": 1,
+          "frequency": 0.25,
+          "ci95": {
+            "low": 0.045586062644636216,
+            "high": 0.6993639475573634
+          },
+          "mean_net_r": 0.7476030804280216,
+          "classification": "CALCULATION"
+        }
+      ],
+      "status": "INSUFFICIENT DATA",
+      "issues": []
+    },
+    {
+      "symbol": "AXTI",
+      "daily_bars": 129,
+      "timeframes": {
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 129,
+        "1W": 25,
+        "1M": 5
       },
       "strict_n": 0,
       "adaptive_n": 0,
@@ -395,111 +451,55 @@
       "issues": []
     },
     {
-      "symbol": "AXTI",
-      "daily_bars": 502,
-      "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
-      },
-      "strict_n": 3,
-      "adaptive_n": 2,
-      "adaptive_metrics": [
-        {
-          "target": "TP1",
-          "n": 2,
-          "wins": 1,
-          "frequency": 0.5,
-          "ci95": {
-            "low": 0.09452865480086614,
-            "high": 0.9054713451991339
-          },
-          "mean_net_r": 1.7506948550072745,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP2",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
-          },
-          "mean_net_r": -1.0127444518104474,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP3",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
-          },
-          "mean_net_r": -1.0127444518104474,
-          "classification": "CALCULATION"
-        }
-      ],
-      "status": "INSUFFICIENT DATA",
-      "issues": []
-    },
-    {
       "symbol": "BE",
-      "daily_bars": 502,
+      "daily_bars": 2093,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3458,
+        "4H": 983,
+        "1D": 2093,
+        "1W": 433,
+        "1M": 99
       },
-      "strict_n": 0,
-      "adaptive_n": 1,
+      "strict_n": 3,
+      "adaptive_n": 4,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 1,
-          "frequency": 1,
+          "n": 4,
+          "wins": 3,
+          "frequency": 0.75,
           "ci95": {
-            "low": 0.20654329147389294,
-            "high": 1
+            "low": 0.3006360524426366,
+            "high": 0.9544139373553637
           },
-          "mean_net_r": 1.5839436083986502,
+          "mean_net_r": 1.025584279702117,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 1,
-          "wins": 1,
-          "frequency": 1,
+          "n": 4,
+          "wins": 3,
+          "frequency": 0.75,
           "ci95": {
-            "low": 0.20654329147389294,
-            "high": 1
+            "low": 0.3006360524426366,
+            "high": 0.9544139373553637
           },
-          "mean_net_r": 2.7255269962313267,
+          "mean_net_r": 1.991652190937815,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 1,
-          "wins": 1,
+          "n": 2,
+          "wins": 2,
           "frequency": 1,
           "ci95": {
-            "low": 0.20654329147389294,
+            "low": 0.34237195288961925,
             "high": 1
           },
-          "mean_net_r": 3.5958623654165836,
+          "mean_net_r": 3.645950788340416,
           "classification": "CALCULATION"
         }
       ],
@@ -508,55 +508,55 @@
     },
     {
       "symbol": "CIFR",
-      "daily_bars": 502,
+      "daily_bars": 1529,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3457,
+        "4H": 982,
+        "1D": 1529,
+        "1W": 316,
+        "1M": 72
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 6,
+      "adaptive_n": 6,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 6,
+          "wins": 2,
+          "frequency": 0.3333333333333333,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.09676933255921683,
+            "high": 0.7000116786584712
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.18810999074200116,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 3,
+          "wins": 2,
+          "frequency": 0.6666666666666666,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.2076549551264879,
+            "high": 0.9385096847238394
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.083981263285175,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 2,
+          "wins": 1,
+          "frequency": 0.5,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.09452865480086614,
+            "high": 0.9054713451991339
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 1.3312421910826926,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -564,16 +564,16 @@
     },
     {
       "symbol": "CRWV",
-      "daily_bars": 414,
+      "daily_bars": 129,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 2874,
-        "4H": 818,
-        "1D": 414,
-        "1W": 85,
-        "1M": 19
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 2860,
+        "4H": 813,
+        "1D": 129,
+        "1W": 25,
+        "1M": 5
       },
       "strict_n": 0,
       "adaptive_n": 0,
@@ -620,55 +620,55 @@
     },
     {
       "symbol": "GLD",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 1,
+      "strict_n": 2,
+      "adaptive_n": 9,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 9,
+          "wins": 4,
+          "frequency": 0.4444444444444444,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.188775429471914,
+            "high": 0.7333526542559703
           },
-          "mean_net_r": -1.8058322511877722,
+          "mean_net_r": 0.08221877830955034,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
+          "n": 5,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.43449149475208104
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.5338737722246083,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
+          "n": 4,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.48990002040399916
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -2.141093291228555,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -676,55 +676,55 @@
     },
     {
       "symbol": "GOOG",
-      "daily_bars": 502,
+      "daily_bars": 129,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3460,
+        "4H": 983,
+        "1D": 129,
+        "1W": 25,
+        "1M": 5
       },
-      "strict_n": 2,
-      "adaptive_n": 3,
+      "strict_n": 0,
+      "adaptive_n": 0,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 3,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.5615060804490177
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.115253272530661,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP2",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0932573372092345,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         },
         {
           "target": "TP3",
-          "n": 1,
+          "n": 0,
           "wins": 0,
-          "frequency": 0,
+          "frequency": null,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": null,
+            "high": null
           },
-          "mean_net_r": -1.0932573372092345,
-          "classification": "CALCULATION"
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -732,14 +732,14 @@
     },
     {
       "symbol": "IREN",
-      "daily_bars": 1256,
+      "daily_bars": 1257,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 1256,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3461,
+        "4H": 984,
+        "1D": 1257,
         "1W": 260,
         "1M": 59
       },
@@ -788,14 +788,14 @@
     },
     {
       "symbol": "META",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 2512,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3462,
+        "4H": 984,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -844,22 +844,46 @@
     },
     {
       "symbol": "MRVL",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3462,
+        "4H": 984,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 1,
-      "adaptive_n": 1,
+      "strict_n": 4,
+      "adaptive_n": 7,
       "adaptive_metrics": [
         {
           "target": "TP1",
+          "n": 7,
+          "wins": 3,
+          "frequency": 0.42857142857142855,
+          "ci95": {
+            "low": 0.15821692226262685,
+            "high": 0.7495457695909742
+          },
+          "mean_net_r": 0.5557868221747161,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 5,
+          "wins": 2,
+          "frequency": 0.4,
+          "ci95": {
+            "low": 0.1176182311592533,
+            "high": 0.769280067791163
+          },
+          "mean_net_r": 1.2405467148459608,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP3",
           "n": 1,
           "wins": 0,
           "frequency": 0,
@@ -867,32 +891,8 @@
             "low": 0,
             "high": 0.7934567085261071
           },
-          "mean_net_r": -1.0412937463984848,
+          "mean_net_r": -1.3933437400352016,
           "classification": "CALCULATION"
-        },
-        {
-          "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        },
-        {
-          "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -900,54 +900,54 @@
     },
     {
       "symbol": "MU",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3462,
+        "4H": 984,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
       "strict_n": 0,
-      "adaptive_n": 1,
+      "adaptive_n": 12,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 12,
+          "wins": 3,
+          "frequency": 0.25,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.08894003962896138,
+            "high": 0.53231033912066
           },
-          "mean_net_r": -1.0599585094374422,
+          "mean_net_r": -0.15680431463014588,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 9,
+          "wins": 1,
+          "frequency": 0.1111111111111111,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.019890371327130535,
+            "high": 0.4350062147680601
           },
-          "mean_net_r": -1.0599585094374422,
+          "mean_net_r": -0.5000666254027846,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 1,
+          "n": 5,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.7934567085261071
+            "high": 0.43449149475208104
           },
-          "mean_net_r": -1.0599585094374422,
+          "mean_net_r": -1.1333096489721886,
           "classification": "CALCULATION"
         }
       ],
@@ -956,14 +956,14 @@
     },
     {
       "symbol": "NBIS",
-      "daily_bars": 522,
+      "daily_bars": 523,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 522,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 523,
         "1W": 108,
         "1M": 24
       },
@@ -1012,72 +1012,16 @@
     },
     {
       "symbol": "NVDA",
-      "daily_bars": 502,
+      "daily_bars": 129,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
-      },
-      "strict_n": 1,
-      "adaptive_n": 0,
-      "adaptive_metrics": [
-        {
-          "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        },
-        {
-          "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        },
-        {
-          "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        }
-      ],
-      "status": "INSUFFICIENT DATA",
-      "issues": []
-    },
-    {
-      "symbol": "ORCL",
-      "daily_bars": 502,
-      "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 129,
+        "1W": 25,
+        "1M": 5
       },
       "strict_n": 0,
       "adaptive_n": 0,
@@ -1123,15 +1067,71 @@
       "issues": []
     },
     {
-      "symbol": "QQQ",
-      "daily_bars": 2512,
+      "symbol": "ORCL",
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 2512,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3467,
+        "4H": 985,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
+      },
+      "strict_n": 4,
+      "adaptive_n": 16,
+      "adaptive_metrics": [
+        {
+          "target": "TP1",
+          "n": 16,
+          "wins": 4,
+          "frequency": 0.25,
+          "ci95": {
+            "low": 0.10181901984237346,
+            "high": 0.49498768929398645
+          },
+          "mean_net_r": -0.37210863051736265,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 13,
+          "wins": 0,
+          "frequency": 0,
+          "ci95": {
+            "low": 0,
+            "high": 0.22810184305529166
+          },
+          "mean_net_r": -1.5000780518127947,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP3",
+          "n": 11,
+          "wins": 0,
+          "frequency": 0,
+          "ci95": {
+            "low": 2.7755575615628914e-17,
+            "high": 0.2588400172488141
+          },
+          "mean_net_r": -1.556597188289001,
+          "classification": "CALCULATION"
+        }
+      ],
+      "status": "INSUFFICIENT DATA",
+      "issues": []
+    },
+    {
+      "symbol": "QQQ",
+      "daily_bars": 2513,
+      "timeframes": {
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3459,
+        "4H": 983,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1180,43 +1180,43 @@
     },
     {
       "symbol": "SLV",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3456,
+        "4H": 982,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 1,
-      "adaptive_n": 1,
+      "strict_n": 4,
+      "adaptive_n": 5,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
+          "n": 5,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.7934567085261071
+            "high": 0.43449149475208104
           },
-          "mean_net_r": 0.16559497793656258,
+          "mean_net_r": -0.7350580781003707,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
+          "n": 2,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.6576280471103807
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.1495481912372039,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
@@ -1236,54 +1236,54 @@
     },
     {
       "symbol": "SMH",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3478,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3457,
+        "4H": 982,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 1,
+      "strict_n": 3,
+      "adaptive_n": 10,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
+          "n": 10,
+          "wins": 2,
+          "frequency": 0.2,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": 0.05668094798069326,
+            "high": 0.5098431532792767
           },
-          "mean_net_r": -1.0292421697811063,
+          "mean_net_r": -0.6233035307613151,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 1,
+          "n": 8,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.7934567085261071
+            "high": 0.3244156195108769
           },
-          "mean_net_r": -1.0292421697811063,
+          "mean_net_r": -0.8274299232301722,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 1,
+          "n": 3,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.7934567085261071
+            "high": 0.5615060804490177
           },
-          "mean_net_r": -1.0292421697811063,
+          "mean_net_r": -1.0916650525444025,
           "classification": "CALCULATION"
         }
       ],
@@ -1292,128 +1292,16 @@
     },
     {
       "symbol": "SNDK",
-      "daily_bars": 438,
-      "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3045,
-        "4H": 867,
-        "1D": 438,
-        "1W": 90,
-        "1M": 20
-      },
-      "strict_n": 0,
-      "adaptive_n": 2,
-      "adaptive_metrics": [
-        {
-          "target": "TP1",
-          "n": 2,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
-          },
-          "mean_net_r": -1.1067083902688692,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP2",
-          "n": 2,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
-          },
-          "mean_net_r": -1.1067083902688692,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP3",
-          "n": 2,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.6576280471103807
-          },
-          "mean_net_r": -1.1067083902688692,
-          "classification": "CALCULATION"
-        }
-      ],
-      "status": "INSUFFICIENT DATA",
-      "issues": []
-    },
-    {
-      "symbol": "SPY",
-      "daily_bars": 502,
+      "daily_bars": 129,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
-      },
-      "strict_n": 0,
-      "adaptive_n": 1,
-      "adaptive_metrics": [
-        {
-          "target": "TP1",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
-          },
-          "mean_net_r": -1.9907952690752986,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP2",
-          "n": 1,
-          "wins": 0,
-          "frequency": 0,
-          "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
-          },
-          "mean_net_r": -1.9907952690752986,
-          "classification": "CALCULATION"
-        },
-        {
-          "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
-          "ci95": {
-            "low": null,
-            "high": null
-          },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
-        }
-      ],
-      "status": "INSUFFICIENT DATA",
-      "issues": []
-    },
-    {
-      "symbol": "USAR",
-      "daily_bars": 424,
-      "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 2947,
-        "4H": 839,
-        "1D": 424,
-        "1W": 87,
-        "1M": 19
+        "1H": 3031,
+        "4H": 862,
+        "1D": 129,
+        "1W": 25,
+        "1M": 5
       },
       "strict_n": 0,
       "adaptive_n": 0,
@@ -1459,17 +1347,73 @@
       "issues": []
     },
     {
-      "symbol": "VPG",
-      "daily_bars": 502,
+      "symbol": "SPY",
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3174,
-        "15M": 956,
-        "30M": 423,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3456,
+        "4H": 982,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
+      },
+      "strict_n": 3,
+      "adaptive_n": 8,
+      "adaptive_metrics": [
+        {
+          "target": "TP1",
+          "n": 8,
+          "wins": 2,
+          "frequency": 0.25,
+          "ci95": {
+            "low": 0.07147768885802763,
+            "high": 0.5907301208974108
+          },
+          "mean_net_r": -0.7357906472316771,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 6,
+          "wins": 1,
+          "frequency": 0.16666666666666666,
+          "ci95": {
+            "low": 0.03005258587173032,
+            "high": 0.563509436563646
+          },
+          "mean_net_r": -0.9291373026720923,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP3",
+          "n": 4,
+          "wins": 1,
+          "frequency": 0.25,
+          "ci95": {
+            "low": 0.045586062644636216,
+            "high": 0.6993639475573634
+          },
+          "mean_net_r": -0.32693216847465506,
+          "classification": "CALCULATION"
+        }
+      ],
+      "status": "INSUFFICIENT DATA",
+      "issues": []
+    },
+    {
+      "symbol": "USAR",
+      "daily_bars": 842,
+      "timeframes": {
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 2936,
+        "4H": 835,
+        "1D": 842,
+        "1W": 174,
+        "1M": 39
       },
       "strict_n": 0,
       "adaptive_n": 1,
@@ -1483,31 +1427,87 @@
             "low": 0,
             "high": 0.7934567085261071
           },
-          "mean_net_r": -1.040725953221436,
+          "mean_net_r": 1.364965087034908,
           "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 1,
+          "n": 0,
+          "wins": 0,
+          "frequency": null,
+          "ci95": {
+            "low": null,
+            "high": null
+          },
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
+        },
+        {
+          "target": "TP3",
+          "n": 0,
+          "wins": 0,
+          "frequency": null,
+          "ci95": {
+            "low": null,
+            "high": null
+          },
+          "mean_net_r": null,
+          "classification": "UNAVAILABLE"
+        }
+      ],
+      "status": "INSUFFICIENT DATA",
+      "issues": []
+    },
+    {
+      "symbol": "VPG",
+      "daily_bars": 2513,
+      "timeframes": {
+        "5M": 4414,
+        "15M": 1325,
+        "30M": 584,
+        "1H": 3458,
+        "4H": 983,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
+      },
+      "strict_n": 5,
+      "adaptive_n": 15,
+      "adaptive_metrics": [
+        {
+          "target": "TP1",
+          "n": 15,
           "wins": 0,
           "frequency": 0,
           "ci95": {
-            "low": 0,
-            "high": 0.7934567085261071
+            "low": -1.3877787807814457e-17,
+            "high": 0.20388926630434784
           },
-          "mean_net_r": -1.040725953221436,
+          "mean_net_r": -0.9907468516567873,
+          "classification": "CALCULATION"
+        },
+        {
+          "target": "TP2",
+          "n": 11,
+          "wins": 0,
+          "frequency": 0,
+          "ci95": {
+            "low": 2.7755575615628914e-17,
+            "high": 0.2588400172488141
+          },
+          "mean_net_r": -0.9504820236275269,
           "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 1,
+          "n": 8,
           "wins": 0,
           "frequency": 0,
           "ci95": {
             "low": 0,
-            "high": 0.7934567085261071
+            "high": 0.3244156195108769
           },
-          "mean_net_r": -1.040725953221436,
+          "mean_net_r": -0.8977158274951476,
           "classification": "CALCULATION"
         }
       ],
@@ -1516,14 +1516,14 @@
     },
     {
       "symbol": "VRT",
-      "daily_bars": 2086,
+      "daily_bars": 2087,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 2086,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3458,
+        "4H": 983,
+        "1D": 2087,
         "1W": 432,
         "1M": 98
       },
@@ -1572,14 +1572,14 @@
     },
     {
       "symbol": "VST",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 2512,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3458,
+        "4H": 983,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1628,55 +1628,55 @@
     },
     {
       "symbol": "XLE",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "1H": 3461,
+        "4H": 984,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 4,
+      "adaptive_n": 7,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 7,
+          "wins": 2,
+          "frequency": 0.2857142857142857,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.0822171657090155,
+            "high": 0.6410709098517873
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.09617959303849058,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 4,
+          "wins": 1,
+          "frequency": 0.25,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.045586062644636216,
+            "high": 0.6993639475573634
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": 0.06477542212479814,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
+          "n": 1,
           "wins": 0,
-          "frequency": null,
+          "frequency": 0,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0,
+            "high": 0.7934567085261071
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -1.0952855316255645,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -1684,55 +1684,55 @@
     },
     {
       "symbol": "XLI",
-      "daily_bars": 502,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 502,
-        "1W": 104,
-        "1M": 23
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3461,
+        "4H": 984,
+        "1D": 2513,
+        "1W": 521,
+        "1M": 119
       },
-      "strict_n": 0,
-      "adaptive_n": 0,
+      "strict_n": 4,
+      "adaptive_n": 10,
       "adaptive_metrics": [
         {
           "target": "TP1",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 10,
+          "wins": 1,
+          "frequency": 0.1,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.01787574951572113,
+            "high": 0.4041563854975721
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.6830491086227412,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP2",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 7,
+          "wins": 1,
+          "frequency": 0.14285714285714285,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.02567895594897479,
+            "high": 0.51313450331903
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.6119792006335852,
+          "classification": "CALCULATION"
         },
         {
           "target": "TP3",
-          "n": 0,
-          "wins": 0,
-          "frequency": null,
+          "n": 6,
+          "wins": 1,
+          "frequency": 0.16666666666666666,
           "ci95": {
-            "low": null,
-            "high": null
+            "low": 0.03005258587173032,
+            "high": 0.563509436563646
           },
-          "mean_net_r": null,
-          "classification": "UNAVAILABLE"
+          "mean_net_r": -0.42766284526226683,
+          "classification": "CALCULATION"
         }
       ],
       "status": "INSUFFICIENT DATA",
@@ -1740,14 +1740,14 @@
     },
     {
       "symbol": "XLK",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
         "5M": 4680,
         "15M": 1560,
         "30M": 780,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 2512,
+        "1H": 3462,
+        "4H": 984,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
@@ -1796,14 +1796,14 @@
     },
     {
       "symbol": "XLU",
-      "daily_bars": 2512,
+      "daily_bars": 2513,
       "timeframes": {
-        "5M": 3354,
-        "15M": 1118,
-        "30M": 559,
-        "1H": 3477,
-        "4H": 989,
-        "1D": 2512,
+        "5M": 4680,
+        "15M": 1560,
+        "30M": 780,
+        "1H": 3461,
+        "4H": 984,
+        "1D": 2513,
         "1W": 521,
         "1M": 119
       },
